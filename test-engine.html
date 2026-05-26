@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Teste da Engine · AIMalexi RPG</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AA%3C/text%3E%3C/svg%3E" />
+  <style>
+    .test-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; }
+    .test-card { background: var(--bg-card); border: 1px solid var(--ink-faded); border-radius: var(--radius-lg); padding: 1rem; }
+    .test-card h3 { color: var(--brass-bright); margin-bottom: 0.5rem; border-bottom: 1px solid var(--ink-faded); padding-bottom: 0.4rem; }
+    .test-output {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      background: var(--bg-deep);
+      padding: 0.6rem;
+      border-radius: var(--radius);
+      max-height: 280px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: var(--ink);
+      border: 1px solid var(--ink-faded);
+    }
+    .test-output .ok    { color: var(--ok); }
+    .test-output .err   { color: var(--err); font-weight: 700; }
+    .test-output .crit  { color: var(--crit); font-weight: 700; }
+    .test-output .extreme { color: var(--extreme); }
+    .test-output .hard  { color: var(--hard); }
+    .test-output .regular { color: var(--regular); }
+    .test-output .fail  { color: var(--fail); }
+    .test-output .fumble { color: var(--fumble); font-weight: 700; }
+    .test-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+    .status-banner {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+    }
+    .status-banner.ok  { background: rgba(90, 138, 90, 0.15); color: var(--ok); border-left: 3px solid var(--ok); }
+    .status-banner.err { background: rgba(139, 26, 26, 0.2); color: #ffb4b4; border-left: 3px solid var(--err); }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="app-header">
+    <h1 class="app-title">🧪 Teste da Engine</h1>
+    <p class="app-subtitle">Validação manual · CoC 7E · AIMalexi RPG</p>
+  </header>
+
+  <div id="status" class="status-banner">Carregando dados e engine...</div>
+
+  <p class="tagline" style="margin-bottom: 1.5rem;">
+    Esta página existe apenas para validar que a engine funciona antes de construir as fichas.
+    Cada cartão executa uma função-chave e mostra o resultado. Botões re-executam a operação.
+  </p>
+
+  <div class="test-grid">
+
+    <!-- Carregamento de dados -->
+    <div class="test-card">
+      <h3>📚 Dados Carregados</h3>
+      <div class="test-output" id="out-data">—</div>
+    </div>
+
+    <!-- Rolagem D100 -->
+    <div class="test-card">
+      <h3>🎲 rollD100() — 10 rolagens normais</h3>
+      <div class="test-actions">
+        <button onclick="testD100('normal')">Rolar 10× Normal</button>
+        <button onclick="testD100('bonus')">Rolar 10× Bônus</button>
+        <button onclick="testD100('penalty')">Rolar 10× Penalidade</button>
+      </div>
+      <div class="test-output" id="out-d100">—</div>
+    </div>
+
+    <!-- ClassifyRoll: testa contra perícia 60 -->
+    <div class="test-card">
+      <h3>🎯 classifyRoll() — perícia 60</h3>
+      <div class="test-actions">
+        <button onclick="testClassify(60)">Rolar 15× contra Perícia 60</button>
+        <button onclick="testClassify(30)">Rolar 15× contra Perícia 30</button>
+        <button onclick="testClassify(90)">Rolar 15× contra Perícia 90</button>
+      </div>
+      <div class="test-output" id="out-classify">—</div>
+    </div>
+
+    <!-- Atributos rolados -->
+    <div class="test-card">
+      <h3>📊 rollAttribute() — gera 1 set completo</h3>
+      <div class="test-actions">
+        <button onclick="testAttributes()">Rolar Novo Set</button>
+      </div>
+      <div class="test-output" id="out-attrs">—</div>
+    </div>
+
+    <!-- DB / Build -->
+    <div class="test-card">
+      <h3>💪 calcDB() — várias faixas</h3>
+      <div class="test-output" id="out-db">—</div>
+    </div>
+
+    <!-- MOV por idade -->
+    <div class="test-card">
+      <h3>🏃 calcMOV() — idade vs atributos</h3>
+      <div class="test-output" id="out-mov">—</div>
+    </div>
+
+    <!-- Pontos de Ocupação -->
+    <div class="test-card">
+      <h3>💼 calcOccupationPoints() — várias ocupações</h3>
+      <div class="test-actions">
+        <button onclick="testOccupation()">Recalcular com novos atributos</button>
+      </div>
+      <div class="test-output" id="out-occ">—</div>
+    </div>
+
+    <!-- Parser de notação de dano -->
+    <div class="test-card">
+      <h3>🗡️ rollNotation() — parser de dano</h3>
+      <div class="test-actions">
+        <button onclick="testNotation()">Rolar Várias Notações</button>
+      </div>
+      <div class="test-output" id="out-notation">—</div>
+    </div>
+
+    <!-- Gerador de Nome -->
+    <div class="test-card">
+      <h3>👤 generateName() — gerador</h3>
+      <div class="test-actions">
+        <button onclick="testNames('ptBR', '1920s')">PT-BR · 1920s</button>
+        <button onclick="testNames('ptBR', 'modern')">PT-BR · Moderno</button>
+        <button onclick="testNames('en', '1920s')">EN · 1920s</button>
+        <button onclick="testNames('en', 'modern')">EN · Moderno</button>
+      </div>
+      <div class="test-output" id="out-names">—</div>
+    </div>
+
+    <!-- Storage -->
+    <div class="test-card">
+      <h3>💾 storage — localStorage</h3>
+      <div class="test-actions">
+        <button onclick="testStorage()">Testar Save/Load/Delete</button>
+        <button onclick="testStorageList()">Listar Personagens</button>
+      </div>
+      <div class="test-output" id="out-storage">—</div>
+    </div>
+
+    <!-- Stats agregados -->
+    <div class="test-card">
+      <h3>📈 Inventário de Dados</h3>
+      <div class="test-output" id="out-inventory">—</div>
+    </div>
+
+  </div>
+
+  <p style="text-align: center; margin-top: 2rem; color: var(--ink-faded); font-style: italic;">
+    Se todos os cartões mostram dados sem erros, a engine está pronta para a Fase 3.
+  </p>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     DADOS (carregam ANTES da engine — atribuem a window.CoCData)
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script src="data/skills.js"></script>
+<script src="data/occupations.js"></script>
+<script src="data/damage-bonus-table.js"></script>
+<script src="data/weapons-templates.js"></script>
+<script src="data/name-pools.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     ENGINE (carrega depois — usa window.CoCData; atribui a window.CoC)
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script src="js/engine/dice.js"></script>
+<script src="js/engine/coc7e-rules.js"></script>
+<script src="js/engine/storage.js"></script>
+<script src="js/engine/name-generator.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TESTES — chama cada função e renderiza resultado
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+  // ─── Helpers de renderização ───────────────────────────────────────────
+  const $ = (sel) => document.querySelector(sel);
+  const out = (id, content) => { $("#" + id).innerHTML = content; };
+  const line = (t, cls) => cls ? `<span class="${cls}">${t}</span>` : t;
+
+  // ─── Boot ──────────────────────────────────────────────────────────────
+  function boot() {
+    const status = $("#status");
+    const checks = [
+      ["window.CoCData",          !!window.CoCData],
+      ["window.CoCData.skills",   Array.isArray(window.CoCData?.skills) && window.CoCData.skills.length > 0],
+      ["window.CoCData.occupations", Array.isArray(window.CoCData?.occupations)],
+      ["window.CoCData.weapons",  Array.isArray(window.CoCData?.weapons)],
+      ["window.CoCData.dbTable",  Array.isArray(window.CoCData?.dbTable)],
+      ["window.CoCData.names",    !!window.CoCData?.names],
+      ["window.CoC.dice",         !!window.CoC?.dice],
+      ["window.CoC.rules",        !!window.CoC?.rules],
+      ["window.CoC.storage",      !!window.CoC?.storage],
+      ["window.CoC.names",        !!window.CoC?.names]
+    ];
+    const failed = checks.filter(c => !c[1]);
+    if (failed.length === 0) {
+      status.className = "status-banner ok";
+      status.innerHTML = "✅ Todos os módulos carregados — engine pronta.";
+    } else {
+      status.className = "status-banner err";
+      status.innerHTML = "❌ Módulos faltando: " + failed.map(f => f[0]).join(", ");
+    }
+
+    // Renderiza tudo
+    renderData();
+    testD100('normal');
+    testClassify(60);
+    testAttributes();
+    renderDB();
+    renderMOV();
+    testOccupation();
+    testNotation();
+    testNames('ptBR', '1920s');
+    renderInventory();
+    out('out-storage', 'Clique nos botões para testar.');
+  }
+
+  // ─── Render: Dados Carregados ──────────────────────────────────────────
+  function renderData() {
+    if (!window.CoCData) return out('out-data', line("⚠ window.CoCData não existe!", "err"));
+    const skillCount = window.CoCData.skills?.length || 0;
+    const occCount   = window.CoCData.occupations?.length || 0;
+    const weapCount  = window.CoCData.weapons?.length || 0;
+    const dbRowCount = window.CoCData.dbTable?.length || 0;
+    const namesOK    = window.CoCData.names ? "OK" : "MISSING";
+
+    out('out-data', [
+      `Perícias:       ${line(skillCount, "ok")}`,
+      `Ocupações:      ${line(occCount, "ok")}`,
+      `Armas:          ${line(weapCount, "ok")}`,
+      `Faixas DB:      ${line(dbRowCount, "ok")}`,
+      `Pools de nome:  ${line(namesOK, "ok")}`
+    ].join("\n"));
+  }
+
+  // ─── Teste: rollD100 ───────────────────────────────────────────────────
+  function testD100(mode) {
+    const bp = mode === 'normal' ? null : mode;
+    const results = [];
+    for (let i = 0; i < 10; i++) {
+      const r = window.CoC.dice.rollD100(bp);
+      const tag = bp ? `[${bp}: tens=${r.tensCandidates.join(",")} → ${r.tens}]` : "";
+      results.push(`${String(r.value).padStart(3)}  ${tag}`);
+    }
+    out('out-d100', results.join("\n"));
+  }
+
+  // ─── Teste: classifyRoll ───────────────────────────────────────────────
+  function testClassify(skill) {
+    const lines = [`Perícia: ${skill}  |  ½=${Math.floor(skill/2)}  ⅕=${Math.floor(skill/5)}`, ""];
+    const counts = {};
+    for (let i = 0; i < 15; i++) {
+      const r = window.CoC.dice.rollD100(null);
+      const level = window.CoC.dice.classifyRoll(r.value, skill);
+      counts[level] = (counts[level] || 0) + 1;
+      const label = window.CoC.dice.LEVEL_LABELS[level];
+      lines.push(`d100=${String(r.value).padStart(3)}  →  ${line(label, level)}`);
+    }
+    lines.push("");
+    lines.push("Distribuição:");
+    Object.entries(counts).forEach(([k, v]) => lines.push(`  ${k.padEnd(8)}: ${v}`));
+    out('out-classify', lines.join("\n"));
+  }
+
+  // ─── Teste: rollAttribute ──────────────────────────────────────────────
+  function testAttributes() {
+    const attrs = {
+      FOR: window.CoC.dice.rollAttribute("3d6x5"),
+      CON: window.CoC.dice.rollAttribute("3d6x5"),
+      TAM: window.CoC.dice.rollAttribute("2d6+6x5"),
+      DES: window.CoC.dice.rollAttribute("3d6x5"),
+      APA: window.CoC.dice.rollAttribute("3d6x5"),
+      INT: window.CoC.dice.rollAttribute("2d6+6x5"),
+      POD: window.CoC.dice.rollAttribute("3d6x5"),
+      EDU: window.CoC.dice.rollAttribute("2d6+6x5")
+    };
+    const lines = [];
+    for (const [name, r] of Object.entries(attrs)) {
+      lines.push(`${name.padEnd(5)} ${String(r.total).padStart(3)}  (${r.formula} → ${r.raw.join("+")}=${r.rawSum})`);
+    }
+    // Derivados
+    const v = (a) => attrs[a].total;
+    const hp = window.CoC.rules.calcHP(v("CON"), v("TAM"));
+    const mp = window.CoC.rules.calcMP(v("POD"));
+    const san = window.CoC.rules.calcSANInit(v("POD"));
+    const mov = window.CoC.rules.calcMOV(v("FOR"), v("DES"), v("TAM"), 28);
+    const db  = window.CoC.rules.calcDB(v("FOR"), v("TAM"));
+    const dodge = window.CoC.rules.calcDodgeBase(v("DES"));
+    lines.push("");
+    lines.push(`PV = (${v("CON")}+${v("TAM")})/10 = ${line(hp, "ok")}`);
+    lines.push(`PM = ${v("POD")}/5 = ${line(mp, "ok")}`);
+    lines.push(`SAN inicial = POD = ${line(san, "ok")}`);
+    lines.push(`MOV (idade 28) = ${line(mov, "ok")}`);
+    lines.push(`DB = ${line(db.db, "ok")}  |  Build = ${line(db.build, "ok")}  (FOR+TAM=${db.forPlusTam})`);
+    lines.push(`Esquivar base = DES/2 = ${line(dodge, "ok")}`);
+    out('out-attrs', lines.join("\n"));
+  }
+
+  // ─── Render: DB para várias faixas ─────────────────────────────────────
+  function renderDB() {
+    const samples = [50, 80, 100, 130, 180, 250, 320];
+    const lines = ["FOR+TAM   DB         Build", "─────────────────────────────"];
+    samples.forEach(v => {
+      const { db, build } = window.CoCData.lookupDB(v);
+      lines.push(`${String(v).padStart(6)}     ${db.padEnd(10)} ${String(build).padStart(3)}`);
+    });
+    out('out-db', lines.join("\n"));
+  }
+
+  // ─── Render: MOV ───────────────────────────────────────────────────────
+  function renderMOV() {
+    const cases = [
+      [60, 60, 60, 20], [60, 60, 60, 45], [60, 60, 60, 65],
+      [70, 50, 50, 30], // FOR>TAM, DES<TAM → MOV 8
+      [40, 80, 50, 30], // DES>TAM, FOR<TAM → MOV 8
+      [80, 80, 50, 30], // ambos > TAM → MOV 9
+      [40, 40, 70, 30]  // ambos < TAM → MOV 7
+    ];
+    const lines = ["FOR  DES  TAM  Idade  →  MOV", "──────────────────────────────"];
+    cases.forEach(([f, d, t, age]) => {
+      const m = window.CoC.rules.calcMOV(f, d, t, age);
+      lines.push(`${String(f).padStart(3)}  ${String(d).padStart(3)}  ${String(t).padStart(3)}  ${String(age).padStart(5)}  →  ${m}`);
+    });
+    out('out-mov', lines.join("\n"));
+  }
+
+  // ─── Teste: calcOccupationPoints ───────────────────────────────────────
+  function testOccupation() {
+    // Atributos de exemplo (gera novos cada clique)
+    const attrs = {
+      FOR: window.CoC.dice.rollAttribute("3d6x5").total,
+      DES: window.CoC.dice.rollAttribute("3d6x5").total,
+      APA: window.CoC.dice.rollAttribute("3d6x5").total,
+      POD: window.CoC.dice.rollAttribute("3d6x5").total,
+      CON: window.CoC.dice.rollAttribute("3d6x5").total,
+      TAM: window.CoC.dice.rollAttribute("2d6+6x5").total,
+      INT: window.CoC.dice.rollAttribute("2d6+6x5").total,
+      EDU: window.CoC.dice.rollAttribute("2d6+6x5").total
+    };
+    const lines = [];
+    lines.push("Atributos do exemplo:");
+    Object.entries(attrs).forEach(([k, v]) => lines.push(`  ${k}=${v}`));
+    lines.push("");
+    lines.push("Ocupação                       Fórmula              Pontos");
+    lines.push("───────────────────────────────────────────────────────────");
+    const samples = ["Detetive Particular", "Médico", "Professor", "Soldado", "Artista", "Diletante", "Hacker"];
+    samples.forEach(name => {
+      const occ = window.CoCData.findOccupation(name);
+      if (!occ) { lines.push(`${name.padEnd(30)} NOT FOUND`); return; }
+      const calc = window.CoC.rules.calcOccupationPoints(occ.pointsFormula, attrs);
+      lines.push(`${name.padEnd(30).slice(0, 30)} ${occ.pointsFormula.padEnd(20).slice(0, 20)} ${line(calc.points, "ok")}`);
+    });
+    lines.push("");
+    lines.push(`Interesse Pessoal = INT × 2 = ${line(window.CoC.rules.calcPersonalInterestPoints(attrs.INT), "ok")}`);
+    out('out-occ', lines.join("\n"));
+  }
+
+  // ─── Teste: rollNotation ───────────────────────────────────────────────
+  function testNotation() {
+    const samples = ["1D6", "2D6+3", "1D10+DB", "1D4+2+DB", "4D10", "2D6+1D4-1"];
+    const db = "+1D4";
+    const lines = [`(DB = ${db})`];
+    samples.forEach(s => {
+      const r = window.CoC.dice.rollNotation(s, db);
+      const dice = r.rolls.map(d => `${d.n}d${d.sides}(${d.dice.join("+")})`).join(" ");
+      lines.push(`${s.padEnd(12)} → ${String(r.total).padStart(3)}   [${dice}]`);
+    });
+    // Empalar:
+    lines.push("");
+    lines.push("--- Empalando (dano máximo): ---");
+    const imp = window.CoC.dice.rollDamage("1D8+DB", db, true);
+    lines.push(`1D8+DB com IMPALE = ${line(imp.total, "crit")}`);
+    out('out-notation', lines.join("\n"));
+  }
+
+  // ─── Teste: generateName ───────────────────────────────────────────────
+  function testNames(locale, era) {
+    const lines = [`Locale: ${locale}  |  Era: ${era}`, ""];
+    for (let i = 0; i < 4; i++) {
+      const m = window.CoC.names.generateName({ locale, era, gender: "male" });
+      lines.push(`M: ${m.full}`);
+    }
+    lines.push("");
+    for (let i = 0; i < 4; i++) {
+      const f = window.CoC.names.generateName({ locale, era, gender: "female" });
+      lines.push(`F: ${f.full}`);
+    }
+    out('out-names', lines.join("\n"));
+  }
+
+  // ─── Teste: Storage ────────────────────────────────────────────────────
+  function testStorage() {
+    if (!window.CoC.storage.isStorageAvailable()) {
+      return out('out-storage', line("⚠ localStorage não disponível neste browser/contexto", "err"));
+    }
+    const fake = {
+      investigator: { name: "Teste Investigador", occupation: "Detetive Particular" },
+      attributes: { FOR: 60, CON: 60, TAM: 70, DES: 50, APA: 55, INT: 80, POD: 50, EDU: 75 },
+      derived: { HP: 13, MP: 10, SAN: 50 }
+    };
+    const id = window.CoC.storage.saveCharacter(fake);
+    const loaded = window.CoC.storage.loadCharacter(id);
+    const list = window.CoC.storage.listCharacters();
+    const deleted = window.CoC.storage.deleteCharacter(id);
+
+    const lines = [
+      line("✓ Save: ", "ok") + `id=${id}`,
+      line("✓ Load: ", "ok") + `name="${loaded?.investigator?.name}"`,
+      line("✓ List: ", "ok") + `${list.length} personagem(s) na lista após save`,
+      line("✓ Delete: ", "ok") + (deleted ? "ok" : "falhou"),
+      line("✓ Listo após delete: ", "ok") + `${window.CoC.storage.listCharacters().length} personagem(s)`
+    ];
+    out('out-storage', lines.join("\n"));
+  }
+
+  function testStorageList() {
+    const list = window.CoC.storage.listCharacters();
+    if (list.length === 0) {
+      out('out-storage', line("Lista vazia. Use 'Testar Save/Load/Delete' primeiro.", "ok"));
+      return;
+    }
+    const lines = list.map(c => `${c.id}  ${c.name.padEnd(25)} ${c.occupation || "—"}`);
+    out('out-storage', lines.join("\n"));
+  }
+
+  // ─── Render: Inventário ────────────────────────────────────────────────
+  function renderInventory() {
+    if (!window.CoCData) return out('out-inventory', "—");
+    const groups = window.CoCData.skillsByCategory();
+    const lines = [];
+    Object.entries(groups).forEach(([cat, list]) => {
+      const lbl = window.CoCData.categoryLabels[cat] || cat;
+      lines.push(`${lbl}: ${list.length} perícias`);
+    });
+    lines.push("");
+    lines.push(`Total perícias:  ${window.CoCData.skills.length}`);
+    lines.push(`Total ocupações: ${window.CoCData.occupations.length}`);
+    lines.push(`Total armas:     ${window.CoCData.weapons.length}`);
+    lines.push(`Faixas DB:       ${window.CoCData.dbTable.length}`);
+    lines.push("");
+    lines.push("Categorias de Armas:");
+    const wcat = {};
+    window.CoCData.weapons.forEach(w => wcat[w.category] = (wcat[w.category] || 0) + 1);
+    Object.entries(wcat).forEach(([k, v]) => lines.push(`  ${k}: ${v}`));
+    out('out-inventory', lines.join("\n"));
+  }
+
+  // Boot quando DOM pronto
+  document.addEventListener('DOMContentLoaded', boot);
+</script>
+
+</body>
+</html>
