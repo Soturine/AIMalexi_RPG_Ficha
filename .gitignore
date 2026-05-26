@@ -1,0 +1,58 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  AIMalexi_RPG_Ficha — .gitignore
+#  Bloqueia PDFs (direitos autorais) e artefatos de SO/editor.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Livros e PDFs (NÃO commitar — risco de DMCA)
+*.pdf
+data/*.pdf
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# Editores e IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.history/
+
+# Logs e temporários
+*.log
+*.tmp
+*.bak
+*.cache
+
+# Node (caso alguém adicione dependências no futuro)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Python (caso scripts auxiliares sejam adicionados)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Backups locais de personagens (privados)
+*-backup.json
+characters-backup/
