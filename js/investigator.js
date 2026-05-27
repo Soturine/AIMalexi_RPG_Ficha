@@ -6,7 +6,18 @@
 (function () {
 
   // ─── Atalhos ──────────────────────────────────────────────────────────
-  const { $, $$, el, toast, modal, confirm, prompt, appendRoll, clearLog, exportLogAsMarkdown, escapeHtml, copyToClipboard } = window.CoC.ui;
+  const { $, $$, el, toast, toastRoll, modal, confirm, prompt, appendRoll, clearLog, exportLogAsMarkdown, escapeHtml, copyToClipboard, bottomSheet } = window.CoC.ui;
+
+  // Wrapper: sempre que registramos uma rolagem no log, também dispara um
+  // toast colorido na tela atual (resolve UX mobile sem precisar trocar de aba).
+  function logAndToast(entry) {
+    appendRoll($("#roll-log"), entry);
+    if (entry && entry.level) toastRoll(entry);
+    if (state.logFab && typeof state.logFab.setBadge === "function") {
+      state.rollCount = (state.rollCount || 0) + 1;
+      state.logFab.setBadge(state.rollCount);
+    }
+  }
   const dice = window.CoC.dice;
   const rules = window.CoC.rules;
   const store = window.CoC.storage;
@@ -349,7 +360,7 @@
       } else {
         const r = dice.rollNotation(trimmed);
         delta = -Math.abs(r.total);
-        appendRoll($("#roll-log"), { skill: `Perda ${key}`, d100: null, level: null, dmg: `${trimmed} → ${r.total}` });
+        logAndToast({ skill: `Perda ${key}`, d100: null, level: "fail", dmg: `${trimmed} → ${r.total}` });
       }
     }
 
@@ -527,7 +538,8 @@
     });
     container.appendChild(addBtn);
 
-    // Bind inputs
+    // Bind inputs — usa updateSkillUI (light update) em vez de renderSkills (rebuild)
+    // para evitar perda de foco enquanto o usuário digita.
     $$("input[data-skill]").forEach(input => {
       input.oninput = () => {
         const name = input.dataset.skill;
@@ -535,7 +547,7 @@
         c.skills = c.skills || {};
         c.skills[name] = c.skills[name] || {};
         c.skills[name].value = v;
-        renderSkills();   // recalcula badges e validação
+        updateSkillUI(name);   // não recria o DOM — só atualiza ½/⅕ e badges
         markDirty();
       };
       input.onblur = persistCurrent;
@@ -568,6 +580,82 @@
       else piSpent += spent;
     }
     return { occSpent, piSpent };
+  }
+
+  /**
+   * Light update: atualiza ½/⅕ na linha da perícia e os badges de pool,
+   * SEM recriar o DOM. Mantém o foco no input atual.
+   *
+   * Reservado para mudanças "value-only" durante digitação.
+   * Mudanças estruturais (ocupação, filtro, busca, add) ainda chamam renderSkills().
+   */
+  function updateSkillUI(name) {
+    const c = state.character;
+    if (!c) return;
+
+    // 1) Atualiza a linha (1/2 e 1/5 da perícia editada)
+    const input = document.querySelector(`input[data-skill="${cssEscape(name)}"]`);
+    if (input) {
+      const v = Number(input.value) || 0;
+      const row = input.closest(".skill-row");
+      const frac = row?.querySelector(".skill-frac");
+      if (frac) frac.textContent = `${dice.half(v)} · ${dice.fifth(v)}`;
+
+      // Atualiza marcação de cap excedido
+      if (row) {
+        const cap = validators.skillCapStatus(v, state.editMode);
+        row.classList.toggle("over-cap", cap.level === "err");
+        row.classList.toggle("over-cap-warn", cap.level === "warn" && !cap.ok);
+      }
+    }
+
+    // 2) Recalcula badges de pool (Ocupação / Interesse)
+    refreshSkillBadges();
+  }
+
+  /**
+   * Recalcula os badges Ocupação/Interesse sem tocar nos inputs.
+   */
+  function refreshSkillBadges() {
+    const c = state.character;
+    if (!c) return;
+    const occName = c.investigator?.occupation;
+    const occ = occName ? window.CoCData.findOccupation(occName) : null;
+    const occSkills = new Set();
+    if (occ) for (const s of occ.skills) s.split("|").map(x => x.trim()).forEach(x => occSkills.add(x));
+
+    const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, v]) => [k, v.value]));
+    const occBudget = occ ? rules.calcOccupationPoints(occ.pointsFormula, attrs).points : 0;
+    const piBudget  = rules.calcPersonalInterestPoints(attrs.INT || 0);
+    const { occSpent, piSpent } = sumSkillSpend(c, occSkills);
+
+    const occState = validators.pointsBadgeState(occSpent, occBudget);
+    const piState  = validators.pointsBadgeState(piSpent, piBudget);
+    const badgeOcc = $("#badge-occ");
+    const badgePi  = $("#badge-pi");
+    if (badgeOcc) {
+      badgeOcc.classList.remove("ok", "warn", "err");
+      if (occState.level === "ok")   badgeOcc.classList.add("ok");
+      if (occState.level === "warn") badgeOcc.classList.add("warn");
+      if (occState.level === "err")  badgeOcc.classList.add("err");
+      badgeOcc.textContent = "Ocupação: " + occState.label;
+    }
+    if (badgePi) {
+      badgePi.classList.remove("ok", "warn", "err");
+      if (piState.level === "ok")    badgePi.classList.add("ok");
+      if (piState.level === "warn")  badgePi.classList.add("warn");
+      if (piState.level === "err")   badgePi.classList.add("err");
+      badgePi.textContent = "Interesse: " + piState.label;
+    }
+  }
+
+  /**
+   * Escape de seletor CSS para nomes com parênteses, espaços, etc.
+   * (CSS.escape() pode não existir em browsers antigos — fallback manual)
+   */
+  function cssEscape(s) {
+    if (window.CSS && typeof window.CSS.escape === "function") return window.CSS.escape(s);
+    return String(s).replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, "\\$1");
   }
 
   /**
@@ -756,7 +844,7 @@
       const diceStr = d.rolls.map(r => `(${r.dice.join("+")})`).join("+");
       dmgStr = `${w.damage} → ${dmgTotal}${isImpale ? " ⚡EMPALA" : ""} ${diceStr}`;
     }
-    appendRoll($("#roll-log"), {
+    logAndToast({
       skill: `⚔ ${w.name}`,
       target: skillVal,
       d100: result.value,
@@ -822,7 +910,7 @@
     const target = difficulty === "hard" ? dice.half(v) : (difficulty === "extreme" ? dice.fifth(v) : v);
     const result = dice.rollD100(state.rollMods.bp || null);
     const level = dice.classifyRoll(result.value, v);
-    appendRoll($("#roll-log"), {
+    logAndToast({
       skill: code,
       target: difficulty === "regular" ? v : `${v} → ${difficulty === "hard" ? "Difícil" : "Extremo"} ${target}`,
       d100: result.value,
@@ -842,7 +930,7 @@
     }
     const result = dice.rollD100(state.rollMods.bp || null);
     const level = dice.classifyRoll(result.value, v);
-    appendRoll($("#roll-log"), {
+    logAndToast({
       skill: name,
       target: v,
       d100: result.value,
@@ -1063,8 +1151,58 @@
     $("#btn-clear-log").onclick = async () => {
       if (await confirm("Limpar todo o log de rolagens?", { title: "Limpar log" })) {
         clearLog($("#roll-log"));
+        state.rollCount = 0;
+        if (state.logFab && state.logFab.setBadge) state.logFab.setBadge(0);
       }
     };
+
+    // FAB Mobile — botão flutuante de log + modificadores acessível em qualquer aba
+    state.rollCount = 0;
+    state.logFab = bottomSheet({
+      id: "rolllog",
+      icon: "🎲",
+      label: "Log de Rolagens",
+      content: () => {
+        const wrap = el("div", {});
+        wrap.appendChild(el("h3", {
+          style: { fontFamily: "var(--font-serif)", color: "var(--brass-bright)", marginBottom: "0.75rem" },
+          text: "Log & Modificadores"
+        }));
+        // Clona o painel de modificadores (sem realocar o existente do desktop)
+        const modPanel = $(".modifier-panel");
+        if (modPanel) wrap.appendChild(modPanel.cloneNode(true));
+        // Espelho do log atual
+        const logMirror = el("div", { class: "roll-log" });
+        const ul = el("ul", { style: { listStyle: "none", padding: 0, margin: 0 } });
+        // Copia entries do log principal
+        $$("#roll-log ul li").forEach(li => ul.appendChild(li.cloneNode(true)));
+        logMirror.appendChild(ul);
+        wrap.appendChild(logMirror);
+        // Bind os botões clonados de difficulty/bp ao mesmo state
+        wrap.querySelectorAll("[data-difficulty]").forEach(b => {
+          b.onclick = () => {
+            wrap.querySelectorAll("[data-difficulty]").forEach(x => x.classList.remove("active"));
+            b.classList.add("active");
+            state.rollMods.difficulty = b.dataset.difficulty;
+            // Espelha no painel desktop
+            $$("#modifier-difficulty button").forEach(x => {
+              x.classList.toggle("active", x.dataset.difficulty === state.rollMods.difficulty);
+            });
+          };
+        });
+        wrap.querySelectorAll("[data-bp]").forEach(b => {
+          b.onclick = () => {
+            wrap.querySelectorAll("[data-bp]").forEach(x => x.classList.remove("active"));
+            b.classList.add("active");
+            state.rollMods.bp = b.dataset.bp || "";
+            $$("#modifier-bonus button").forEach(x => {
+              x.classList.toggle("active", (x.dataset.bp || "") === state.rollMods.bp);
+            });
+          };
+        });
+        return wrap;
+      }
+    });
   }
 
   // ═════════════════════════════════════════════════════════════════════
