@@ -1,28 +1,61 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    AIMalexi RPG · js/engine/storage.js
-   Abstração de Persistência (localStorage) — Multi-personagem
-   Atribui a window.CoC.storage
+   Persistência híbrida: IndexedDB com fallback automático para localStorage.
+
+   Estratégia cache-first:
+   - boot: carrega TUDO para memória (state.cache)
+   - reads: síncronos, vêm do cache (zero latência)
+   - writes: atualizam cache imediatamente + persistem em background
+   - migração silenciosa: copia dados antigos do localStorage para IDB no
+     primeiro boot quando IDB está disponível
+
+   Atribui a window.CoC.storage. API 100% compatível com versão anterior.
+   Acrescenta:
+     - window.CoC.storage.ready  → Promise (resolve quando cache pronto)
+     - window.CoC.storage.backend → "indexeddb" | "localstorage" | "memory"
    ═══════════════════════════════════════════════════════════════════════════ */
 
 window.CoC = window.CoC || {};
 
 (function () {
 
-  // ─── Constantes de chave ──────────────────────────────────────────────
+  // ─── Constantes ──────────────────────────────────────────────────────
   const KEY_PREFIX = "aimalexi-rpg/";
+
+  // IndexedDB
+  const DB_NAME = "aimalexi-rpg";
+  const DB_VERSION = 1;
+  const STORE = "kv";   // store key-value simples
+
+  // Chaves canônicas (usadas no localStorage como caminhos)
   const KEY_INVESTIGATOR_LIST = KEY_PREFIX + "investigators/list";
   const KEY_KEEPER_LIBRARY    = KEY_PREFIX + "keeper/library";
-  const KEY_ACTIVE = {
-    investigator: KEY_PREFIX + "investigators/active",
-    keeper:       KEY_PREFIX + "keeper/active"
-  };
-  const KEY_LAST_EXPORT = KEY_PREFIX + "lastExportAt";
+  const KEY_ACTIVE_INV        = KEY_PREFIX + "investigators/active";
+  const KEY_LAST_EXPORT       = KEY_PREFIX + "lastExportAt";
 
   function characterKey(id) { return KEY_PREFIX + "investigators/" + id; }
   function creatureKey(id)  { return KEY_PREFIX + "keeper/creatures/" + id; }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────
-  function isStorageAvailable() {
+  // ─── Estado em cache ─────────────────────────────────────────────────
+  const cache = {
+    characters: {},      // id → character (objeto inteiro)
+    creatures: {},       // id → creature
+    characterList: [],   // [{id, name, occupation, updatedAt}]
+    creatureList: [],    // [{id, name, type, hp, updatedAt}]
+    activeCharacterId: null,
+    lastExportAt: 0
+  };
+
+  let backend = "memory";   // determinado em init()
+  let db = null;            // IDBDatabase quando backend === "indexeddb"
+
+  // Fila de gravações pendentes (debounced por chave)
+  const pendingWrites = new Map();
+  let flushTimer = null;
+  const FLUSH_DELAY_MS = 150;
+
+  // ─── Detecção de disponibilidade ─────────────────────────────────────
+  function isLocalStorageAvailable() {
     try {
       const t = "__aimalexi_test__";
       localStorage.setItem(t, t);
@@ -33,137 +66,349 @@ window.CoC = window.CoC || {};
     }
   }
 
-  function safeGet(key, fallback = null) {
+  function isIndexedDBAvailable() {
+    return typeof indexedDB !== "undefined" && indexedDB !== null;
+  }
+
+  // ─── IndexedDB primitives ────────────────────────────────────────────
+  function openIDB() {
+    return new Promise((resolve, reject) => {
+      try {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const dbInst = e.target.result;
+          if (!dbInst.objectStoreNames.contains(STORE)) {
+            dbInst.createObjectStore(STORE);
+          }
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror   = (e) => reject(e.target.error || new Error("IDB open failed"));
+        req.onblocked = ()  => reject(new Error("IDB blocked"));
+      } catch (e) { reject(e); }
+    });
+  }
+
+  function idbGet(key) {
+    return new Promise((resolve, reject) => {
+      if (!db) return resolve(null);
+      try {
+        const tx = db.transaction(STORE, "readonly");
+        const req = tx.objectStore(STORE).get(key);
+        req.onsuccess = () => resolve(req.result === undefined ? null : req.result);
+        req.onerror = () => reject(req.error);
+      } catch (e) { reject(e); }
+    });
+  }
+
+  function idbSet(key, value) {
+    return new Promise((resolve, reject) => {
+      if (!db) return resolve(false);
+      try {
+        const tx = db.transaction(STORE, "readwrite");
+        tx.objectStore(STORE).put(value, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error || new Error("IDB tx aborted"));
+      } catch (e) { reject(e); }
+    });
+  }
+
+  function idbDelete(key) {
+    return new Promise((resolve, reject) => {
+      if (!db) return resolve(false);
+      try {
+        const tx = db.transaction(STORE, "readwrite");
+        tx.objectStore(STORE).delete(key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+      } catch (e) { reject(e); }
+    });
+  }
+
+  function idbKeys() {
+    return new Promise((resolve, reject) => {
+      if (!db) return resolve([]);
+      try {
+        const tx = db.transaction(STORE, "readonly");
+        const req = tx.objectStore(STORE).getAllKeys();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      } catch (e) { reject(e); }
+    });
+  }
+
+  // ─── LocalStorage primitives ─────────────────────────────────────────
+  function lsGet(key) {
     try {
       const raw = localStorage.getItem(key);
-      return raw == null ? fallback : JSON.parse(raw);
+      return raw == null ? null : JSON.parse(raw);
     } catch (e) {
-      console.warn("Storage read failed for", key, e);
-      return fallback;
+      console.warn("LS read failed for", key, e);
+      return null;
     }
   }
 
-  function safeSet(key, value) {
+  function lsSet(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
       return true;
     } catch (e) {
-      console.warn("Storage write failed for", key, e);
+      console.warn("LS write failed for", key, e);
       return false;
     }
   }
 
-  function safeRemove(key) {
+  function lsDelete(key) {
+    try { localStorage.removeItem(key); return true; }
+    catch (e) { return false; }
+  }
+
+  function lsKeys() {
+    const out = [];
     try {
-      localStorage.removeItem(key);
-      return true;
-    } catch (e) {
-      return false;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(KEY_PREFIX)) out.push(k);
+      }
+    } catch (e) {}
+    return out;
+  }
+
+  // ─── Backend-agnostic write (cache + persistência em background) ─────
+  function persistKey(key, value) {
+    pendingWrites.set(key, value);
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = setTimeout(flushPending, FLUSH_DELAY_MS);
+  }
+
+  function persistDelete(key) {
+    pendingWrites.set(key, undefined);   // marker for deletion
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = setTimeout(flushPending, FLUSH_DELAY_MS);
+  }
+
+  async function flushPending() {
+    flushTimer = null;
+    if (pendingWrites.size === 0) return;
+    const writes = Array.from(pendingWrites.entries());
+    pendingWrites.clear();
+    for (const [key, value] of writes) {
+      try {
+        if (value === undefined) {
+          if (backend === "indexeddb") await idbDelete(key);
+          else lsDelete(key);
+        } else {
+          if (backend === "indexeddb") {
+            await idbSet(key, value);
+          } else {
+            const ok = lsSet(key, value);
+            if (!ok) {
+              // localStorage cheio — alerta no console; usuário ainda tem o JSON export
+              console.error("⚠ localStorage quota excedida! Use Exportar JSON urgentemente.");
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Persist failed for", key, e);
+      }
     }
+  }
+
+  // Em desligamento da página, força flush síncrono quando possível
+  if (typeof window !== "undefined") {
+    window.addEventListener("beforeunload", () => {
+      // localStorage é síncrono; IDB não consegue garantir, mas tentamos
+      if (flushTimer) clearTimeout(flushTimer);
+      if (backend === "localstorage") flushPending();
+    });
+  }
+
+  // ─── Boot: detecta backend e carrega cache ───────────────────────────
+  async function loadAllFromIDB() {
+    const keys = await idbKeys();
+    for (const key of keys) {
+      if (typeof key !== "string" || !key.startsWith(KEY_PREFIX)) continue;
+      const val = await idbGet(key);
+      placeInCache(key, val);
+    }
+  }
+
+  function loadAllFromLocalStorage() {
+    const keys = lsKeys();
+    for (const key of keys) placeInCache(key, lsGet(key));
+  }
+
+  function placeInCache(key, val) {
+    if (val == null) return;
+    if (key === KEY_INVESTIGATOR_LIST) cache.characterList = Array.isArray(val) ? val : [];
+    else if (key === KEY_KEEPER_LIBRARY) cache.creatureList = Array.isArray(val) ? val : [];
+    else if (key === KEY_ACTIVE_INV)     cache.activeCharacterId = val;
+    else if (key === KEY_LAST_EXPORT)    cache.lastExportAt = Number(val) || 0;
+    else if (key.startsWith(KEY_PREFIX + "investigators/")) {
+      const id = key.replace(KEY_PREFIX + "investigators/", "");
+      cache.characters[id] = val;
+    }
+    else if (key.startsWith(KEY_PREFIX + "keeper/creatures/")) {
+      const id = key.replace(KEY_PREFIX + "keeper/creatures/", "");
+      cache.creatures[id] = val;
+    }
+  }
+
+  /**
+   * Migração silenciosa: se IDB foi escolhido como backend MAS está vazio,
+   * E localStorage tem dados antigos → copia para IDB.
+   */
+  async function migrateFromLocalStorageIfNeeded() {
+    if (backend !== "indexeddb") return;
+    if (cache.characterList.length > 0 || cache.creatureList.length > 0) return;
+    if (!isLocalStorageAvailable()) return;
+
+    const lsKeysList = lsKeys();
+    if (lsKeysList.length === 0) return;
+
+    console.log("[storage] Migrando " + lsKeysList.length + " chaves do localStorage para IndexedDB...");
+    for (const key of lsKeysList) {
+      const val = lsGet(key);
+      if (val != null) {
+        await idbSet(key, val);
+        placeInCache(key, val);
+      }
+    }
+    console.log("[storage] Migração concluída. Dados antigos preservados no localStorage como backup.");
+  }
+
+  async function init() {
+    if (isIndexedDBAvailable()) {
+      try {
+        db = await openIDB();
+        backend = "indexeddb";
+        await loadAllFromIDB();
+        await migrateFromLocalStorageIfNeeded();
+      } catch (e) {
+        console.warn("[storage] IndexedDB falhou, caindo pra localStorage:", e?.message || e);
+        db = null;
+        backend = isLocalStorageAvailable() ? "localstorage" : "memory";
+        if (backend === "localstorage") loadAllFromLocalStorage();
+      }
+    } else if (isLocalStorageAvailable()) {
+      backend = "localstorage";
+      loadAllFromLocalStorage();
+    } else {
+      backend = "memory";   // dados só durante a sessão atual
+      console.warn("[storage] Sem IndexedDB nem localStorage — dados não persistirão entre sessões.");
+    }
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────
+  function isStorageAvailable() {
+    return backend !== "memory";
   }
 
   function genId() {
-    // ID curto, ordenável por tempo
-    const ts = Date.now().toString(36);
-    const rand = Math.random().toString(36).slice(2, 7);
-    return ts + "-" + rand;
+    return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7);
   }
 
-  // ─── INVESTIGADORES ───────────────────────────────────────────────────
+  // ═════════════════════════════════════════════════════════════════════
+  // API PÚBLICA — síncrona (cache-first)
+  // ═════════════════════════════════════════════════════════════════════
 
-  /**
-   * Salva um personagem. Se não tiver id, gera um novo.
-   * @returns {string} id do personagem
-   */
+  // ─── INVESTIGADORES ──────────────────────────────────────────────────
   function saveCharacter(character) {
     if (!character) return null;
     if (!character.id) character.id = genId();
     character.updatedAt = new Date().toISOString();
     if (!character.createdAt) character.createdAt = character.updatedAt;
 
-    safeSet(characterKey(character.id), character);
-
-    // Atualiza lista
-    const list = safeGet(KEY_INVESTIGATOR_LIST, []);
-    const idx = list.findIndex(e => e.id === character.id);
+    cache.characters[character.id] = character;
     const entry = {
       id: character.id,
       name: character.investigator?.name || "Sem Nome",
       occupation: character.investigator?.occupation || "",
       updatedAt: character.updatedAt
     };
-    if (idx >= 0) list[idx] = entry; else list.push(entry);
-    safeSet(KEY_INVESTIGATOR_LIST, list);
+    const idx = cache.characterList.findIndex(e => e.id === character.id);
+    if (idx >= 0) cache.characterList[idx] = entry;
+    else cache.characterList.push(entry);
 
+    persistKey(characterKey(character.id), character);
+    persistKey(KEY_INVESTIGATOR_LIST, cache.characterList);
     return character.id;
   }
 
   function loadCharacter(id) {
     if (!id) return null;
-    return safeGet(characterKey(id));
+    return cache.characters[id] || null;
   }
 
   function listCharacters() {
-    return safeGet(KEY_INVESTIGATOR_LIST, []);
+    return cache.characterList.slice();
   }
 
   function deleteCharacter(id) {
     if (!id) return false;
-    safeRemove(characterKey(id));
-    const list = safeGet(KEY_INVESTIGATOR_LIST, []);
-    const newList = list.filter(e => e.id !== id);
-    safeSet(KEY_INVESTIGATOR_LIST, newList);
-    // Limpa active se for o ativo
-    if (safeGet(KEY_ACTIVE.investigator) === id) {
-      safeRemove(KEY_ACTIVE.investigator);
+    delete cache.characters[id];
+    cache.characterList = cache.characterList.filter(e => e.id !== id);
+    persistDelete(characterKey(id));
+    persistKey(KEY_INVESTIGATOR_LIST, cache.characterList);
+    if (cache.activeCharacterId === id) {
+      cache.activeCharacterId = null;
+      persistDelete(KEY_ACTIVE_INV);
     }
     return true;
   }
 
   function setActiveCharacter(id) {
-    if (id) safeSet(KEY_ACTIVE.investigator, id);
-    else safeRemove(KEY_ACTIVE.investigator);
+    if (id) {
+      cache.activeCharacterId = id;
+      persistKey(KEY_ACTIVE_INV, id);
+    } else {
+      cache.activeCharacterId = null;
+      persistDelete(KEY_ACTIVE_INV);
+    }
   }
 
   function getActiveCharacter() {
-    const id = safeGet(KEY_ACTIVE.investigator);
-    return id ? loadCharacter(id) : null;
+    return cache.activeCharacterId ? loadCharacter(cache.activeCharacterId) : null;
   }
 
-  // ─── BIBLIOTECA DO MESTRE (NPCs / Criaturas) ──────────────────────────
-
+  // ─── BIBLIOTECA DO MESTRE ────────────────────────────────────────────
   function saveCreature(creature) {
     if (!creature) return null;
     if (!creature.id) creature.id = genId();
     creature.updatedAt = new Date().toISOString();
     if (!creature.createdAt) creature.createdAt = creature.updatedAt;
 
-    safeSet(creatureKey(creature.id), creature);
-
-    const library = safeGet(KEY_KEEPER_LIBRARY, []);
-    const idx = library.findIndex(e => e.id === creature.id);
+    cache.creatures[creature.id] = creature;
     const entry = {
       id: creature.id,
       name: creature.name || "Sem Nome",
       type: creature.type || "Outro",
-      hp: creature.derived?.HP || creature.HP || null,
+      hp: creature.derived?.hp || creature.HP || null,
       updatedAt: creature.updatedAt
     };
-    if (idx >= 0) library[idx] = entry; else library.push(entry);
-    safeSet(KEY_KEEPER_LIBRARY, library);
+    const idx = cache.creatureList.findIndex(e => e.id === creature.id);
+    if (idx >= 0) cache.creatureList[idx] = entry;
+    else cache.creatureList.push(entry);
 
+    persistKey(creatureKey(creature.id), creature);
+    persistKey(KEY_KEEPER_LIBRARY, cache.creatureList);
     return creature.id;
   }
 
-  function loadCreature(id) { return id ? safeGet(creatureKey(id)) : null; }
+  function loadCreature(id) {
+    return id ? (cache.creatures[id] || null) : null;
+  }
 
-  function listCreatures() { return safeGet(KEY_KEEPER_LIBRARY, []); }
+  function listCreatures() {
+    return cache.creatureList.slice();
+  }
 
   function deleteCreature(id) {
     if (!id) return false;
-    safeRemove(creatureKey(id));
-    const library = safeGet(KEY_KEEPER_LIBRARY, []);
-    safeSet(KEY_KEEPER_LIBRARY, library.filter(e => e.id !== id));
+    delete cache.creatures[id];
+    cache.creatureList = cache.creatureList.filter(e => e.id !== id);
+    persistDelete(creatureKey(id));
+    persistKey(KEY_KEEPER_LIBRARY, cache.creatureList);
     return true;
   }
 
@@ -176,13 +421,7 @@ window.CoC = window.CoC || {};
     return saveCreature(copy);
   }
 
-  // ─── EXPORT / IMPORT JSON ─────────────────────────────────────────────
-
-  /**
-   * Exporta um objeto qualquer como arquivo JSON download.
-   * @param {Object} obj
-   * @param {string} filename
-   */
+  // ─── EXPORT / IMPORT JSON ────────────────────────────────────────────
   function exportJSON(obj, filename) {
     try {
       const json = JSON.stringify(obj, null, 2);
@@ -194,8 +433,8 @@ window.CoC = window.CoC || {};
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
-      // Registra timestamp do último export (usado pelo alerta de saída)
-      safeSet(KEY_LAST_EXPORT, Date.now());
+      cache.lastExportAt = Date.now();
+      persistKey(KEY_LAST_EXPORT, cache.lastExportAt);
       return true;
     } catch (e) {
       console.error("Export failed", e);
@@ -203,11 +442,6 @@ window.CoC = window.CoC || {};
     }
   }
 
-  /**
-   * Lê arquivo .json escolhido pelo usuário via <input type="file"> e retorna parsed.
-   * @param {File} file
-   * @returns {Promise<Object>}
-   */
   function importJSONFromFile(file) {
     return new Promise((resolve, reject) => {
       if (!file) return reject(new Error("Nenhum arquivo fornecido"));
@@ -225,54 +459,49 @@ window.CoC = window.CoC || {};
     });
   }
 
-  /**
-   * Mescla biblioteca importada à biblioteca atual.
-   * @param {Object} library - { creatures: [...] } ou um array direto
-   * @returns {{ added: number, updated: number }}
-   */
   function mergeCreatureLibrary(library) {
     const creatures = Array.isArray(library) ? library : (library?.creatures || []);
     let added = 0, updated = 0;
     for (const c of creatures) {
-      if (c && c.id && loadCreature(c.id)) {
-        saveCreature(c); updated++;
-      } else {
-        delete c.id;
-        saveCreature(c); added++;
-      }
+      if (c && c.id && loadCreature(c.id)) { saveCreature(c); updated++; }
+      else { delete c.id; saveCreature(c); added++; }
     }
     return { added, updated };
   }
 
-  // ─── TIMESTAMP DE EXPORT (para alerta de saída) ───────────────────────
-
-  function getLastExportTimestamp() {
-    return safeGet(KEY_LAST_EXPORT, 0);
-  }
+  // ─── TIMESTAMP DE EXPORT ─────────────────────────────────────────────
+  function getLastExportTimestamp() { return cache.lastExportAt || 0; }
 
   function minutesSinceLastExport() {
-    const ts = getLastExportTimestamp();
-    if (!ts) return Infinity;
-    return Math.round((Date.now() - ts) / 60000);
+    if (!cache.lastExportAt) return Infinity;
+    return Math.round((Date.now() - cache.lastExportAt) / 60000);
   }
 
-  // ─── UTILITÁRIOS ──────────────────────────────────────────────────────
-
-  /**
-   * Limpa TUDO. Pede confirmação obrigatória via callback do caller.
-   * Use com cuidado.
-   */
+  // ─── UTILITÁRIOS ─────────────────────────────────────────────────────
   function nuclearReset() {
-    const keys = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith(KEY_PREFIX)) keys.push(k);
-    }
-    keys.forEach(safeRemove);
-    return keys.length;
+    const charKeys = Object.keys(cache.characters).map(characterKey);
+    const creatKeys = Object.keys(cache.creatures).map(creatureKey);
+    const allKeys = [...charKeys, ...creatKeys, KEY_INVESTIGATOR_LIST, KEY_KEEPER_LIBRARY, KEY_ACTIVE_INV, KEY_LAST_EXPORT];
+
+    // Limpa cache
+    cache.characters = {};
+    cache.creatures = {};
+    cache.characterList = [];
+    cache.creatureList = [];
+    cache.activeCharacterId = null;
+    cache.lastExportAt = 0;
+
+    // Persiste limpeza
+    for (const k of allKeys) persistDelete(k);
+    return allKeys.length;
   }
 
-  // ─── Expor no namespace global ─────────────────────────────────────────
+  // ─── Inicialização ────────────────────────────────────────────────────
+  const ready = init();
+
+  // ═════════════════════════════════════════════════════════════════════
+  // EXPOR
+  // ═════════════════════════════════════════════════════════════════════
   window.CoC.storage = {
     isStorageAvailable,
     saveCharacter, loadCharacter, listCharacters, deleteCharacter,
@@ -281,7 +510,10 @@ window.CoC = window.CoC || {};
     exportJSON, importJSONFromFile, mergeCreatureLibrary,
     getLastExportTimestamp, minutesSinceLastExport,
     nuclearReset,
-    KEY_PREFIX
+    KEY_PREFIX,
+    // Novos:
+    ready,                         // Promise<void> — resolve quando cache carregado
+    get backend() { return backend; }
   };
 
 })();

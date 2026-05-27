@@ -604,3 +604,82 @@ label {
   border-radius: var(--radius);
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--brass); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FEEDBACK VISUAL — flash em mudança de PV/PM/SAN
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes flash-loss {
+  0%   { box-shadow: 0 0 0 0 rgba(139, 26, 26, 0.7), inset 0 0 18px 4px rgba(139, 26, 26, 0); }
+  30%  { box-shadow: 0 0 0 6px rgba(139, 26, 26, 0), inset 0 0 18px 4px rgba(139, 26, 26, 0.55); }
+  100% { box-shadow: 0 0 0 0 transparent, inset 0 0 0 0 transparent; }
+}
+@keyframes flash-gain {
+  0%   { box-shadow: 0 0 0 0 rgba(90, 138, 90, 0.7), inset 0 0 18px 4px rgba(90, 138, 90, 0); }
+  30%  { box-shadow: 0 0 0 6px rgba(90, 138, 90, 0), inset 0 0 18px 4px rgba(90, 138, 90, 0.55); }
+  100% { box-shadow: 0 0 0 0 transparent, inset 0 0 0 0 transparent; }
+}
+
+.derived-card.flash-loss, .stat-tile.flash-loss {
+  animation: flash-loss 0.85s ease-out forwards;
+}
+.derived-card.flash-gain, .stat-tile.flash-gain {
+  animation: flash-gain 0.85s ease-out forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ATMOSFERA — SAN baixa
+   ───────────────────────────────────────────────────────────────────────────
+   Aplicado em <body> via JS quando a sanidade cai abaixo de 50% / 25%.
+   - san-low      (<50%): dessaturação leve, vinheta vermelha sutil
+   - san-critical (<25%): dessaturação mais forte, vinheta mais densa,
+                          leve tremor cíclico imperceptível mas presente
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body.san-low {
+  filter: saturate(0.78) contrast(1.05);
+  transition: filter 1.2s ease-out;
+}
+
+body.san-low::after {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(139, 26, 26, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 50% 0%,   rgba(139, 26, 26, 0.05) 0%, transparent 60%);
+}
+
+@keyframes san-tremor {
+  0%, 100% { transform: translate(0, 0); }
+  20%      { transform: translate(0.4px, -0.2px); }
+  40%      { transform: translate(-0.3px, 0.3px); }
+  60%      { transform: translate(0.2px, 0.4px); }
+  80%      { transform: translate(-0.4px, -0.3px); }
+}
+
+body.san-critical {
+  filter: saturate(0.55) contrast(1.12) hue-rotate(-8deg);
+  transition: filter 1.4s ease-out;
+}
+
+body.san-critical .app {
+  animation: san-tremor 7s ease-in-out infinite;
+}
+
+body.san-critical::after {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 100%, rgba(139, 26, 26, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 50% 0%,   rgba(139, 26, 26, 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 80% at 0% 50%,   rgba(58, 10, 10, 0.10) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 80% at 100% 50%, rgba(58, 10, 10, 0.10) 0%, transparent 65%);
+  opacity: 1;
+}
+
+/* Respeito a prefers-reduced-motion: desliga o tremor */
+@media (prefers-reduced-motion: reduce) {
+  body.san-critical .app { animation: none; }
+}
+
+/* No print, desliga tudo isso */
+@media print {
+  body.san-low, body.san-critical { filter: none !important; }
+  body.san-critical .app { animation: none !important; }
+}
