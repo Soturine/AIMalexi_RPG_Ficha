@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Como Jogar · Guia do Iniciante · Chamado de Cthulhu 7E</title>
+  <meta name="description" content="Aprenda a jogar Chamado de Cthulhu 7E em 15-20 minutos. Crie um investigador e entre na primeira sessão sem ler 400 páginas." />
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/guia.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9D%93%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="app-header">
+    <h1 class="app-title">Guia do Iniciante</h1>
+    <p class="app-subtitle">Crie um Investigador e jogue em 15 minutos · Chamado de Cthulhu 7E</p>
+  </header>
+
+  <div class="toolbar no-print">
+    <a href="index.html" class="btn btn-ghost">← Início</a>
+    <span class="toolbar-spacer"></span>
+    <a href="investigator.html" class="btn">🎲 Ficha do Investigador</a>
+    <a href="keeper.html" class="btn">📜 Ficha do Mestre</a>
+  </div>
+
+  <div class="guia-grid">
+
+    <!-- ─── SUMÁRIO STICKY ─── -->
+    <aside class="guia-toc no-print" aria-label="Sumário">
+      <h3>Sumário</h3>
+      <ol id="toc-list">
+        <li><a href="#parte-1">O que é Chamado de Cthulhu?</a></li>
+        <li><a href="#parte-2">A rolagem D100</a></li>
+        <li><a href="#parte-3">Crie em 7 passos</a></li>
+        <li><a href="#parte-4">10 perícias essenciais</a></li>
+        <li><a href="#parte-5">Exemplo de cena</a></li>
+        <li><a href="#parte-6">Para o Mestre</a></li>
+        <li><a href="#parte-7">FAQ</a></li>
+      </ol>
+    </aside>
+
+    <!-- ─── CONTEÚDO ─── -->
+    <main class="guia-content">
+
+      <!-- INTRO -->
+      <section class="guia-intro">
+        <p>
+          Crie um Investigador e jogue sua primeira sessão em <b>15-20 minutos</b>.
+          Sem ler 400 páginas. Sem decorar tabelas.
+        </p>
+        <p style="font-size: 0.95rem; color: var(--ink-dim); font-style: italic;">
+          Este guia foi escrito para alguém que <i>nunca</i> jogou RPG ou Chamado de Cthulhu.
+          A ferramenta toda foi pensada para que tudo seja descoberto pelo caminho.
+        </p>
+        <span class="meta">Tempo de leitura: ~20 min · Interatividade incluída</span>
+      </section>
+
+      <div class="section-divider" aria-hidden="true">⸙ · ⸙ · ⸙</div>
+
+      <!-- PARTE 1 -->
+      <section class="guia-section" id="parte-1">
+        <h2><span class="section-icon" aria-hidden="true">🐙</span> 1. O que é Chamado de Cthulhu?</h2>
+
+        <p>
+          <b>Chamado de Cthulhu</b> (em inglês, <i>Call of Cthulhu</i>) é um RPG de horror cósmico
+          criado em 1981, baseado nos contos de <b>H.P. Lovecraft</b>. Diferente de RPGs de fantasia
+          heroica como D&D, aqui você <b>não é um herói</b>.
+        </p>
+        <p>
+          Você é um <b>Investigador</b> — uma pessoa comum (jornalista, médico, professor, detetive)
+          que descobre que sob o verniz da realidade existem coisas antigas, vastas e indiferentes
+          à humanidade. Conhecer essas coisas custa caro: você perde <b>Sanidade</b>.
+        </p>
+
+        <h3>O que muda em relação a outros RPGs?</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>RPGs Heroicos (D&D)</th>
+              <th>Chamado de Cthulhu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Sobe de nível e fica mais poderoso</td><td>Não evolui — só sobrevive (ou enlouquece)</td></tr>
+            <tr><td>Combate é o foco</td><td>Investigação e atmosfera são o foco</td></tr>
+            <tr><td>Heróis enfrentam monstros</td><td>Investigadores <b>fogem</b> de monstros</td></tr>
+            <tr><td>Vitória = derrotar o vilão</td><td>Vitória = sobreviver com a mente intacta</td></tr>
+            <tr><td>Magia é poder</td><td>Magia é corrupção</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Os 3 papéis na mesa</h3>
+        <ul>
+          <li><b>Jogador (Investigador):</b> você é uma pessoa comum tentando entender o mistério</li>
+          <li><b>Guardião (Keeper / Mestre):</b> narra o mundo, interpreta NPCs, decide consequências</li>
+          <li><b>Os Mitos:</b> entidades cósmicas — Cthulhu, Nyarlathotep, Yog-Sothoth — que você <b>não vai derrotar</b></li>
+        </ul>
+
+        <div class="callout tip">
+          <div class="callout-title">💡 Lembrete</div>
+          O objetivo NÃO é ganhar. É sobreviver, descobrir, e — talvez — proteger
+          os próximos que tentarem entender.
+        </div>
+      </section>
+
+      <!-- PARTE 2 -->
+      <section class="guia-section" id="parte-2">
+        <h2><span class="section-icon" aria-hidden="true">🎲</span> 2. A única mecânica essencial: D100</h2>
+
+        <p>
+          Você joga <b>1D100</b> (um dado de 100 lados — ou dois D10, um para dezenas e outro para
+          unidades) contra um valor (sua perícia ou atributo).
+        </p>
+
+        <div class="callout">
+          <div class="callout-title">⚖ Regra de ouro</div>
+          <b>Tirou IGUAL OU MENOR que sua perícia? Sucesso.</b><br>
+          Tirou MAIOR? Falha.
+        </div>
+
+        <p>Por exemplo: sua perícia "Encontrar" é 55. Você joga 1D100:</p>
+        <ul>
+          <li>Tirou <b>42</b> → sucesso (42 ≤ 55) ✅</li>
+          <li>Tirou <b>78</b> → falha (78 &gt; 55) ❌</li>
+        </ul>
+
+        <h3>Três níveis de sucesso</h3>
+        <p>O Guardião pode pedir uma rolagem mais difícil:</p>
+        <table>
+          <thead>
+            <tr><th>Nível</th><th>Você precisa tirar</th><th>Quando o Guardião pede</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><b>Regular</b></td><td>≤ valor da perícia</td><td>Tarefa normal</td></tr>
+            <tr><td><b>Difícil</b></td><td>≤ metade do valor</td><td>Tarefa complicada</td></tr>
+            <tr><td><b>Extremo</b></td><td>≤ um quinto do valor</td><td>Tarefa quase impossível</td></tr>
+          </tbody>
+        </table>
+
+        <p>
+          Sua "Encontrar" é 55. O Guardião pede um teste <b>Difícil</b>: você precisa tirar
+          <span class="formula">≤ 27</span> (metade de 55, arredondado pra baixo).
+        </p>
+        <p style="color: var(--ink-dim); font-style: italic;">
+          A ficha já mostra os 3 números pra você. Em cada perícia você verá:
+          <span class="formula">55 / 27 / 11</span> — Regular, Difícil, Extremo.
+        </p>
+
+        <!-- DEMO INTERATIVO -->
+        <div class="demo-roll" id="demo-classify">
+          <div class="demo-roll-header">
+            <h4>🎲 Tente agora: configure e role</h4>
+            <div class="demo-roll-controls">
+              <label>Perícia <input type="number" id="demo-skill" min="1" max="99" value="55" /></label>
+              <button class="demo-roll-button" id="btn-demo-classify">Rolar 1D100</button>
+            </div>
+          </div>
+          <div class="demo-roll-result empty" id="demo-classify-result">
+            Aperte <b>Rolar 1D100</b> para ver o resultado classificado.
+          </div>
+        </div>
+
+        <h3>Crítico e Fumble</h3>
+        <ul>
+          <li>Tirou <b>1</b>? → <b style="color: var(--crit);">Crítico!</b> Sucesso espetacular. ✨</li>
+          <li>Tirou <b>100</b>? → <b style="color: var(--blood);">Fumble!</b> Falha catastrófica. 💀
+            <span style="color: var(--ink-dim);"> (Se sua perícia for ≥ 50, fumble só com 100. Se for &lt; 50, qualquer 96-100 já é fumble.)</span>
+          </li>
+        </ul>
+
+        <h3>Dado de Bônus e Penalidade</h3>
+        <p>Às vezes o Guardião diz: "<b>com dado de bônus</b>" (favorável) ou "<b>com dado de penalidade</b>" (desfavorável):</p>
+        <ul>
+          <li><b>Bônus:</b> rola DOIS dados de dezena, usa o <b>MENOR</b></li>
+          <li><b>Penalidade:</b> rola DOIS dados de dezena, usa o <b>MAIOR</b></li>
+        </ul>
+        <p style="color: var(--ink-dim); font-style: italic;">A ficha tem botões para isso — clique antes de rolar.</p>
+      </section>
+
+      <!-- PARTE 3 -->
+      <section class="guia-section" id="parte-3">
+        <h2><span class="section-icon" aria-hidden="true">🪶</span> 3. Crie seu Investigador em 7 passos</h2>
+
+        <p>Abra a <a href="investigator.html"><b>Ficha do Investigador</b></a>. Vamos juntos:</p>
+
+        <div class="step-grid">
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <h4>Conceito</h4>
+            <p>Quem é você? Uma frase basta. "Detetive cínico de Londres anos 1920" ou "Médica idealista recém-formada".</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <h4>Rolar Atributos</h4>
+            <p>Clique <b>🎲 Rolar Tudo</b> na ficha. Aparecem 8 atributos rolados automaticamente: FOR, CON, TAM, DES, APA, INT, POD, EDU.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <h4>Escolher Ocupação</h4>
+            <p>No dropdown, escolha uma profissão. Cada uma tem perícias e fórmula de pontos (ex: <span class="formula">EDU×2 + DES×2</span>).</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">4</div>
+            <h4>Distribuir Perícias</h4>
+            <p>Suba as perícias da ocupação até o limite. Badge no topo mostra <b>X / Y pontos</b> em verde/vermelho.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">5</div>
+            <h4>Interesses Pessoais</h4>
+            <p>Ganha <span class="formula">INT × 2</span> pontos extras para gastar em <b>qualquer</b> perícia que você queira.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">6</div>
+            <h4>Equipamento</h4>
+            <p>Lanterna, caderno, lupa... se a ocupação permite, arma. Anote na seção Arsenal e Diário.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">7</div>
+            <h4>Background</h4>
+            <p>Ideologia, pessoas importantes, lugares queridos, traços. 3-5 frases dão vida ao personagem.</p>
+          </div>
+        </div>
+
+        <div class="callout success">
+          <div class="callout-title">✓ Pronto!</div>
+          Seu investigador está vivo. Salve com <b>💾 Exportar JSON</b> — recomendado!
+          Depois é só jogar.
+        </div>
+
+        <div class="callout warn">
+          <div class="callout-title">⚠ Importante: backup</div>
+          A ficha salva automaticamente no seu navegador, mas <b>se você limpar o cache, perde tudo</b>.
+          Use o botão de Exportar JSON ao final de cada sessão. É um arquivo pequeno que você pode
+          guardar em qualquer lugar e importar de volta a qualquer momento.
+        </div>
+      </section>
+
+      <!-- PARTE 4 -->
+      <section class="guia-section" id="parte-4">
+        <h2><span class="section-icon" aria-hidden="true">📜</span> 4. As 10 perícias essenciais</h2>
+
+        <p>
+          Chamado de Cthulhu tem ~60 perícias. Você raramente vai usar mais de 10-15.
+          Estas são as essenciais:
+        </p>
+
+        <table>
+          <thead>
+            <tr><th>Perícia</th><th>Para que serve</th><th>Base</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><b>Encontrar</b></td><td>Achar pistas, objetos escondidos, detalhes</td><td><span class="skill-pill"><span class="pill-value">25%</span></span></td></tr>
+            <tr><td><b>Escutar</b></td><td>Ouvir conversas, sons sutis, alguém se aproximando</td><td><span class="skill-pill"><span class="pill-value">20%</span></span></td></tr>
+            <tr><td><b>Psicologia</b></td><td>Detectar mentiras, ler intenções, entender estado emocional</td><td><span class="skill-pill"><span class="pill-value">10%</span></span></td></tr>
+            <tr><td><b>Pesquisar Bibliotecas</b></td><td>Achar informação em livros, arquivos, jornais</td><td><span class="skill-pill"><span class="pill-value">20%</span></span></td></tr>
+            <tr><td><b>Persuasão</b></td><td>Convencer alguém com argumentos lógicos</td><td><span class="skill-pill"><span class="pill-value">10%</span></span></td></tr>
+            <tr><td><b>Lábia</b></td><td>Convencer com charme/desonestidade</td><td><span class="skill-pill"><span class="pill-value">5%</span></span></td></tr>
+            <tr><td><b>Intimidação</b></td><td>Convencer com medo ou ameaça</td><td><span class="skill-pill"><span class="pill-value">15%</span></span></td></tr>
+            <tr><td><b>Esquivar</b></td><td>Sair da frente de ataques físicos</td><td><span class="skill-pill"><span class="pill-value">DES÷2</span></span></td></tr>
+            <tr><td><b>Primeiros Socorros</b></td><td>Estancar sangramento, estabilizar feridos</td><td><span class="skill-pill"><span class="pill-value">30%</span></span></td></tr>
+            <tr><td><b>Ocultismo</b></td><td>Reconhecer símbolos, criaturas e cultos míticos</td><td><span class="skill-pill"><span class="pill-value">5%</span></span></td></tr>
+          </tbody>
+        </table>
+
+        <h3>Sobre as perícias sociais</h3>
+        <p>
+          <b>Persuasão, Lábia, Intimidação, Charme</b> — você usa UMA dessas dependendo da abordagem.
+          Não role todas. O Guardião decide qual é apropriada, ou você decide o approach e usa a
+          perícia correspondente.
+        </p>
+
+        <h3>Sobre Sanidade</h3>
+        <p>Não é perícia, mas é vital:</p>
+        <ul>
+          <li>Começa = seu <span class="formula">POD</span></li>
+          <li>Máxima = <span class="formula">99 − Mitos de Cthulhu</span></li>
+          <li>Você perde SAN ao ver coisas terríveis (cadáveres mutilados, criaturas, magia)</li>
+          <li>Quando perde <b>5+ SAN de uma vez</b>, faça um teste de Sanidade (INT × 5) — se falhar, <b>Loucura Temporária</b> (1D10 horas comportando-se anormalmente)</li>
+          <li>Se sua SAN chegar a <b>0</b>, seu investigador enlouquece permanentemente e vira NPC</li>
+        </ul>
+      </section>
+
+      <!-- PARTE 5 -->
+      <section class="guia-section" id="parte-5">
+        <h2><span class="section-icon" aria-hidden="true">🎭</span> 5. Como jogar uma cena (exemplo)</h2>
+
+        <p>Imagine essa cena curta. Vai sentir o ritmo do jogo.</p>
+
+        <div class="dialogue">
+          <div class="turn guardian">
+            <span class="who">Guardião</span>
+            <p>Você é Marina, jornalista de Londres, 1922. Está numa biblioteca empoeirada
+            procurando referências ao culto de "Os Que Esperam Dormindo". O bibliotecário,
+            Sr. Whitlock, parece nervoso.</p>
+          </div>
+
+          <div class="turn player">
+            <span class="who">Você</span>
+            <p>Eu queria observar o Whitlock — ele tá realmente nervoso ou só com pressa
+            de ir embora?</p>
+          </div>
+
+          <div class="turn guardian">
+            <span class="who">Guardião</span>
+            <p>Faz um teste de <b>Psicologia</b>.</p>
+          </div>
+
+          <div class="turn action">
+            <span class="who">Rolagem</span>
+            <p>Você rola 1D100 contra sua Psicologia de 65. Tira <b style="color: var(--regular);">23</b>. Sucesso Regular ✅</p>
+          </div>
+
+          <div class="turn guardian">
+            <span class="who">Guardião</span>
+            <p>Ele está claramente escondendo algo. Os olhos dele desviam toda vez que você
+            menciona o nome do culto. As mãos suam.</p>
+          </div>
+
+          <div class="turn player">
+            <span class="who">Você</span>
+            <p>Vou usar <b>Lábia</b> — finjo que sou estudante de antropologia da Miskatonic,
+            fazendo tese sobre cultos perdidos.</p>
+          </div>
+
+          <div class="turn guardian">
+            <span class="who">Guardião</span>
+            <p>Ele tá tenso, então vou pedir um teste <b>Difícil</b> de Lábia.</p>
+          </div>
+
+          <div class="turn action">
+            <span class="who">Rolagem</span>
+            <p>Sua Lábia é 50. Difícil = ≤ 25. Você rola... <b style="color: var(--hard);">18</b>. Sucesso! ✅</p>
+          </div>
+
+          <div class="turn guardian">
+            <span class="who">Guardião</span>
+            <p>Ele suspira aliviado. "Ah, acadêmico. Que bom. Tenho... tenho um livro nos fundos.
+            Não devo emprestar. Mas se for para pesquisa séria..." Ele se afasta. Você vê uma
+            marca estranha no pulso dele — uma cicatriz em forma de <b>espiral</b>.</p>
+          </div>
+
+          <div class="turn player">
+            <span class="who">Você</span>
+            <p>Reconheço essa marca? <b>Ocultismo</b>.</p>
+          </div>
+
+          <div class="turn action">
+            <span class="who">Rolagem</span>
+            <p>Sua Ocultismo é 30. Você rola <b style="color: var(--fail);">87</b>. Falha ❌</p>
+          </div>
+
+          <div class="turn guardian">
+            <span class="who">Guardião</span>
+            <p>Você nunca viu nada parecido. Mas algo no fundo da sua mente formiga... como se devesse saber.</p>
+          </div>
+        </div>
+
+        <div class="callout">
+          <div class="callout-title">📊 O que aconteceu nessa cena?</div>
+          <ul style="margin: 0;">
+            <li><b>3 rolagens em ~2 minutos</b> — Psicologia, Lábia (Difícil), Ocultismo</li>
+            <li>A ficha já mostrou os números calculados (Difícil = 25)</li>
+            <li>Nenhum dado foi rolado por combate ou regra complicada</li>
+            <li>A história moveu-se com base nos resultados</li>
+          </ul>
+        </div>
+
+        <div class="callout danger">
+          <div class="callout-title">💀 E se tirar Fumble (100) na Lábia?</div>
+          <b>Guardião:</b> Você se atrapalha. Diz "tese sobre cultos perdidos da Miskatonic" e nota
+          que o nome certo é Miskatonic University. Ele estreita os olhos. "Quem mandou você aqui?"
+          — agora ele é hostil.
+          <p style="margin-top: 0.5rem;"><i>Fumbles criam complicações narrativas. Não desistam, abracem.
+          São os melhores momentos da mesa.</i></p>
+        </div>
+
+        <h3>E a Sanidade?</h3>
+        <p>Mais tarde, se Marina abrir aquele livro nos fundos e ler descrições do culto:</p>
+        <div class="dialogue">
+          <div class="turn guardian">
+            <span class="who">Guardião</span>
+            <p>Você lê um trecho que descreve sacrifícios humanos em detalhe gráfico.
+            <b>Perda de SAN: <span class="formula">0/1D4</span>.</b></p>
+          </div>
+          <div class="turn action">
+            <span class="who">Significado</span>
+            <p>Se passar num teste de POD × 5, perde 0 SAN. Se falhar, perde 1D4 (1 a 4) pontos.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PARTE 6 -->
+      <section class="guia-section" id="parte-6">
+        <h2><span class="section-icon" aria-hidden="true">👁</span> 6. Para o Mestre / Guardião</h2>
+
+        <p>Sua primeira sessão como Guardião. Não tente ser perfeito.</p>
+
+        <div class="callout tip">
+          <div class="callout-title">💡 Filosofia do Guardião</div>
+          Cthulhu vive de atmosfera, não de regras precisas. Se esquecer uma regra, improvise.
+          O livro está aí pra consulta, não pra ditar tudo.
+        </div>
+
+        <h3>Use a <a href="keeper.html">Ficha do Mestre</a></h3>
+        <ul>
+          <li><b>🎲 Novo NPC Aleatório</b> — quando precisar de um NPC inesperado (testemunha, comerciante, policial). Em 1 clique.</li>
+          <li><b>📜 Bestiário (lateral esquerda)</b> — 15 arquétipos pré-prontos: Cultista, Mafioso, Profundo, Carniçal, Cão de Tindalos, Shoggoth...</li>
+          <li><b>+ Modificador</b> — aplica Fanático, Armado, Veterano, Ferido, Iniciado nos Mythos sobre qualquer criatura</li>
+          <li><b>⚔ Encontro</b> — manda a criatura ativa para o tracker à direita com HP editável inline</li>
+          <li><b>✎ Editar</b> — abre o Modo Completo (editor profundo) para customizar tudo</li>
+        </ul>
+
+        <h3>Quando pedir uma rolagem</h3>
+        <ul>
+          <li>✅ Quando a falha cria consequência interessante (escalar muro = se cair, faz barulho)</li>
+          <li>❌ Quando a tarefa é trivial (caminhar até a porta) ou impossível (descobrir o segredo do universo)</li>
+          <li>❌ Para informação que o jogador PRECISA ter para a aventura andar (dê de graça)</li>
+        </ul>
+
+        <h3>Como aplicar perda de Sanidade</h3>
+        <p>Formato: <span class="formula">X / YDZ</span> — "0/1D6" significa "se passar no teste, 0; se falhar, 1D6".</p>
+        <p>O teste de SAN é contra o valor de Sanidade atual (1D100 ≤ SAN).</p>
+        <table>
+          <thead><tr><th>Situação</th><th>Perda</th></tr></thead>
+          <tbody>
+            <tr><td>Ver um cadáver</td><td><span class="formula">0/1D3</span></td></tr>
+            <tr><td>Ver uma criatura mítica menor</td><td><span class="formula">0/1D6</span></td></tr>
+            <tr><td>Ver uma criatura mítica maior</td><td><span class="formula">1/1D10</span></td></tr>
+            <tr><td>Ver um Grande Antigo</td><td><span class="formula">1D10/1D100</span></td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout warn">
+          <div class="callout-title">⚠ Erro mais comum do Guardião iniciante</div>
+          <b>Querer matar os investigadores.</b> Não. Cthulhu não é punitivo — é trágico.
+          A meta é criar uma história memorável onde os personagens <b>descobrem algo terrível</b>
+          e <b>pagam um preço</b>. Morte é só um dos preços. Perda de sanidade, perda de gente
+          querida, perda da inocência — tudo vale mais que TPK.
+        </div>
+
+        <h3>Aventuras prontas (sem criar do zero)</h3>
+        <ul>
+          <li><b>Os Painéis Brancos</b> — cenário gratuito, vem com o livro básico em PT-BR</li>
+          <li><b>A Casa Negra</b> — clássico para iniciantes</li>
+          <li><b>A Sombra Sobre Innsmouth</b> — campanha curta, ótima introdução aos Profundos</li>
+          <li><b>itch.io</b> — busca "Call of Cthulhu", centenas de cenários gratuitos e pagos</li>
+        </ul>
+      </section>
+
+      <!-- PARTE 7 -->
+      <section class="guia-section" id="parte-7">
+        <h2><span class="section-icon" aria-hidden="true">❓</span> 7. Perguntas frequentes</h2>
+
+        <h3>"Meu investigador morreu. E agora?"</h3>
+        <p>
+          Crie outro. Cthulhu pressupõe rotatividade — investigadores morrem ou enlouquecem.
+          Use o Wizard de criação para fazer um novo em ~5 minutos. Conecte-o à campanha
+          narrativamente (parente, colega, jornalista cobrindo o caso anterior).
+        </p>
+
+        <h3>"Como ganho perícias novas ou subo as existentes?"</h3>
+        <p>
+          Ao final de cada cenário, perícias <b>usadas com sucesso</b> ganham um teste de melhoria:
+        </p>
+        <ul>
+          <li>Role 1D100 contra a perícia atual</li>
+          <li>Se tirar <b>MAIOR</b> que o valor (ou tirar 96+): ganha <b>1D10 pontos</b></li>
+        </ul>
+
+        <h3>"O que é Mitos de Cthulhu?"</h3>
+        <p>
+          Uma "perícia" especial que representa quanto você <b>sabe</b> sobre os Mitos cósmicos.
+          Começa em 0. Cada vez que você lê um tomo proibido ou aprende uma magia, ela aumenta.
+          <b>Cada ponto de Mitos reduz sua SAN máxima em 1.</b> Saber muito = quebrar mais rápido.
+        </p>
+
+        <h3>"Quanto tempo dura uma sessão típica?"</h3>
+        <p>
+          3-4 horas. Um cenário curto (one-shot) cabe em 1 sessão. Cenários médios em 2-4 sessões.
+          Campanhas longas existem mas são raras.
+        </p>
+
+        <h3>"Posso jogar Cthulhu solo?"</h3>
+        <p>
+          Sim! Há cenários "solo journaling" — você é Guardião e Investigador ao mesmo tempo.
+          A ficha funciona igual. Procure por <i>Cthulhu Dark</i>, <i>Cthulhu Confidential</i>
+          ou <i>Alone Against the X</i> para experiências solo.
+        </p>
+
+        <h3>"Funciona no celular? Sem internet?"</h3>
+        <p>
+          Sim para ambos. A ferramenta foi feita para funcionar 100% offline depois de aberta uma vez.
+          Mobile-first também — você pode usar no celular, segurando com uma mão na mesa.
+        </p>
+      </section>
+
+      <!-- CTA FINAL -->
+      <div class="guia-cta" id="cta">
+        <h2>🦑 Próximo passo</h2>
+        <p>Abra a Ficha do Investigador e crie seu primeiro personagem. Você vai descobrir o resto jogando.</p>
+        <div class="guia-cta-actions">
+          <a href="investigator.html" class="btn btn-primary">🎲 Criar Investigador</a>
+          <a href="keeper.html" class="btn">📜 Ficha do Mestre</a>
+          <a href="index.html" class="btn btn-ghost">← Portal</a>
+        </div>
+        <p style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--ink-faded);">
+          <i>"That is not dead which can eternal lie, and with strange aeons even death may die."</i><br>
+          — H.P. Lovecraft
+        </p>
+      </div>
+
+    </main>
+  </div>
+
+</div>
+
+<!-- Engine de dados (só dice.js basta para a demo de rolagem) -->
+<script src="js/engine/dice.js"></script>
+<script src="js/guia.js"></script>
+
+</body>
+</html>

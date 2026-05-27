@@ -162,7 +162,7 @@
         <div class="workspace-empty">
           <span class="icon" aria-hidden="true">📜</span>
           <p><b>Selecione uma criatura da biblioteca</b> ou gere um NPC aleatório.</p>
-          <p style="margin-top: 0.5rem; font-size: 0.85rem;">Modo Simples por padrão — clique em <b>Editar</b> para o Modo Completo.</p>
+          <p style="margin-top: 0.5rem; font-size: 0.85rem;">Modo <b>Simples</b> por padrão — depois de abrir, clique em <b>"✎ Abrir Editor Completo"</b> para acessar o editor profundo.</p>
         </div>
       `;
       return;
@@ -170,6 +170,17 @@
     ws.className = "workspace mode-" + state.mode;
     ws.innerHTML = renderCreatureHeader() + renderSimpleMode() + renderFullMode();
     bindWorkspaceEvents();
+
+    // Primeira vez que o usuário abre QUALQUER criatura nesta sessão:
+    // pulsa o toggle Simples↔Completo 3 vezes para chamar atenção.
+    if (!state._modeToggleSeen) {
+      state._modeToggleSeen = true;
+      const btn = $("#btn-toggle-mode");
+      if (btn) {
+        btn.classList.add("first-attention");
+        setTimeout(() => btn.classList.remove("first-attention"), 5500);
+      }
+    }
   }
 
   function renderCreatureHeader() {
@@ -177,20 +188,41 @@
     const typeLabel = (window.CoCData.bestiaryTypeLabels || {})[c.type] || c.type || "—";
     const cat = c.category ? ` · ${escapeHtml(c.category)}` : "";
     const isInstance = !!state.activeSourceId;
+    const isSimple = state.mode === "simple";
+
+    // Toggle "pílula" — texto descreve a AÇÃO (o que acontece ao clicar)
+    const toggleLabel = isSimple ? "✎ Abrir Editor Completo" : "👁 Voltar ao Modo Simples";
+    const toggleTitle = isSimple
+      ? "Modo atual: SIMPLES. Clique para abrir o Editor Completo (stats brutos, ataques múltiplos, lore)."
+      : "Modo atual: COMPLETO. Clique para voltar à visualização Simples (operacional em mesa).";
+    const modePillLabel = isSimple ? "MODO SIMPLES" : "MODO EDITOR";
+
     return `
       <div class="creature-header">
-        <div>
-          <div class="creature-type">${escapeHtml(typeLabel)}${cat}</div>
+        <div class="creature-header-title">
+          <div class="creature-type-row">
+            <span class="creature-type">${escapeHtml(typeLabel)}${cat}</span>
+            <span class="mode-pill ${isSimple ? "simple" : "full"}" aria-label="Modo atual">${modePillLabel}</span>
+          </div>
           <div class="creature-title" id="creature-title" contenteditable="${state.mode === "full"}">${escapeHtml(c.name)}</div>
         </div>
         <div class="creature-header-actions">
-          <button id="btn-toggle-mode" title="${state.mode === "simple" ? "Abrir editor completo" : "Voltar ao Modo Simples"}">
-            ${state.mode === "simple" ? "✎ Editar" : "👁 Simples"}
+          <!-- Grupo 1: TOGGLE DE MODO (destacado) -->
+          <button id="btn-toggle-mode" class="mode-toggle-btn ${isSimple ? "to-full" : "to-simple"}" title="${escapeHtml(toggleTitle)}">
+            ${toggleLabel}
           </button>
-          <button id="btn-add-modifiers" title="Aplicar modificadores (Fanático, Armado, Veterano, ...)">+ Modificador</button>
-          <button id="btn-save-creature" title="Salvar na biblioteca">💾 Salvar</button>
-          <button id="btn-add-to-encounter" class="btn-primary" title="Adicionar ao tracker de encontro">⚔ Encontro</button>
-          ${isInstance ? `<button id="btn-fork-creature" class="btn-ghost" title="Variante de '${escapeHtml(c.name)}'">⑂ Variante</button>` : ""}
+
+          <!-- Grupo 2: AÇÕES DE CUSTOMIZAÇÃO -->
+          <div class="btn-group" role="group" aria-label="Customização">
+            <button id="btn-add-modifiers" title="Aplicar modificadores (Fanático, Armado, Veterano, Ferido, ...)">+ Modificador</button>
+            ${isInstance ? `<button id="btn-fork-creature" class="btn-ghost" title="Criar variante editável de '${escapeHtml(c.name)}' sem alterar o original do bestiário">⑂ Variante</button>` : ""}
+          </div>
+
+          <!-- Grupo 3: AÇÕES PRINCIPAIS -->
+          <div class="btn-group" role="group" aria-label="Persistência">
+            <button id="btn-save-creature" title="Salvar esta criatura na biblioteca (persiste no navegador)">💾 Salvar</button>
+            <button id="btn-add-to-encounter" class="btn-primary" title="Adicionar ao tracker de encontro à direita">⚔ Encontro</button>
+          </div>
         </div>
       </div>
     `;

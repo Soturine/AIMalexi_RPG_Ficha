@@ -167,18 +167,38 @@
 .creature-header {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 0.5rem;
+  gap: 0.75rem;
   align-items: start;
   padding-bottom: 0.75rem;
   margin-bottom: 1rem;
   border-bottom: 1px solid var(--keeper-accent);
 }
+
+.creature-header-title { min-width: 0; }
+
+.creature-type-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.15rem;
+}
+
 .creature-header .creature-title {
   font-family: var(--font-serif);
   font-size: 1.5rem;
   color: var(--keeper-accent-bright);
   text-shadow: 0 0 14px var(--keeper-accent-glow);
+  outline: none;
+  border-radius: var(--radius);
+  padding: 0.1rem 0.35rem;
+  margin-left: -0.35rem;
 }
+.creature-header .creature-title[contenteditable="true"]:focus {
+  background: var(--bg-deep);
+  outline: 1px solid var(--brass);
+}
+
 .creature-header .creature-type {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -186,12 +206,95 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
+/* Pílula indicadora de modo atual */
+.mode-pill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  line-height: 1.4;
+  border: 1px solid;
+}
+.mode-pill.simple {
+  color: var(--mist);
+  border-color: var(--mist);
+  background: rgba(90, 122, 138, 0.12);
+}
+.mode-pill.full {
+  color: var(--brass-bright);
+  border-color: var(--brass);
+  background: rgba(184, 146, 79, 0.15);
+}
+
+/* Ações no header — agrupadas */
 .creature-header-actions {
   display: flex;
-  gap: 0.3rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
 }
-.creature-header-actions button { font-size: 0.78rem; padding: 0.35rem 0.6rem; }
+.creature-header-actions .btn-group {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--ink-faded);
+}
+.creature-header-actions .btn-group:first-of-type { border-left: none; padding-left: 0; }
+.creature-header-actions button { font-size: 0.78rem; padding: 0.35rem 0.65rem; }
+
+/* TOGGLE DE MODO — botão destacado, visualmente diferente dos demais */
+.mode-toggle-btn {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.78rem !important;
+  padding: 0.45rem 0.85rem !important;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius);
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.mode-toggle-btn.to-full {
+  background: linear-gradient(180deg, rgba(184, 146, 79, 0.22), rgba(140, 110, 58, 0.30));
+  color: var(--brass-bright);
+  border-color: var(--brass);
+  box-shadow: 0 0 0 2px rgba(184, 146, 79, 0.18);
+}
+.mode-toggle-btn.to-full:hover {
+  background: linear-gradient(180deg, var(--brass), #8c6e3a);
+  color: var(--bg-deep);
+  box-shadow: 0 2px 14px var(--brass-glow);
+}
+.mode-toggle-btn.to-simple {
+  background: linear-gradient(180deg, rgba(90, 122, 138, 0.22), rgba(60, 84, 96, 0.30));
+  color: var(--mist);
+  border-color: var(--mist);
+  box-shadow: 0 0 0 2px rgba(90, 122, 138, 0.18);
+}
+.mode-toggle-btn.to-simple:hover {
+  background: var(--mist);
+  color: var(--bg-deep);
+}
+
+/* Pulse de atenção na primeira vez que abre uma criatura */
+@keyframes mode-toggle-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(184, 146, 79, 0.18); }
+  50%      { box-shadow: 0 0 0 8px rgba(184, 146, 79, 0.45); }
+}
+.mode-toggle-btn.first-attention {
+  animation: mode-toggle-pulse 1.6s ease-in-out 3;
+}
 
 /* Grid principal de stats no Modo Simples */
 .simple-stats {
@@ -524,6 +627,26 @@
   .library-list { max-height: 35vh; }
   .creature-header { grid-template-columns: 1fr; }
   .creature-header-actions { justify-content: flex-start; }
+
+  /* Grupos viram blocos com divisor inferior em vez de borda à esquerda */
+  .creature-header-actions .btn-group {
+    border-left: none;
+    padding-left: 0;
+    padding-top: 0.4rem;
+    margin-top: 0.4rem;
+    border-top: 1px dashed var(--ink-faded);
+    width: 100%;
+  }
+  .creature-header-actions .btn-group:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+
+  /* Toggle ocupa largura cheia no mobile pra ficar 100% visível */
+  .mode-toggle-btn {
+    width: 100%;
+    justify-content: center;
+    font-size: 0.85rem !important;
+    padding: 0.55rem 0.85rem !important;
+  }
+
   .simple-stats { grid-template-columns: repeat(2, 1fr); }
   .raw-stats-row { grid-template-columns: repeat(4, 1fr); }
   .notable-skills { grid-template-columns: 1fr; }
