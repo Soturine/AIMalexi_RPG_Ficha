@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ficha do Mestre · Chamado de Cthulhu 7E · AIMalexi RPG</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/keeper.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9C%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="app-header">
+    <h1 class="app-title">Ficha do Mestre</h1>
+    <p class="app-subtitle">Bestiário & NPCs · Chamado de Cthulhu · 7ª Edição</p>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <a href="index.html" class="btn btn-ghost" title="Voltar ao portal">← Início</a>
+
+    <button id="btn-new-npc" title="Gerar NPC aleatório com 1 clique">🎲 NPC Aleatório</button>
+    <button id="btn-new-custom" title="Criar criatura customizada do zero">+ Criar</button>
+    <button id="btn-import" title="Importar biblioteca JSON">📁 Importar</button>
+    <input type="file" id="file-import" accept="application/json,.json" style="display:none" />
+
+    <span class="toolbar-spacer"></span>
+
+    <button id="btn-print" class="btn-ghost" title="Imprimir / PDF">🖨️</button>
+    <button id="btn-export" class="btn-export" title="Exportar biblioteca completa como JSON (BACKUP)">💾 Exportar</button>
+  </div>
+
+  <!-- Grid 3 colunas -->
+  <div class="keeper-grid">
+
+    <!-- ─── BIBLIOTECA ─── -->
+    <aside class="library-col">
+      <div class="library-panel">
+        <input type="search" id="library-search" class="library-search" placeholder="🔍 Buscar..." />
+
+        <div class="library-tabs">
+          <button class="library-tab active" data-tab="all">Tudo</button>
+          <button class="library-tab" data-tab="bestiary">Bestiário</button>
+          <button class="library-tab" data-tab="saved">Salvos</button>
+        </div>
+
+        <div class="library-list" id="library-list"></div>
+
+        <div class="library-actions">
+          <button id="btn-encounter-add" title="Adicionar criatura ativa ao tracker de encontro">+ Encontro</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ─── WORKSPACE (criatura ativa) ─── -->
+    <div class="workspace-col">
+      <div class="workspace" id="workspace">
+        <div class="workspace-empty">
+          <span class="icon" aria-hidden="true">📜</span>
+          <p><b>Selecione uma criatura da biblioteca</b> ou gere um NPC aleatório.</p>
+          <p style="margin-top: 0.5rem; font-size: 0.85rem;">Modo Simples por padrão — clique em <b>Editar</b> para o Modo Completo.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── ENCONTRO + ROLL LOG ─── -->
+    <aside class="encounter-col">
+      <div class="encounter-panel">
+        <h3>
+          ⚔️ Encontro
+          <button class="btn-ghost btn-icon" id="btn-clear-encounter" title="Limpar tracker">✕</button>
+        </h3>
+        <div class="encounter-list" id="encounter-list">
+          <div class="encounter-empty">Nenhuma criatura ativa.<br>Use <b>+ Encontro</b>.</div>
+        </div>
+
+        <div class="roll-log" id="roll-log" style="margin-top: 1rem;">
+          <div class="roll-log-header">
+            <strong style="font-family: var(--font-serif); color: var(--keeper-accent-bright);">🎲 Log</strong>
+            <div style="display:flex; gap: 0.25rem;">
+              <button class="btn-ghost btn-icon" id="btn-copy-log" title="Copiar log">↗</button>
+              <button class="btn-ghost btn-icon" id="btn-clear-log" title="Limpar log">✕</button>
+            </div>
+          </div>
+          <ul style="list-style:none; padding:0; margin:0;"></ul>
+        </div>
+      </div>
+    </aside>
+
+  </div><!-- /keeper-grid -->
+
+  <footer style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--ink-faded); font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-faded);">
+    <a href="index.html">← Portal</a> · <a href="GUIA-INICIANTE.md">Guia do Iniciante</a> · <a href="investigator.html">Ficha do Investigador →</a>
+  </footer>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     DADOS
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script src="data/skills.js"></script>
+<script src="data/occupations.js"></script>
+<script src="data/damage-bonus-table.js"></script>
+<script src="data/weapons-templates.js"></script>
+<script src="data/name-pools.js"></script>
+<script src="data/bestiary.js"></script>
+<script src="data/npc-archetypes.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     ENGINE
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script src="js/engine/dice.js"></script>
+<script src="js/engine/coc7e-rules.js"></script>
+<script src="js/engine/storage.js"></script>
+<script src="js/engine/name-generator.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     UI COMPARTILHADA
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script src="js/shared/ui-components.js"></script>
+<script src="js/shared/validators.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     ORQUESTRADOR DA FICHA DO MESTRE
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script src="js/keeper.js"></script>
+
+</body>
+</html>
