@@ -13,6 +13,112 @@ window.CoC = window.CoC || {};
   const floor = Math.floor;
 
   /**
+   * Avalia uma expressão aritmética SIMPLES contendo apenas:
+   *   dígitos · ponto decimal · + - * / · parênteses
+   *
+   * Implementa Shunting Yard + avaliação em RPN. Sem new Function, sem eval,
+   * sem chance de injeção de código ou crash por sintaxe inválida.
+   *
+   * @param {string} expr - já sanitizada (whitelist enforcada externamente)
+   * @returns {number} resultado, ou lança Error em malformações
+   */
+  function safeEvalArithmetic(expr) {
+    if (!expr || typeof expr !== "string") return 0;
+    const tokens = tokenize(expr);
+    const rpn = toRPN(tokens);
+    return evalRPN(rpn);
+  }
+
+  function tokenize(s) {
+    const out = [];
+    let i = 0;
+    while (i < s.length) {
+      const c = s[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if (c === "(" || c === ")" || c === "+" || c === "*" || c === "/") {
+        out.push(c); i++; continue;
+      }
+      if (c === "-") {
+        // Detecta menos unário: início, ou após operador/parêntese aberto
+        const prev = out[out.length - 1];
+        if (out.length === 0 || prev === "(" || /^[+\-*/]$/.test(prev)) {
+          // unário: trata como 0 - (...) ou negativa o próximo número
+          out.push("0"); out.push("-"); i++;
+        } else {
+          out.push("-"); i++;
+        }
+        continue;
+      }
+      if (/[0-9.]/.test(c)) {
+        let j = i + 1;
+        while (j < s.length && /[0-9.]/.test(s[j])) j++;
+        const num = parseFloat(s.slice(i, j));
+        if (isNaN(num)) throw new Error("Bad number");
+        out.push(num);
+        i = j;
+        continue;
+      }
+      throw new Error("Bad char: " + c);
+    }
+    return out;
+  }
+
+  function toRPN(tokens) {
+    const out = [];
+    const ops = [];
+    const prec = { "+": 1, "-": 1, "*": 2, "/": 2 };
+    for (const t of tokens) {
+      if (typeof t === "number") {
+        out.push(t);
+      } else if (t === "(") {
+        ops.push(t);
+      } else if (t === ")") {
+        while (ops.length && ops[ops.length - 1] !== "(") out.push(ops.pop());
+        if (ops.pop() !== "(") throw new Error("Mismatched parens");
+      } else if (prec[t] != null) {
+        while (ops.length) {
+          const top = ops[ops.length - 1];
+          if (top !== "(" && prec[top] >= prec[t]) out.push(ops.pop());
+          else break;
+        }
+        ops.push(t);
+      } else {
+        throw new Error("Bad token: " + t);
+      }
+    }
+    while (ops.length) {
+      const op = ops.pop();
+      if (op === "(" || op === ")") throw new Error("Mismatched parens");
+      out.push(op);
+    }
+    return out;
+  }
+
+  function evalRPN(rpn) {
+    const stack = [];
+    for (const t of rpn) {
+      if (typeof t === "number") {
+        stack.push(t);
+      } else {
+        const b = stack.pop();
+        const a = stack.pop();
+        if (a === undefined || b === undefined) throw new Error("Bad RPN");
+        switch (t) {
+          case "+": stack.push(a + b); break;
+          case "-": stack.push(a - b); break;
+          case "*": stack.push(a * b); break;
+          case "/":
+            if (b === 0) throw new Error("Division by zero");
+            stack.push(a / b); break;
+          default: throw new Error("Bad op: " + t);
+        }
+      }
+    }
+    if (stack.length !== 1) throw new Error("Bad expression");
+    return stack[0];
+  }
+
+  /**
    * Pontos de Vida (PV).
    *   PV = floor((CON + TAM) / 10)
    */
@@ -129,23 +235,20 @@ window.CoC = window.CoC || {};
     const upperAttrs = {};
     for (const k in attrs) upperAttrs[k.toUpperCase()] = num(attrs[k]);
 
-    // Substitui nomes de atributos pelos valores
+    // Substitui nomes de atributos pelos valores E avalia com parser próprio
+    // (sem new Function — elimina risco de injeção e crash por sintaxe).
     function evalSingle(expr) {
-      let e = expr.replace(/\s+/g, "").toUpperCase();
-      // troca "FORxN" e "FOR*N" e "FOR×N" — aceita ambos
-      e = e.replace(/×/g, "*");
+      let e = expr.replace(/\s+/g, "").toUpperCase().replace(/×/g, "*");
       // Troca cada nome de atributo pelo valor
       ["FOR", "CON", "TAM", "DES", "APA", "INT", "POD", "EDU"].forEach((a) => {
         const re = new RegExp("\\b" + a + "\\b", "g");
-        e = e.replace(re, upperAttrs[a] != null ? upperAttrs[a] : "0");
+        e = e.replace(re, String(upperAttrs[a] != null ? upperAttrs[a] : 0));
       });
-      // Avalia expressão aritmética simples (sem código arbitrário)
-      // Aceita apenas dígitos, + - * / ( )
-      if (!/^[0-9+\-*/().\s]*$/.test(e)) return 0;
+      // Whitelist estrita: só dígitos, ponto, + - * / ( )
+      if (!/^[0-9+\-*/().]*$/.test(e)) return 0;
       try {
-        // eslint-disable-next-line no-new-func
-        const v = Function("return (" + e + ");")();
-        return typeof v === "number" && !isNaN(v) ? v : 0;
+        const result = safeEvalArithmetic(e);
+        return typeof result === "number" && !isNaN(result) && isFinite(result) ? result : 0;
       } catch (err) {
         return 0;
       }

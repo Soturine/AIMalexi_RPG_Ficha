@@ -36,15 +36,24 @@
   // BOOT
   // ═════════════════════════════════════════════════════════════════════
 
-  function boot() {
+  async function boot() {
     bindToolbar();
     bindLibraryTabs();
     bindLibrarySearch();
     bindEncounter();
     bindRollLog();
 
+    // Aguarda o cache do storage (IndexedDB é async no boot)
+    if (store.ready) {
+      try { await store.ready; } catch (e) { /* fallback já tratado pelo storage */ }
+    }
+
     renderLibrary();
     renderEncounter();
+
+    if (store.backend === "memory") {
+      toast("⚠ Persistência indisponível. Use 💾 Exportar para salvar criaturas.", { type: "warn", duration: 7000 });
+    }
   }
 
   // ═════════════════════════════════════════════════════════════════════
@@ -1042,10 +1051,14 @@
   // GO
   // ═════════════════════════════════════════════════════════════════════
 
+  function startBoot() {
+    Promise.resolve(boot()).catch(err => console.error("[keeper] boot failed", err));
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
+    document.addEventListener("DOMContentLoaded", startBoot);
   } else {
-    boot();
+    startBoot();
   }
 
 })();

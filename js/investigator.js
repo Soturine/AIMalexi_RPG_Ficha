@@ -50,13 +50,18 @@
   // BOOT
   // ═════════════════════════════════════════════════════════════════════
 
-  function boot() {
+  async function boot() {
     populateOccupationDropdown();
     bindToolbar();
     bindModifiers();
     bindMobileTabs();
     bindRollLog();
     bindDirtyTracking();
+
+    // Aguarda o storage carregar cache (IndexedDB é assíncrono no boot)
+    if (store.ready) {
+      try { await store.ready; } catch (e) { /* fallback já cuidado pelo storage.js */ }
+    }
 
     // Tenta carregar último ativo, ou abre wizard
     const active = store.getActiveCharacter();
@@ -77,6 +82,11 @@
       hasUnsavedChanges: () => !!state.character,
       minutesThreshold: 10
     });
+
+    // Informa qual backend de persistência está em uso (só se for relevante)
+    if (store.backend === "memory") {
+      toast("⚠ Persistência indisponível neste navegador. Use 💾 Exportar JSON para salvar.", { type: "warn", duration: 7000 });
+    }
   }
 
   // ═════════════════════════════════════════════════════════════════════
@@ -152,6 +162,7 @@
     renderSkills();
     renderWeapons();
     renderBackground();
+    applySanityAtmosphere();   // ajusta filtro CSS de SAN baixa ao carregar
   }
 
   function clearUI() {
@@ -159,6 +170,7 @@
     $("#derived-bar").innerHTML = "";
     $("#skills-groups").innerHTML = "";
     $("#weapons-list").innerHTML = "";
+    document.body.classList.remove("san-low", "san-critical");
   }
 
   // ─── IDENTIDADE ───────────────────────────────────────────────────────
@@ -299,7 +311,10 @@
       const d = c.derived[key];
       if (!d) continue;
       const isTracker = key === "PV" || key === "PM" || key === "SAN";
-      const card = el("div", { class: "derived-card" + (isTracker ? " tracker " + key.toLowerCase() : "") });
+      const card = el("div", {
+        class: "derived-card" + (isTracker ? " tracker " + key.toLowerCase() : ""),
+        "data-key": key
+      });
 
       const cur = d.current ?? d.value;
       const max = key === "SAN" ? d.max : d.value;
@@ -382,7 +397,42 @@
     }
 
     renderDerived();
+    flashDerivedCard(key, delta);   // feedback visual: vermelho perdeu, verde ganhou
+    applySanityAtmosphere();        // filtro sutil quando SAN < 50% do máximo
     persistCurrent();
+  }
+
+  /**
+   * Adiciona classe transiente .flash-loss / .flash-gain ao card derivado.
+   * Cleanup automático após animação CSS terminar.
+   */
+  function flashDerivedCard(key, delta) {
+    if (!delta) return;
+    const card = $(`#derived-bar .derived-card[data-key="${key}"]`);
+    if (!card) return;
+    const cls = delta < 0 ? "flash-loss" : "flash-gain";
+    card.classList.remove("flash-loss", "flash-gain");
+    // Força reflow para reiniciar a animação se chamada em sequência rápida
+    void card.offsetWidth;
+    card.classList.add(cls);
+    setTimeout(() => card.classList.remove(cls), 900);
+  }
+
+  /**
+   * Aplica filtro CSS atmosférico ao <body> quando a SAN cai abaixo de 50% do máximo.
+   * Intensifica quando cai abaixo de 25%. Remove acima desse limiar.
+   */
+  function applySanityAtmosphere() {
+    const c = state.character;
+    if (!c?.derived?.SAN) {
+      document.body.classList.remove("san-low", "san-critical");
+      return;
+    }
+    const cur = Number(c.derived.SAN.current) || 0;
+    const max = Number(c.derived.SAN.max) || 99;
+    const ratio = max > 0 ? cur / max : 1;
+    document.body.classList.toggle("san-low", ratio < 0.5 && ratio >= 0.25);
+    document.body.classList.toggle("san-critical", ratio < 0.25);
   }
 
   // ─── PERÍCIAS ─────────────────────────────────────────────────────────
@@ -910,16 +960,21 @@
     const target = difficulty === "hard" ? dice.half(v) : (difficulty === "extreme" ? dice.fifth(v) : v);
     const result = dice.rollD100(state.rollMods.bp || null);
     const level = dice.classifyRoll(result.value, v);
-    logAndToast({
+    const entry = {
+      kind: "attribute",
       skill: code,
-      target: difficulty === "regular" ? v : `${v} → ${difficulty === "hard" ? "Difícil" : "Extremo"} ${target}`,
+      skillRaw: code,
+      target,
+      targetRaw: v,
+      label: difficulty === "regular" ? v : `${v} → ${difficulty === "hard" ? "Difícil" : "Extremo"} ${target}`,
       d100: result.value,
-      level
-    });
-    persistCurrent();
+      level,
+      pushed: false
+    };
+    registerRoll(entry);
   }
 
-  function rollSkill(name) {
+  function rollSkill(name, opts = {}) {
     const c = state.character;
     const skillVal = Number(c?.skills?.[name]?.value);
     let v = skillVal;
@@ -930,14 +985,163 @@
     }
     const result = dice.rollD100(state.rollMods.bp || null);
     const level = dice.classifyRoll(result.value, v);
-    logAndToast({
-      skill: name,
+    const entry = {
+      kind: "skill",
+      skill: name + (opts.pushed ? "  ⚠ PUSHED" : ""),
+      skillRaw: name,
       target: v,
+      targetRaw: v,
       d100: result.value,
       level,
-      note: state.rollMods.bp ? `[${state.rollMods.bp}]` : ""
-    });
+      note: state.rollMods.bp ? `[${state.rollMods.bp}]` : "",
+      pushed: !!opts.pushed
+    };
+    registerRoll(entry);
+  }
+
+  /**
+   * Pipeline central: registra a rolagem no estado + log + toast,
+   * e oferece ações pós-rolagem (Gastar Sorte / Forçar) quando aplicável.
+   */
+  function registerRoll(entry) {
+    state.lastRoll = entry;
+    logAndToast(entry);
     persistCurrent();
+    presentPostRollActions(entry);
+  }
+
+  /**
+   * Apresenta no roll-log o card de ações pós-rolagem:
+   *  - Gastar Sorte (se falha + Sorte ≥ diferença)
+   *  - Forçar (se já não foi forçada; só faz sentido em sucessos menores OU falhas)
+   *
+   * O card é EFÊMERO: some quando uma nova rolagem entra (substituído).
+   */
+  function presentPostRollActions(entry) {
+    // Remove qualquer card de ação anterior
+    const old = $("#post-roll-actions");
+    if (old) old.remove();
+    if (!entry || entry.kind === "weapon-attack") return;  // ataques têm fluxo próprio
+
+    const c = state.character;
+    const luck = Number(c?.attributes?.Sorte?.value) || 0;
+    const diff = entry.d100 - (Number(entry.target) || 0);
+    const canSpendLuck =
+      !entry.pushed
+      && (entry.level === "fail" || entry.level === "fumble" || entry.level === "regular")
+      && diff > 0
+      && luck >= diff
+      && entry.level !== "fumble";  // fumble não pode ser convertido (regra do livro)
+    const canPush =
+      !entry.pushed
+      && entry.kind === "skill"
+      && (entry.level === "fail" || entry.level === "regular" || entry.level === "hard");
+
+    if (!canSpendLuck && !canPush) return;
+
+    const panel = el("div", {
+      id: "post-roll-actions",
+      class: "post-roll-actions",
+      style: {
+        marginTop: "0.5rem", padding: "0.5rem 0.6rem",
+        background: "var(--bg-card-hi)",
+        borderLeft: "3px solid var(--brass)",
+        borderRadius: "var(--radius)",
+        fontSize: "0.8rem"
+      }
+    });
+    const dimEntry = entry.skillRaw || entry.skill || "rolagem";
+    const header = el("div", {
+      style: { color: "var(--ink-dim)", marginBottom: "0.35rem", fontFamily: "var(--font-mono)", fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase" }
+    }, [`Ações pós-rolagem · ${dimEntry}`]);
+    panel.appendChild(header);
+
+    const row = el("div", { style: { display: "flex", gap: "0.35rem", flexWrap: "wrap" } });
+
+    if (canSpendLuck) {
+      const cost = diff;
+      const btn = el("button", {
+        class: "btn-primary",
+        title: `Reduz sua Sorte em ${cost} para tornar este teste um sucesso Regular.`,
+        on: { click: () => spendLuck(entry, cost) }
+      }, [`🍀 Gastar ${cost} Sorte (vira Regular)`]);
+      row.appendChild(btn);
+    }
+
+    if (canPush) {
+      const btn = el("button", {
+        class: "btn-danger",
+        title: "Forçar a rolagem — relança com risco de consequência grave em caso de falha.",
+        on: { click: () => pushRoll(entry) }
+      }, ["⚡ Forçar Rolagem"]);
+      row.appendChild(btn);
+    }
+
+    const dismiss = el("button", {
+      class: "btn-ghost",
+      on: { click: () => panel.remove() }
+    }, ["Dispensar"]);
+    row.appendChild(dismiss);
+
+    panel.appendChild(row);
+    const log = $("#roll-log");
+    if (log) log.insertBefore(panel, log.firstChild.nextSibling || null);
+  }
+
+  /**
+   * Gasta Sorte para converter uma falha em sucesso Regular.
+   */
+  function spendLuck(entry, cost) {
+    const c = state.character;
+    if (!c?.attributes?.Sorte) return;
+    c.attributes.Sorte.value = Math.max(0, Number(c.attributes.Sorte.value) - cost);
+    const old = $("#post-roll-actions");
+    if (old) old.remove();
+    logAndToast({
+      skill: `🍀 Sorte gasta: ${entry.skillRaw || entry.skill}`,
+      target: cost,
+      d100: null,
+      level: "regular",
+      note: `${cost} pontos de Sorte usados para virar Regular`
+    });
+    renderAttributes();   // atualiza o card de Sorte
+    persistCurrent();
+  }
+
+  /**
+   * Forçar Rolagem (Push) — relança com flag pushed=true.
+   * Em CoC 7E, falhar uma rolagem forçada = consequência narrativa decidida pelo Guardião.
+   */
+  async function pushRoll(entry) {
+    const old = $("#post-roll-actions");
+    if (old) old.remove();
+    const confirmed = await confirm(
+      `Forçar a rolagem de "${entry.skillRaw || entry.skill}"? Falha numa rolagem forçada gera consequência narrativa GRAVE decidida pelo Guardião.`,
+      { title: "Forçar Rolagem", danger: true, confirmLabel: "Forçar" }
+    );
+    if (!confirmed) return;
+    if (entry.kind === "skill") {
+      rollSkill(entry.skillRaw, { pushed: true });
+    } else if (entry.kind === "attribute") {
+      // Reaplica rolagem de atributo com flag de pushed
+      const code = entry.skillRaw;
+      const c = state.character;
+      const v = Number(c?.attributes?.[code]?.value) || 0;
+      const result = dice.rollD100(state.rollMods.bp || null);
+      const level = dice.classifyRoll(result.value, v);
+      const e = {
+        kind: "attribute",
+        skill: code + "  ⚠ PUSHED",
+        skillRaw: code,
+        target: v,
+        targetRaw: v,
+        label: v,
+        d100: result.value,
+        level,
+        pushed: true
+      };
+      registerRoll(e);
+    }
   }
 
   // ═════════════════════════════════════════════════════════════════════
@@ -1247,10 +1451,14 @@
   // GO
   // ═════════════════════════════════════════════════════════════════════
 
+  function startBoot() {
+    Promise.resolve(boot()).catch(err => console.error("[investigator] boot failed", err));
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
+    document.addEventListener("DOMContentLoaded", startBoot);
   } else {
-    boot();
+    startBoot();
   }
 
 })();
