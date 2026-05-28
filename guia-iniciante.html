@@ -34,10 +34,11 @@
         <li><a href="#parte-1">O que é Chamado de Cthulhu?</a></li>
         <li><a href="#parte-2">A rolagem D100</a></li>
         <li><a href="#parte-3">Crie em 7 passos</a></li>
-        <li><a href="#parte-4">10 perícias essenciais</a></li>
-        <li><a href="#parte-5">Exemplo de cena</a></li>
-        <li><a href="#parte-6">Para o Mestre</a></li>
-        <li><a href="#parte-7">FAQ</a></li>
+        <li><a href="#parte-4">Cálculos e distribuição de pontos</a></li>
+        <li><a href="#parte-5">10 perícias essenciais</a></li>
+        <li><a href="#parte-6">Exemplo de cena</a></li>
+        <li><a href="#parte-7">Para o Mestre</a></li>
+        <li><a href="#parte-8">FAQ</a></li>
       </ol>
     </aside>
 
@@ -237,9 +238,198 @@
         </div>
       </section>
 
-      <!-- PARTE 4 -->
+      <!-- PARTE 4 (cálculos + distribuição de pontos) -->
       <section class="guia-section" id="parte-4">
-        <h2><span class="section-icon" aria-hidden="true">📜</span> 4. As 10 perícias essenciais</h2>
+        <h2><span class="section-icon" aria-hidden="true">🧮</span> 4. Os cálculos da ficha e a distribuição de pontos</h2>
+
+        <p>
+          A boa notícia: <b>a ficha calcula quase tudo isto automaticamente.</b> Esta seção existe
+          para você <i>entender</i> os números que aparecem — útil quando o Guardião pedir algo ou
+          quando quiser ajustar à mão no <b>Modo Editar</b>.
+        </p>
+
+        <h3>Atributos derivados</h3>
+        <p>Depois de rolar os 8 atributos (FOR, CON, TAM, DES, APA, INT, POD, EDU), a ficha deriva:</p>
+        <table>
+          <thead><tr><th>Valor</th><th>Fórmula</th><th>O que é</th></tr></thead>
+          <tbody>
+            <tr><td><b>Pontos de Vida (PV)</b></td><td><span class="formula">(CON + TAM) ÷ 10</span></td><td>Quanto dano físico você aguenta. Arredonda pra baixo.</td></tr>
+            <tr><td><b>Pontos de Magia (PM)</b></td><td><span class="formula">POD ÷ 5</span></td><td>Combustível de magias e certos esforços.</td></tr>
+            <tr><td><b>Sanidade inicial</b></td><td><span class="formula">= POD</span></td><td>Sua estabilidade mental no começo.</td></tr>
+            <tr><td><b>Sanidade máxima</b></td><td><span class="formula">99 − Mitos de Cthulhu</span></td><td>Teto da SAN. Saber dos Mitos baixa esse teto.</td></tr>
+            <tr><td><b>Esquivar</b></td><td><span class="formula">DES ÷ 2</span></td><td>Perícia-base para sair da frente de ataques.</td></tr>
+            <tr><td><b>Idioma Próprio</b></td><td><span class="formula">= EDU</span></td><td>Sua língua materna já começa nesse valor.</td></tr>
+            <tr><td><b>Movimento (MOV)</b></td><td>ver abaixo</td><td>Velocidade em perseguições.</td></tr>
+            <tr><td><b>Bônus de Dano / Corpo</b></td><td>ver tabela</td><td>Força física no combate corpo-a-corpo.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Movimento (MOV)</h3>
+        <p>Compara DES e FOR contra o TAM:</p>
+        <ul>
+          <li>DES <b>e</b> FOR <b>ambos menores</b> que TAM → <span class="formula">MOV 7</span></li>
+          <li>DES <b>e</b> FOR <b>ambos maiores</b> que TAM → <span class="formula">MOV 9</span></li>
+          <li>qualquer outro caso (inclui empates) → <span class="formula">MOV 8</span></li>
+        </ul>
+        <p>A idade depois reduz o MOV:</p>
+        <table>
+          <thead><tr><th>Idade</th><th>Ajuste no MOV</th></tr></thead>
+          <tbody>
+            <tr><td>até 39</td><td>—</td></tr>
+            <tr><td>40–49</td><td><span class="formula">−1</span></td></tr>
+            <tr><td>50–59</td><td><span class="formula">−2</span></td></tr>
+            <tr><td>60–69</td><td><span class="formula">−3</span></td></tr>
+            <tr><td>70–79</td><td><span class="formula">−4</span></td></tr>
+            <tr><td>80+</td><td><span class="formula">−5</span></td></tr>
+          </tbody>
+        </table>
+
+        <h3>Bônus de Dano (BD) e Corpo</h3>
+        <p>Some <span class="formula">FOR + TAM</span> e leia a faixa. O <b>Bônus de Dano</b> soma ao dano de ataques corpo-a-corpo; o <b>Corpo</b> (Build) pesa em agarrões e manobras.</p>
+        <table>
+          <thead><tr><th>FOR + TAM</th><th>Bônus de Dano</th><th>Corpo</th></tr></thead>
+          <tbody>
+            <tr><td>2 – 64</td><td><span class="formula">−2</span></td><td>−2</td></tr>
+            <tr><td>65 – 84</td><td><span class="formula">−1</span></td><td>−1</td></tr>
+            <tr><td>85 – 124</td><td>nenhum (<span class="formula">0</span>)</td><td>0</td></tr>
+            <tr><td>125 – 164</td><td><span class="formula">+1D4</span></td><td>+1</td></tr>
+            <tr><td>165 – 204</td><td><span class="formula">+1D6</span></td><td>+2</td></tr>
+            <tr><td>205 – 284</td><td><span class="formula">+2D6</span></td><td>+3</td></tr>
+            <tr><td>285 – 364</td><td><span class="formula">+3D6</span></td><td>+4</td></tr>
+            <tr><td>365 – 444</td><td><span class="formula">+4D6</span></td><td>+5</td></tr>
+          </tbody>
+        </table>
+        <div class="callout tip">
+          <div class="callout-title">💡 Na prática</div>
+          A ficha aplica o Bônus de Dano automaticamente nas armas do <b>Arsenal</b> — você só vê o
+          dano final ao rolar o ataque. Investigadores comuns ficam quase sempre na faixa 0.
+        </div>
+
+        <h3>Meio e Quinto: por que cada perícia mostra 3 números</h3>
+        <p>
+          Lembra dos níveis de sucesso (Regular / Difícil / Extremo)? Cada perícia exibe os três
+          valores já calculados para você não fazer conta na hora:
+        </p>
+        <ul>
+          <li><b>Regular</b> = o valor cheio</li>
+          <li><b>Difícil</b> = metade (÷2, arredonda pra baixo)</li>
+          <li><b>Extremo</b> = um quinto (÷5, arredonda pra baixo)</li>
+        </ul>
+        <p>
+          Ex.: Persuasão 60 aparece como <span class="formula">60 / 30 / 12</span>. Se o Guardião
+          pedir "Persuasão Difícil", você precisa tirar ≤ 30.
+        </p>
+
+        <h3>A idade molda o investigador</h3>
+        <p>
+          A idade dá e tira. Mais velho = mais Educação, menos vigor físico. Faixas oficiais:
+        </p>
+        <table>
+          <thead><tr><th>Idade</th><th>EDU</th><th>Físico (FOR/CON/DES)</th><th>APA</th><th>Especial</th></tr></thead>
+          <tbody>
+            <tr><td>15–19</td><td><span class="formula">−5</span></td><td>−5 entre FOR e TAM</td><td>—</td><td>Sorte: rola 2×, usa a maior</td></tr>
+            <tr><td>20–39</td><td>1 teste de melhoria</td><td>—</td><td>—</td><td>Auge — sem penalidades</td></tr>
+            <tr><td>40–49</td><td>2 testes</td><td>−5 (distribua)</td><td>−5</td><td>—</td></tr>
+            <tr><td>50–59</td><td>3 testes</td><td>−10</td><td>−10</td><td>—</td></tr>
+            <tr><td>60–69</td><td>4 testes</td><td>−20</td><td>−15</td><td>—</td></tr>
+            <tr><td>70–79</td><td>4 testes</td><td>−40</td><td>−20</td><td>—</td></tr>
+            <tr><td>80–89</td><td>4 testes</td><td>−80</td><td>−25</td><td>—</td></tr>
+          </tbody>
+        </table>
+        <p style="color: var(--ink-dim); font-size: 0.9rem;">
+          "Teste de melhoria de EDU": role 1D100; se tirar <b>acima</b> da sua EDU atual, soma 1D10 a ela.
+        </p>
+        <div class="callout warn">
+          <div class="callout-title">⚠ Atenção nesta versão da ficha</div>
+          A ficha aplica o ajuste de idade ao <b>MOV</b> automaticamente, mas as <b>deduções de
+          atributo</b> (FOR/CON/DES/APA/EDU) por enquanto você faz <b>à mão no Modo Editar</b>.
+          Escolha a idade, role os atributos, e ajuste conforme a tabela acima.
+        </div>
+
+        <div class="section-divider" aria-hidden="true">⸙ · ⸙ · ⸙</div>
+
+        <h3>Distribuição de pontos de perícia</h3>
+        <p>Você tem <b>duas reservas</b> de pontos para subir perícias acima da base:</p>
+
+        <h4>1. Pontos de Ocupação</h4>
+        <p>
+          Cada ocupação tem uma <b>fórmula</b>. A mais comum é <span class="formula">EDU × 4</span>,
+          mas muitas misturam atributos:
+        </p>
+        <table>
+          <thead><tr><th>Fórmula</th><th>Significa</th></tr></thead>
+          <tbody>
+            <tr><td><span class="formula">EDU × 4</span></td><td>EDU vezes 4 (ex.: Jornalista, Médico)</td></tr>
+            <tr><td><span class="formula">EDU × 2 + DES × 2</span></td><td>soma as duas partes (ex.: Detetive)</td></tr>
+            <tr><td><span class="formula">EDU × 2 + (DES × 2 | FOR × 2)</span></td><td>o <b>|</b> é "<b>escolha uma</b>" — pegue o atributo mais alto (ou o que combina com o conceito)</td></tr>
+          </tbody>
+        </table>
+        <p>Esses pontos só podem ir nas <b>perícias da ocupação</b> (a ficha as destaca).</p>
+
+        <h4>2. Pontos de Interesse Pessoal</h4>
+        <p>
+          Todo investigador ganha <span class="formula">INT × 2</span> pontos extras, que vão em
+          <b>qualquer</b> perícia que você quiser — hobbies, talentos, manias.
+        </p>
+
+        <div class="callout">
+          <div class="callout-title">📏 Limites na criação</div>
+          Nenhuma perícia passa de <b>75%</b> na criação. O Guardião pode liberar até <b>90%</b> em
+          casos especiais (na ficha, ative o <b>Modo Editar</b>). Acima de 90% é bloqueado.
+          A perícia <b>Mitos de Cthulhu</b> não pode ser comprada — só sobe no jogo.
+        </div>
+
+        <h3>Exemplo completo: criando a Marina (jornalista)</h3>
+        <p><b>Atributos rolados:</b> FOR 50 · CON 55 · TAM 60 · DES 60 · APA 55 · INT 60 · POD 50 · EDU 70.</p>
+        <p><b>Derivados que a ficha calcula:</b></p>
+        <ul>
+          <li>PV = (55 + 60) ÷ 10 = <b>11</b></li>
+          <li>PM = 50 ÷ 5 = <b>10</b> · SAN inicial = <b>50</b></li>
+          <li>Esquivar = 60 ÷ 2 = <b>30</b> · Idioma Próprio = <b>70</b></li>
+          <li>MOV: DES (60) = TAM (60) e FOR (50) &lt; TAM → cai no "outro caso" = <b>8</b></li>
+          <li>FOR + TAM = 110 → Bônus de Dano <b>0</b>, Corpo <b>0</b></li>
+        </ul>
+        <p><b>Pontos para distribuir:</b></p>
+        <ul>
+          <li>Ocupação (Jornalista = EDU×4): 70 × 4 = <b>280 pontos</b></li>
+          <li>Interesse Pessoal (INT×2): 60 × 2 = <b>120 pontos</b></li>
+        </ul>
+        <p><b>280 de ocupação</b> (perícias da profissão + Avaliação de Crédito):</p>
+        <table>
+          <thead><tr><th>Perícia</th><th>Base → Final</th><th>Gasto</th></tr></thead>
+          <tbody>
+            <tr><td>Avaliação de Crédito</td><td>0 → 20</td><td>+20</td></tr>
+            <tr><td>Pesquisar Bibliotecas</td><td>20 → 70</td><td>+50</td></tr>
+            <tr><td>Persuasão</td><td>10 → 60</td><td>+50</td></tr>
+            <tr><td>Psicologia</td><td>10 → 60</td><td>+50</td></tr>
+            <tr><td>História</td><td>5 → 50</td><td>+45</td></tr>
+            <tr><td>Lábia</td><td>5 → 45</td><td>+40</td></tr>
+            <tr><td>Arte/Ofício (Fotografia)</td><td>5 → 30</td><td>+25</td></tr>
+            <tr><td><b>Total</b></td><td></td><td><b>280</b> ✓</td></tr>
+          </tbody>
+        </table>
+        <p><b>120 de interesse pessoal</b> (qualquer perícia):</p>
+        <table>
+          <thead><tr><th>Perícia</th><th>Base → Final</th><th>Gasto</th></tr></thead>
+          <tbody>
+            <tr><td>Encontrar</td><td>25 → 55</td><td>+30</td></tr>
+            <tr><td>Escutar</td><td>20 → 50</td><td>+30</td></tr>
+            <tr><td>Primeiros Socorros</td><td>30 → 50</td><td>+20</td></tr>
+            <tr><td>Esquivar</td><td>30 → 50</td><td>+20</td></tr>
+            <tr><td>Furtividade</td><td>20 → 40</td><td>+20</td></tr>
+            <tr><td><b>Total</b></td><td></td><td><b>120</b> ✓</td></tr>
+          </tbody>
+        </table>
+        <div class="callout success">
+          <div class="callout-title">✓ Marina está pronta</div>
+          Nenhuma perícia passou de 75%. A ficha mostra o <b>badge X / Y</b> em verde enquanto você
+          está dentro do orçamento — quando fecha em verde, acabou a distribuição.
+        </div>
+      </section>
+
+      <!-- PARTE 5 -->
+      <section class="guia-section" id="parte-5">
+        <h2><span class="section-icon" aria-hidden="true">📜</span> 5. As 10 perícias essenciais</h2>
 
         <p>
           Chamado de Cthulhu tem ~60 perícias. Você raramente vai usar mais de 10-15.
@@ -282,9 +472,9 @@
         </ul>
       </section>
 
-      <!-- PARTE 5 -->
-      <section class="guia-section" id="parte-5">
-        <h2><span class="section-icon" aria-hidden="true">🎭</span> 5. Como jogar uma cena (exemplo)</h2>
+      <!-- PARTE 6 -->
+      <section class="guia-section" id="parte-6">
+        <h2><span class="section-icon" aria-hidden="true">🎭</span> 6. Como jogar uma cena (exemplo)</h2>
 
         <p>Imagine essa cena curta. Vai sentir o ritmo do jogo.</p>
 
@@ -391,9 +581,9 @@
         </div>
       </section>
 
-      <!-- PARTE 6 -->
-      <section class="guia-section" id="parte-6">
-        <h2><span class="section-icon" aria-hidden="true">👁</span> 6. Para o Mestre / Guardião</h2>
+      <!-- PARTE 7 -->
+      <section class="guia-section" id="parte-7">
+        <h2><span class="section-icon" aria-hidden="true">👁</span> 7. Para o Mestre / Guardião</h2>
 
         <p>Sua primeira sessão como Guardião. Não tente ser perfeito.</p>
 
@@ -449,9 +639,9 @@
         </ul>
       </section>
 
-      <!-- PARTE 7 -->
-      <section class="guia-section" id="parte-7">
-        <h2><span class="section-icon" aria-hidden="true">❓</span> 7. Perguntas frequentes</h2>
+      <!-- PARTE 8 -->
+      <section class="guia-section" id="parte-8">
+        <h2><span class="section-icon" aria-hidden="true">❓</span> 8. Perguntas frequentes</h2>
 
         <h3>"Meu investigador morreu. E agora?"</h3>
         <p>
