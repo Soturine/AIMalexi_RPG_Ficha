@@ -298,6 +298,27 @@
   margin-left: 0.3rem;
 }
 
+/* Marcador/toggle de "perícia da ocupação" (designação de perícias livres) */
+.skill-row .skill-occ-toggle,
+.skill-row .skill-occ {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5em;
+  margin-right: 0.2rem;
+  padding: 0.1rem 0.15rem;
+  font-size: 0.95em;
+  line-height: 1;
+  background: none;
+  border: none;
+  color: var(--ink-faded);
+  vertical-align: baseline;
+}
+.skill-row .skill-occ-toggle { cursor: pointer; transition: color 0.15s, transform 0.1s; }
+.skill-row .skill-occ-toggle:hover { color: var(--brass-bright); transform: scale(1.15); }
+.skill-row .skill-occ-toggle.on { color: var(--brass); }
+.skill-row .skill-occ.mandatory { color: var(--brass); cursor: default; }
+
 .skill-row .skill-input {
   width: 56px;
   padding: 0.2rem 0.3rem;

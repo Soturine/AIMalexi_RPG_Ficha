@@ -41,9 +41,17 @@
   // Cap mínimo do PV antes de morrer
   const PV_MIN = -2;
 
-  // Saúde do storage
-  if (!store.isStorageAvailable()) {
-    toast("⚠ Seu navegador não tem localStorage disponível. A ficha funciona mas o estado não será salvo.", { type: "warn", duration: 6000 });
+  // Persistência: a disponibilidade REAL do storage só é conhecida após store.ready
+  // resolver — o IndexedDB abre de forma assíncrona e, até lá, backend === "memory".
+  // A checagem correta (e o aviso, se for o caso) vive no boot(), DEPOIS do await.
+  // O toast antigo aqui no topo era um falso-positivo que disparava em quase todo load.
+  // Aqui registramos apenas o handler de erros reais de gravação (ex.: quota cheia).
+  if (store.onError) {
+    store.onError((info) => {
+      if (info && info.type === "quota") {
+        toast("⚠ Armazenamento cheio. Exporte o personagem (💾 Exportar JSON) e remova fichas antigas para liberar espaço.", { type: "error", duration: 8000 });
+      }
+    });
   }
 
   // ═════════════════════════════════════════════════════════════════════
@@ -57,10 +65,18 @@
     bindMobileTabs();
     bindRollLog();
     bindDirtyTracking();
+    if (window.CoC.sanityFx) window.CoC.sanityFx.init();   // overlay + modo de efeitos
 
     // Aguarda o storage carregar cache (IndexedDB é assíncrono no boot)
     if (store.ready) {
       try { await store.ready; } catch (e) { /* fallback já cuidado pelo storage.js */ }
+    }
+
+    // Resiliência: se alguma entrada corrompida foi posta em quarentena no load,
+    // avisa o usuário (sem tela branca — os demais dados continuam intactos).
+    const corrupted = store.getCorruptedEntries ? store.getCorruptedEntries() : [];
+    if (corrupted.length > 0) {
+      toast(`⚠ ${corrupted.length} registro(s) corrompido(s) foram isolados para proteger o app. Seus demais dados estão intactos.`, { type: "warn", duration: 8000 });
     }
 
     // Tenta carregar último ativo, ou abre wizard
@@ -71,7 +87,16 @@
       // Ficha vazia inicial — mostra wizard se for primeira visita
       const list = store.listCharacters();
       if (list.length === 0) {
-        openWizard();
+        // Backup-fantasma: se não há nenhum personagem mas existe um snapshot do
+        // último salvo, oferece restaurá-lo antes de cair no wizard.
+        const ghost = store.getGhost ? store.getGhost() : null;
+        if (ghost && await confirm("Encontramos um backup do seu último personagem salvo. Deseja restaurá-lo?", { title: "Recuperar personagem", confirmLabel: "Restaurar" })) {
+          const restored = store.recoverGhost();
+          if (restored) { loadCharacter(restored); toast("Personagem restaurado do backup.", { type: "success" }); }
+          else openWizard();
+        } else {
+          openWizard();
+        }
       } else {
         toast("Nenhum personagem ativo. Selecione um na barra superior ou crie um novo.", { type: "info" });
       }
@@ -86,6 +111,22 @@
     // Informa qual backend de persistência está em uso (só se for relevante)
     if (store.backend === "memory") {
       toast("⚠ Persistência indisponível neste navegador. Use 💾 Exportar JSON para salvar.", { type: "warn", duration: 7000 });
+    }
+
+    // Lembrete de backup: alerta se o usuário não exportou nos últimos 7 dias
+    // e tem pelo menos um personagem salvo.
+    const BACKUP_REMINDER_DAYS = 7;
+    const minutesSince = store.minutesSinceLastExport();
+    if (
+      minutesSince > BACKUP_REMINDER_DAYS * 24 * 60 &&
+      store.listCharacters().length > 0
+    ) {
+      setTimeout(() => {
+        toast(
+          `💾 Dica de segurança: você não faz backup há ${minutesSince === Infinity ? "um bom tempo" : Math.floor(minutesSince / (60 * 24)) + " dias"}. Use o botão 💾 Exportar JSON para guardar seus personagens.`,
+          { type: "warn", duration: 9000 }
+        );
+      }, 3000);
     }
   }
 
@@ -170,7 +211,7 @@
     $("#derived-bar").innerHTML = "";
     $("#skills-groups").innerHTML = "";
     $("#weapons-list").innerHTML = "";
-    document.body.classList.remove("san-low", "san-critical");
+    if (window.CoC.sanityFx) window.CoC.sanityFx.clear();
   }
 
   // ─── IDENTIDADE ───────────────────────────────────────────────────────
@@ -419,20 +460,17 @@
   }
 
   /**
-   * Aplica filtro CSS atmosférico ao <body> quando a SAN cai abaixo de 50% do máximo.
-   * Intensifica quando cai abaixo de 25%. Remove acima desse limiar.
+   * Atualiza os efeitos visuais de insanidade conforme a SAN atual/máxima.
+   * A lógica de níveis (0-4), camadas e acessibilidade vive em js/shared/sanity-fx.js.
    */
   function applySanityAtmosphere() {
+    const fx = window.CoC.sanityFx;
+    if (!fx) return;
     const c = state.character;
-    if (!c?.derived?.SAN) {
-      document.body.classList.remove("san-low", "san-critical");
-      return;
-    }
+    if (!c?.derived?.SAN) { fx.clear(); return; }
     const cur = Number(c.derived.SAN.current) || 0;
     const max = Number(c.derived.SAN.max) || 99;
-    const ratio = max > 0 ? cur / max : 1;
-    document.body.classList.toggle("san-low", ratio < 0.5 && ratio >= 0.25);
-    document.body.classList.toggle("san-critical", ratio < 0.25);
+    fx.apply(cur, max);
   }
 
   // ─── PERÍCIAS ─────────────────────────────────────────────────────────
@@ -442,16 +480,14 @@
     const groups = window.CoCData.skillsByCategory();
     const labels = window.CoCData.categoryLabels;
 
-    // Computar pool e perícias da ocupação
+    // Computar pool e perícias da ocupação.
+    // occupationSkills = perícias livres designadas pelo jogador (chave do fix de
+    // ocupação personalizada). O conjunto EFETIVO = obrigatórias ∪ designadas.
+    c.occupationSkills = Array.isArray(c.occupationSkills) ? c.occupationSkills : [];
     const occName = c.investigator?.occupation;
     const occ = occName ? window.CoCData.findOccupation(occName) : null;
-    const occSkills = new Set();
-    if (occ) {
-      for (const s of occ.skills) {
-        // Aceita "Skill1 | Skill2" (escolha)
-        s.split("|").map(x => x.trim()).forEach(x => occSkills.add(x));
-      }
-    }
+    const occCtx = rules.buildOccupationContext(occ, c);
+    const occSkills = occCtx.effective;
 
     // Calcular pontos disponíveis
     const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, v]) => [k, v.value]));
@@ -474,7 +510,7 @@
     if (piState.level === "ok")    badgePi.classList.add("ok");
     if (piState.level === "warn")  badgePi.classList.add("warn");
     if (piState.level === "err")   badgePi.classList.add("err");
-    badgeOcc.textContent = "Ocupação: " + occState.label;
+    badgeOcc.textContent = "Ocupação: " + occState.label + occFreePicksHint(occCtx);
     badgePi.textContent  = "Interesse: " + piState.label;
 
     // Renderiza grupos
@@ -521,8 +557,9 @@
         });
         const specTag = s.specializable ? `<span class="skill-tag">específica</span>` : "";
         const baseFormula = s.baseFormula ? ` <span class="skill-tag" title="Base derivada">${escapeHtml(s.baseFormula)}=${base}</span>` : "";
+        const occMark = occToggleHTML(s.name, occCtx.mandatory.has(s.name), occCtx.chosen.has(s.name));
         row.innerHTML = `
-          <div class="skill-name">${escapeHtml(s.name)}${specTag}${baseFormula}</div>
+          <div class="skill-name">${occMark}${escapeHtml(s.name)}${specTag}${baseFormula}</div>
           <input class="skill-input" type="number" min="0" max="99" value="${value}" data-skill="${escapeHtml(s.name)}" title="Total da perícia (Base ${base} + alocados)" />
           <div class="skill-frac" title="Difícil · Extremo">${dice.half(value)} · ${dice.fifth(value)}</div>
           <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(s.name)}" title="Rolar perícia">🎲</button>
@@ -568,8 +605,9 @@
               (capStatus.level === "warn" && !capStatus.ok ? " over-cap-warn" : "")
           });
           const parentTag = parent ? `<span class="skill-tag" title="Base herdada de ${escapeHtml(parent.name)}">base ${parentBase}</span>` : "";
+          const occMark = occToggleHTML(name, occCtx.mandatory.has(name), occCtx.chosen.has(name));
           row.innerHTML = `
-            <div class="skill-name">${escapeHtml(name)}${parentTag}</div>
+            <div class="skill-name">${occMark}${escapeHtml(name)}${parentTag}</div>
             <input class="skill-input" type="number" min="0" max="99" value="${value}" data-skill="${escapeHtml(name)}" />
             <div class="skill-frac" title="Difícil · Extremo">${dice.half(value)} · ${dice.fifth(value)}</div>
             <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(name)}" title="Rolar perícia">🎲</button>
@@ -607,6 +645,51 @@
     $$("[data-roll-skill]").forEach(btn => {
       btn.onclick = () => rollSkill(btn.dataset.rollSkill);
     });
+
+    // Bind toggles de "perícia da ocupação" (designação de perícias livres)
+    $$("[data-occ-toggle]").forEach(btn => {
+      btn.onclick = (e) => { e.preventDefault(); toggleOccupationSkill(btn.dataset.occToggle); };
+    });
+  }
+
+  /**
+   * HTML do marcador de ocupação numa linha de perícia.
+   *  - obrigatória → diamante travado (◆), não clicável.
+   *  - designada (livre) → botão ◆ (clique para virar Interesse Pessoal).
+   *  - disponível → botão ◇ (clique para contar no pool da ocupação).
+   */
+  function occToggleHTML(name, isMandatory, isChosen) {
+    if (isMandatory) {
+      return `<span class="skill-occ mandatory" title="Perícia obrigatória da ocupação — já conta no pool de pontos da ocupação">◆</span>`;
+    }
+    const on = !!isChosen;
+    const title = on
+      ? "Perícia livre da ocupação (conta no pool). Clique para devolver ao Interesse Pessoal."
+      : "Marcar como perícia livre da ocupação (os pontos passam a contar no pool da ocupação).";
+    return `<button class="skill-occ-toggle${on ? " on" : ""}" data-occ-toggle="${escapeHtml(name)}" title="${title}" aria-pressed="${on}">${on ? "◆" : "◇"}</button>`;
+  }
+
+  /** Texto auxiliar do badge: quantas perícias livres da ocupação já foram usadas. */
+  function occFreePicksHint(ctx) {
+    if (!ctx || !ctx.freeBudget) return "";
+    return ` · livres ${ctx.freeUsed}/${ctx.freeBudget}`;
+  }
+
+  /**
+   * Alterna a designação de uma perícia como "perícia livre da ocupação".
+   * É o que faz os pontos gastos nela contarem no pool da OCUPAÇÃO (e não no
+   * de Interesse Pessoal). Não-bloqueante: o jogador pode exceder anySkillsCount —
+   * o badge apenas sinaliza. Resolve o bug da ocupação Personalizada.
+   */
+  function toggleOccupationSkill(name) {
+    const c = state.character;
+    if (!c || !name) return;
+    c.occupationSkills = Array.isArray(c.occupationSkills) ? c.occupationSkills : [];
+    const idx = c.occupationSkills.indexOf(name);
+    if (idx >= 0) c.occupationSkills.splice(idx, 1);
+    else c.occupationSkills.push(name);
+    renderSkills();
+    persistCurrent();
   }
 
   function computeBaseValue(skill, attrs) {
@@ -669,10 +752,11 @@
   function refreshSkillBadges() {
     const c = state.character;
     if (!c) return;
+    c.occupationSkills = Array.isArray(c.occupationSkills) ? c.occupationSkills : [];
     const occName = c.investigator?.occupation;
     const occ = occName ? window.CoCData.findOccupation(occName) : null;
-    const occSkills = new Set();
-    if (occ) for (const s of occ.skills) s.split("|").map(x => x.trim()).forEach(x => occSkills.add(x));
+    const occCtx = rules.buildOccupationContext(occ, c);
+    const occSkills = occCtx.effective;
 
     const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, v]) => [k, v.value]));
     const occBudget = occ ? rules.calcOccupationPoints(occ.pointsFormula, attrs).points : 0;
@@ -688,7 +772,7 @@
       if (occState.level === "ok")   badgeOcc.classList.add("ok");
       if (occState.level === "warn") badgeOcc.classList.add("warn");
       if (occState.level === "err")  badgeOcc.classList.add("err");
-      badgeOcc.textContent = "Ocupação: " + occState.label;
+      badgeOcc.textContent = "Ocupação: " + occState.label + occFreePicksHint(occCtx);
     }
     if (badgePi) {
       badgePi.classList.remove("ok", "warn", "err");
@@ -738,6 +822,10 @@
         <label>Valor inicial</label>
         <input type="number" id="cs-value" value="0" min="0" max="99" />
       </div>
+      <div style="margin-top: 0.5rem;">
+        <label><input type="checkbox" id="cs-occ" /> Conta para a ocupação (perícia livre)</label>
+        <p class="dim" style="font-size: 0.8em; margin-top: 0.2rem;">Marque para os pontos desta perícia contarem no pool da OCUPAÇÃO em vez do Interesse Pessoal. Essencial para a ocupação "Personalizada".</p>
+      </div>
     `;
 
     const parentSel = wrapper.querySelector("#cs-parent");
@@ -745,6 +833,12 @@
     const nameInput = wrapper.querySelector("#cs-name");
     const examples = wrapper.querySelector("#cs-examples");
     const valueInput = wrapper.querySelector("#cs-value");
+    const occCheck = wrapper.querySelector("#cs-occ");
+
+    // Pré-marca quando a ocupação atual ainda tem perícias livres disponíveis.
+    const occNow = state.character.investigator?.occupation ? window.CoCData.findOccupation(state.character.investigator.occupation) : null;
+    const ctxNow = rules.buildOccupationContext(occNow, state.character);
+    if (occCheck) occCheck.checked = ctxNow.freeBudget > 0 && ctxNow.freeUsed < ctxNow.freeBudget;
 
     function syncName() {
       const p = parentSel.value;
@@ -773,6 +867,10 @@
           const v = Math.max(0, Math.min(99, parseInt(valueInput.value, 10) || 0));
           state.character.skills = state.character.skills || {};
           state.character.skills[name] = { value: v };
+          if (occCheck && occCheck.checked) {
+            state.character.occupationSkills = Array.isArray(state.character.occupationSkills) ? state.character.occupationSkills : [];
+            if (!state.character.occupationSkills.includes(name)) state.character.occupationSkills.push(name);
+          }
           renderSkills();
           persistCurrent();
           toast(`"${name}" adicionada`, { type: "success" });
@@ -1164,14 +1262,38 @@
       if (!file) return;
       try {
         const data = await store.importJSONFromFile(file);
-        // Aceita formato direto ou wrapper
-        const char = data.investigator ? data : (data.character || data);
-        if (!char.investigator) { toast("Arquivo não parece ser uma ficha válida", { type: "error" }); return; }
+
+        // Detecta envelope versionado (exportado por esta versão ou posterior).
+        // Formato: { _format: "aimalexi-rpg", _schemaVersion: N, investigator: {...}, ... }
+        // Legado: objeto de personagem direto, sem _format.
+        const isEnvelope = data._format === "aimalexi-rpg";
+
+        // Extrai o objeto de personagem:
+        //   1. envelope com "investigator" no root (export direto do personagem)
+        //   2. wrapper { character: {...} } (formato intermediário antigo)
+        //   3. objeto direto sem wrapper (formato legacy)
+        const char = isEnvelope && data.investigator ? data
+                   : data.character
+                   ? data.character
+                   : data;
+
+        if (!char || !char.investigator) {
+          toast("Arquivo não parece ser uma ficha de investigador válida.", { type: "error" });
+          return;
+        }
+
+        // Avisa se versão de schema do arquivo é mais nova que a do app
+        if (isEnvelope && data._schemaVersion > store.SAVE_SCHEMA_VERSION) {
+          toast(`⚠ Arquivo foi criado por uma versão mais nova do app (schema v${data._schemaVersion}). Alguns dados podem ser ignorados.`, { type: "warn", duration: 7000 });
+        }
+
+        // Aplica migrações antes de carregar
+        store.runMigrations(char);
         char.id = null; // gera novo ID local
         state.character = char;
         persistCurrent();
         renderAll();
-        toast("Personagem importado com sucesso", { type: "success" });
+        toast("Personagem importado com sucesso!", { type: "success" });
       } catch (err) {
         toast("Erro ao importar: " + err.message, { type: "error" });
       }
@@ -1189,6 +1311,9 @@
     };
 
     $("#btn-print").onclick = () => window.print();
+
+    const btnSanFx = $("#btn-sanity-fx");
+    if (btnSanFx) btnSanFx.onclick = () => window.CoC.sanityFx && window.CoC.sanityFx.openSettings();
 
     $("#btn-export").onclick = () => {
       if (!state.character) return toast("Nenhum personagem para exportar", { type: "warn" });

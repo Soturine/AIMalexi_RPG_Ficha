@@ -28,8 +28,16 @@
     rollHistory: []
   };
 
-  if (!store.isStorageAvailable()) {
-    toast("⚠ localStorage indisponível — biblioteca não persistirá.", { type: "warn", duration: 6000 });
+  // A disponibilidade real do storage só é conhecida após store.ready (IndexedDB é
+  // assíncrono). A checagem correta vive no boot(), depois do await — evita o
+  // falso-positivo que disparava em quase todo carregamento. Registra só o handler
+  // de erro real de gravação (quota cheia).
+  if (store.onError) {
+    store.onError((info) => {
+      if (info && info.type === "quota") {
+        toast("⚠ Armazenamento cheio. Exporte a biblioteca e remova itens antigos para liberar espaço.", { type: "error", duration: 8000 });
+      }
+    });
   }
 
   // ═════════════════════════════════════════════════════════════════════

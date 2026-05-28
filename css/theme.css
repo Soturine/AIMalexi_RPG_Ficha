@@ -628,58 +628,196 @@ label {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ATMOSFERA — SAN baixa
+   ATMOSFERA — INSANIDADE PROGRESSIVA (efeitos de SAN baixa)
    ───────────────────────────────────────────────────────────────────────────
-   Aplicado em <body> via JS quando a sanidade cai abaixo de 50% / 25%.
-   - san-low      (<50%): dessaturação leve, vinheta vermelha sutil
-   - san-critical (<25%): dessaturação mais forte, vinheta mais densa,
-                          leve tremor cíclico imperceptível mas presente
+   Controlado por JS (js/shared/sanity-fx.js):
+     body[data-sanity="0..4"]      → intensidade derivada de SAN_atual / SAN_max
+        0: ≥50% (nada) · 1: <50% · 2: <30% · 3: <15% · 4: <5% (colapso)
+     body[data-sanity-fx="full|reduced|off"] → modo de acessibilidade
+
+   PRINCÍPIOS DE ENGENHARIA:
+   - Legibilidade preservada: o blur/distorção vivem num OVERLAY (#sanity-fx,
+     irmão de .app) mascarado para a PERIFERIA — o centro de leitura fica nítido.
+     A graduação de cor vai no .app (não no <body>, que quebraria position:fixed
+     de modais/toasts). Modais e toasts ficam ACIMA do overlay (z-index 100/200)
+     e portanto permanecem 100% legíveis.
+   - GPU: animações usam apenas transform/opacity. backdrop-filter é restrito aos
+     níveis altos e desligado em "reduced"/reduced-motion.
+   - Sem reflow: todas as camadas são fixed/absolute, pointer-events:none.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-body.san-low {
-  filter: saturate(0.78) contrast(1.05);
-  transition: filter 1.2s ease-out;
+#sanity-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 40;                 /* acima do .app (2), abaixo de fab(90)/modal(100)/toast(200) */
+  pointer-events: none;
+  overflow: hidden;
+}
+#sanity-fx > div {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.1s ease-out;
+  will-change: opacity;
 }
 
-body.san-low::after {
+/* Camada: vinheta vermelha (escurecimento de borda + pressão central) */
+#sanity-fx .sfx-vignette {
   background:
-    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(139, 26, 26, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 50% 0%,   rgba(139, 26, 26, 0.05) 0%, transparent 60%);
+    radial-gradient(ellipse 75% 60% at 50% 100%, rgba(139, 26, 26, 0.16) 0%, transparent 58%),
+    radial-gradient(ellipse 60% 45% at 50% 0%,   rgba(139, 26, 26, 0.10) 0%, transparent 58%),
+    radial-gradient(ellipse 60% 90% at 0% 50%,   rgba(40, 6, 6, 0.16) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 90% at 100% 50%, rgba(40, 6, 6, 0.16) 0%, transparent 60%),
+    radial-gradient(ellipse 120% 120% at 50% 50%, transparent 55%, rgba(8, 4, 4, 0.55) 100%);
 }
 
-@keyframes san-tremor {
+/* Camada: ruído/grão animado (textura de deterioração) */
+#sanity-fx .sfx-grain {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>");
+  mix-blend-mode: overlay;
+}
+
+/* Camada: aberração cromática (franjas vermelho/ciano nas bordas) */
+#sanity-fx .sfx-chroma {
+  background:
+    radial-gradient(ellipse 130% 130% at 49.4% 50%, transparent 60%, rgba(255, 40, 40, 0.16) 100%),
+    radial-gradient(ellipse 130% 130% at 50.6% 50%, transparent 60%, rgba(40, 200, 255, 0.14) 100%);
+  mix-blend-mode: screen;
+}
+
+/* Camada: blur PERIFÉRICO (centro nítido via máscara radial) */
+#sanity-fx .sfx-blur {
+  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0px);
+  -webkit-mask-image: radial-gradient(ellipse 62% 62% at 50% 50%, transparent 48%, #000 92%);
+  mask-image: radial-gradient(ellipse 62% 62% at 50% 50%, transparent 48%, #000 92%);
+  opacity: 1;                  /* a intensidade vem do raio do blur, não da opacidade */
+  transition: backdrop-filter 1.1s ease-out, -webkit-backdrop-filter 1.1s ease-out;
+}
+
+/* Camada: flicker (lampejos instáveis) */
+#sanity-fx .sfx-flicker {
+  background: radial-gradient(ellipse 120% 120% at 50% 50%, rgba(0,0,0,0) 40%, rgba(20, 2, 2, 0.5) 100%);
+}
+
+/* ── Graduação de cor + tremor no conteúdo (.app), não no <body> ── */
+.app { transition: filter 1.2s ease-out; }
+
+/* ─────────────────── NÍVEIS ─────────────────── */
+
+/* Nível 1 — ~50%: leve escurecimento + vinheta sutil + respiração lenta */
+/* --b = base da respiração: a vinheta pulsa em torno dessa opacidade (ver @keyframes sfx-breathe) */
+body[data-sanity="1"] .app { filter: saturate(0.86) contrast(1.03); }
+body[data-sanity="1"] #sanity-fx .sfx-vignette { --b: 0.45; opacity: var(--b); animation: sfx-breathe 9s ease-in-out infinite; }
+
+/* Nível 2 — ~30%: blur periférico + aberração cromática + ruído + distorção leve */
+body[data-sanity="2"] .app { filter: saturate(0.7) contrast(1.06) brightness(0.97); }
+body[data-sanity="2"] #sanity-fx .sfx-vignette { --b: 0.70; opacity: var(--b); animation: sfx-breathe 7s ease-in-out infinite; }
+body[data-sanity="2"] #sanity-fx .sfx-grain { opacity: 0.5; animation: sfx-grain-shift 0.9s steps(3) infinite; }
+body[data-sanity="2"] #sanity-fx .sfx-chroma { opacity: 0.6; }
+body[data-sanity="2"] #sanity-fx .sfx-blur { backdrop-filter: blur(1.5px); -webkit-backdrop-filter: blur(1.5px); }
+body[data-sanity="2"] .app { animation: sfx-shake-soft 9s ease-in-out infinite; }
+
+/* Nível 3 — ~15%: shake agressivo + respiração + vinheta pesada + flicker ocasional */
+body[data-sanity="3"] .app { filter: saturate(0.55) contrast(1.1) brightness(0.93) hue-rotate(-6deg); }
+body[data-sanity="3"] #sanity-fx .sfx-vignette { --b: 0.90; opacity: var(--b); animation: sfx-breathe 5s ease-in-out infinite; }
+body[data-sanity="3"] #sanity-fx .sfx-grain { opacity: 0.7; animation: sfx-grain-shift 0.55s steps(3) infinite; }
+body[data-sanity="3"] #sanity-fx .sfx-chroma { opacity: 0.85; animation: sfx-chroma-pulse 4s ease-in-out infinite; }
+body[data-sanity="3"] #sanity-fx .sfx-blur { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+body[data-sanity="3"] #sanity-fx .sfx-flicker { opacity: 0.6; animation: sfx-flicker 6.3s steps(1) infinite; }
+body[data-sanity="3"] .app { animation: sfx-shake 3.7s ease-in-out infinite; }
+
+/* Nível 4 — ~5%: colapso visual, animações instáveis, lampejos imprevisíveis */
+body[data-sanity="4"] .app { filter: saturate(0.4) contrast(1.18) brightness(0.9) hue-rotate(-10deg); }
+body[data-sanity="4"] #sanity-fx .sfx-vignette { --b: 1; opacity: var(--b); animation: sfx-breathe-erratic 3.3s ease-in-out infinite; }
+body[data-sanity="4"] #sanity-fx .sfx-grain { opacity: 0.92; animation: sfx-grain-shift 0.32s steps(2) infinite; }
+body[data-sanity="4"] #sanity-fx .sfx-chroma { opacity: 1; animation: sfx-chroma-pulse 2.1s ease-in-out infinite; }
+body[data-sanity="4"] #sanity-fx .sfx-blur { backdrop-filter: blur(4.5px); -webkit-backdrop-filter: blur(4.5px); }
+body[data-sanity="4"] #sanity-fx .sfx-flicker { opacity: 0.85; animation: sfx-flicker-erratic 4.9s steps(1) infinite; }
+body[data-sanity="4"] .app { animation: sfx-shake-hard 2.9s ease-in-out infinite; }
+
+/* ─────────────────── KEYFRAMES (transform/opacity = GPU) ─────────────────── */
+@keyframes sfx-breathe {
+  0%, 100% { opacity: var(--b, 0.45); transform: scale(1); }
+  50%      { opacity: calc(var(--b, 0.45) * 1.35); transform: scale(1.012); }
+}
+@keyframes sfx-breathe-erratic {
+  0%   { opacity: 0.7; }   17% { opacity: 1; }    33% { opacity: 0.55; }
+  50%  { opacity: 1; }     61% { opacity: 0.8; }  74% { opacity: 1; }
+  88%  { opacity: 0.6; }   100% { opacity: 0.95; }
+}
+@keyframes sfx-grain-shift {
+  0%   { transform: translate(0, 0); }
+  33%  { transform: translate(-3%, 2%); }
+  66%  { transform: translate(2%, -3%); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes sfx-chroma-pulse {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(1.5px); }
+}
+@keyframes sfx-flicker {
+  0%, 92%, 100% { opacity: 0; }
+  93%  { opacity: 0.5; }
+  95%  { opacity: 0.1; }
+  97%  { opacity: 0.65; }
+}
+@keyframes sfx-flicker-erratic {
+  0%, 70%, 100% { opacity: 0; }
+  71% { opacity: 0.7; }   73% { opacity: 0.05; }
+  74% { opacity: 0.85; }  82% { opacity: 0; }
+  83% { opacity: 0.4; }   90% { opacity: 0.1; }
+}
+@keyframes sfx-shake-soft {
   0%, 100% { transform: translate(0, 0); }
-  20%      { transform: translate(0.4px, -0.2px); }
-  40%      { transform: translate(-0.3px, 0.3px); }
-  60%      { transform: translate(0.2px, 0.4px); }
-  80%      { transform: translate(-0.4px, -0.3px); }
+  25% { transform: translate(0.4px, -0.3px); }
+  50% { transform: translate(-0.3px, 0.4px); }
+  75% { transform: translate(0.3px, 0.3px); }
+}
+@keyframes sfx-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(0.8px, -0.6px) rotate(0.04deg); }
+  40% { transform: translate(-0.7px, 0.7px) rotate(-0.05deg); }
+  60% { transform: translate(0.6px, 0.8px) rotate(0.03deg); }
+  80% { transform: translate(-0.8px, -0.5px) rotate(-0.04deg); }
+}
+@keyframes sfx-shake-hard {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(1.6px, -1.1px) rotate(0.08deg); }
+  25% { transform: translate(-1.4px, 1.3px) rotate(-0.1deg); }
+  43% { transform: translate(1.2px, 1.5px) rotate(0.06deg); }
+  58% { transform: translate(-1.7px, -0.9px) rotate(-0.09deg); }
+  72% { transform: translate(1.1px, -1.6px) rotate(0.07deg); }
+  86% { transform: translate(-1.3px, 1.1px) rotate(-0.05deg); }
 }
 
-body.san-critical {
-  filter: saturate(0.55) contrast(1.12) hue-rotate(-8deg);
-  transition: filter 1.4s ease-out;
+/* ─── MODO REDUZIDO: mantém cor+vinheta estáticas, corta TODO movimento/blur ─── */
+body[data-sanity-fx="reduced"] #sanity-fx .sfx-grain,
+body[data-sanity-fx="reduced"] #sanity-fx .sfx-chroma,
+body[data-sanity-fx="reduced"] #sanity-fx .sfx-flicker { opacity: 0 !important; }
+body[data-sanity-fx="reduced"] #sanity-fx .sfx-blur {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
+body[data-sanity-fx="reduced"] #sanity-fx .sfx-vignette { animation: none !important; }
+body[data-sanity-fx="reduced"] .app { animation: none !important; }
 
-body.san-critical .app {
-  animation: san-tremor 7s ease-in-out infinite;
-}
+/* ─── MODO OFF: desliga tudo ─── */
+body[data-sanity-fx="off"] #sanity-fx { display: none !important; }
+body[data-sanity-fx="off"] .app { filter: none !important; animation: none !important; }
 
-body.san-critical::after {
-  background:
-    radial-gradient(ellipse 90% 70% at 50% 100%, rgba(139, 26, 26, 0.18) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 50% 0%,   rgba(139, 26, 26, 0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 80% at 0% 50%,   rgba(58, 10, 10, 0.10) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 80% at 100% 50%, rgba(58, 10, 10, 0.10) 0%, transparent 65%);
-  opacity: 1;
-}
-
-/* Respeito a prefers-reduced-motion: desliga o tremor */
+/* ─── prefers-reduced-motion: corta movimento mesmo no modo COMPLETO ─── */
 @media (prefers-reduced-motion: reduce) {
-  body.san-critical .app { animation: none; }
+  #sanity-fx .sfx-vignette,
+  #sanity-fx .sfx-grain,
+  #sanity-fx .sfx-chroma,
+  #sanity-fx .sfx-flicker,
+  .app { animation: none !important; }
+  #sanity-fx .sfx-flicker { opacity: 0 !important; }
 }
 
-/* No print, desliga tudo isso */
+/* ─── Impressão: sem efeitos ─── */
 @media print {
-  body.san-low, body.san-critical { filter: none !important; }
-  body.san-critical .app { animation: none !important; }
+  #sanity-fx { display: none !important; }
+  .app { filter: none !important; animation: none !important; }
 }
