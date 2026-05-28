@@ -309,42 +309,19 @@ const portraitSvgs = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
-// FOTOS DE DOMÍNIO PÚBLICO (placeholders — usuário deve baixar e colocar)
+// FOTOS DE DOMÍNIO PÚBLICO
+// Vazio por padrão para não mostrar templates quebrados. Para habilitar:
+//   1. Baixe a foto (Wikimedia Commons / Public Domain Review)
+//   2. Salve em assets/templates/banners/ ou /portraits/
+//   3. Adicione a entrada no array correspondente, ex:
+//      { id: "banner-photo-library", name: "Biblioteca Vitoriana", kind: "photo",
+//        path: "assets/templates/banners/victorian-library.jpg",
+//        credit: "Wikimedia Commons · Public Domain" }
 // ═══════════════════════════════════════════════════════════════════════════
 
-const bannerPhotos = [
-  {
-    id: "banner-photo-library",
-    name: "Biblioteca Vitoriana",
-    kind: "photo",
-    path: "assets/templates/banners/victorian-library.jpg",
-    credit: "Wikimedia Commons · Public Domain · ex: 'Trinity College Library Dublin'"
-  },
-  {
-    id: "banner-photo-harbor",
-    name: "Porto na Névoa",
-    kind: "photo",
-    path: "assets/templates/banners/foggy-harbor.jpg",
-    credit: "Wikimedia Commons · Public Domain · busque por 'foggy harbor 1920'"
-  },
-  {
-    id: "banner-photo-mansion",
-    name: "Mansão Sombria",
-    kind: "photo",
-    path: "assets/templates/banners/gothic-mansion.jpg",
-    credit: "Wikimedia Commons · Public Domain · busque por 'haunted mansion engraving'"
-  }
-];
+const bannerPhotos = [];
 
-const portraitPhotos = [
-  {
-    id: "portrait-photo-silhouette-vintage",
-    name: "Silhueta Vintage",
-    kind: "photo",
-    path: "assets/templates/portraits/vintage-silhouette.jpg",
-    credit: "Wikimedia Commons · Public Domain · 'Victorian silhouette portrait'"
-  }
-];
+const portraitPhotos = [];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EXPORTAR

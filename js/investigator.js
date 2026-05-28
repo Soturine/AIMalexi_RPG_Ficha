@@ -287,261 +287,47 @@
 
   /**
    * Abre o modal de escolha de imagem para um slot (banner | portrait).
-   * 3 fontes: upload de arquivo (vira Blob no IDB), URL externa, biblioteca de templates.
+   * Delega ao módulo compartilhado window.CoC.mediaPicker.
    */
   function openImagePicker(slot) {
     if (!state.character) return;
     if (slot !== "banner" && slot !== "portrait") return;
-
     const c = state.character;
     c.media = c.media || { banner: null, portrait: null };
-    const current = c.media[slot];
-
-    const root = el("div", { class: "img-picker" });
-
-    // === Tabs ===
-    const tabs = el("div", { class: "img-picker-tabs" });
-    const tabContent = el("div", { class: "img-picker-content" });
-
-    let activeTab = "upload";
-    const setTab = (id) => {
-      activeTab = id;
-      tabs.querySelectorAll(".img-tab").forEach(t => {
-        t.classList.toggle("active", t.dataset.tab === id);
-      });
-      tabContent.innerHTML = "";
-      tabContent.appendChild(renderTab(id));
-    };
-
-    [
-      { id: "upload",   label: "📁 Upload",     desc: "Subir arquivo do dispositivo" },
-      { id: "url",      label: "🔗 URL",        desc: "Link externo (aviso offline)" },
-      { id: "template", label: "🖼️ Biblioteca", desc: "Templates pré-prontos" },
-      { id: "remove",   label: "🗑️ Remover",   desc: "Apagar imagem atual" }
-    ].forEach(t => {
-      const btn = el("button", {
-        class: "img-tab" + (activeTab === t.id ? " active" : ""),
-        title: t.desc,
-        on: { click: () => setTab(t.id) }
-      });
-      btn.dataset.tab = t.id;
-      btn.textContent = t.label;
-      tabs.appendChild(btn);
-    });
-
-    function renderTab(id) {
-      if (id === "upload") return renderUploadTab();
-      if (id === "url")    return renderUrlTab();
-      if (id === "template") return renderTemplateTab();
-      if (id === "remove") return renderRemoveTab();
-      return el("div");
-    }
-
-    function renderUploadTab() {
-      const wrap = el("div");
-      wrap.appendChild(el("p", { class: "img-picker-hint" },
-        ["Aceita JPG, PNG, WebP. Máximo 5 MB. Salvo localmente no IndexedDB (funciona offline)."]));
-      const input = el("input", {
-        type: "file",
-        accept: "image/jpeg,image/png,image/webp",
-        on: { change: (e) => handleFile(e.target.files?.[0]) }
-      });
-      wrap.appendChild(input);
-      return wrap;
-    }
-
-    function renderUrlTab() {
-      const wrap = el("div");
-      wrap.appendChild(el("p", { class: "img-picker-hint" }, [
-        navigator.onLine
-          ? "Cola uma URL pública. Recomendado: usar “Baixar e cachear” para funcionar offline depois."
-          : "⚠ Você está OFFLINE. URLs externas NÃO carregam agora. Use Upload ou Biblioteca."
-      ]));
-      const urlInput = el("input", {
-        type: "url",
-        placeholder: "https://exemplo.com/imagem.jpg",
-        style: { width: "100%", marginBottom: "0.5rem" }
-      });
-      wrap.appendChild(urlInput);
-
-      const row = el("div", { style: { display: "flex", gap: "0.5rem" } });
-      row.appendChild(el("button", {
-        class: "btn",
-        on: { click: () => {
-          const url = urlInput.value.trim();
-          if (!url) return;
-          if (!/^https?:\/\//i.test(url)) return toast("URL inválida", { type: "error" });
-          c.media[slot] = { kind: "url", url };
-          persistCurrent();
-          renderMedia();
-          closePicker();
-          toast("URL definida. Funcionará enquanto o link existir e você estiver online.", { type: "info" });
-        }}
-      }, ["Usar URL direta"]));
-      row.appendChild(el("button", {
-        class: "btn",
-        disabled: !navigator.onLine,
-        title: navigator.onLine ? "Baixa a imagem e salva localmente como Blob" : "Indisponível offline",
-        on: { click: () => {
-          const url = urlInput.value.trim();
-          if (!url || !/^https?:\/\//i.test(url)) return toast("URL inválida", { type: "error" });
-          fetchUrlAsBlob(url).then(({ blob, mime }) => {
-            if (blob.size > 5 * 1024 * 1024) return toast("Imagem maior que 5 MB", { type: "error" });
-            c.media[slot] = { kind: "blob", blob, mime };
-            persistCurrent();
-            renderMedia();
-            closePicker();
-            toast("✓ Imagem baixada e cacheada localmente", { type: "success" });
-          }).catch(err => toast("Falha ao baixar: " + err.message, { type: "error" }));
-        }}
-      }, ["⬇ Baixar e cachear"]));
-      wrap.appendChild(row);
-      return wrap;
-    }
-
-    function renderTemplateTab() {
-      const wrap = el("div");
-      const templates = window.CoCData?.imageTemplates?.[slot === "banner" ? "banners" : "portraits"] || [];
-      if (templates.length === 0) {
-        wrap.appendChild(el("p", { class: "img-picker-hint" }, ["Nenhum template disponível para este slot."]));
-        return wrap;
-      }
-      wrap.appendChild(el("p", { class: "img-picker-hint" },
-        [`${templates.length} templates curados. SVGs ornamentais e fotos de domínio público.`]));
-      const grid = el("div", { class: "template-grid" });
-      templates.forEach(t => {
-        const card = el("button", {
-          class: "template-card",
-          title: t.name + (t.credit ? ` · ${t.credit}` : ""),
-          on: { click: () => {
-            c.media[slot] = { kind: "template", id: t.id };
-            persistCurrent();
-            renderMedia();
-            closePicker();
-            toast(`Template "${t.name}" aplicado`, { type: "success" });
-          }}
-        });
-        const thumb = el("div", { class: "template-thumb" });
-        if (t.svg) {
-          thumb.innerHTML = t.svg;
-        } else if (t.path) {
-          thumb.style.backgroundImage = `url('${t.path}')`;
-        }
-        card.appendChild(thumb);
-        card.appendChild(el("span", { class: "template-name" }, [t.name]));
-        grid.appendChild(card);
-      });
-      wrap.appendChild(grid);
-      return wrap;
-    }
-
-    function renderRemoveTab() {
-      const wrap = el("div");
-      wrap.appendChild(el("p", { class: "img-picker-hint" },
-        [current ? "Remove a imagem atual e volta para o placeholder padrão." : "Nenhuma imagem definida ainda."]));
-      const btn = el("button", {
-        class: "btn-danger",
-        disabled: !current,
-        on: { click: () => {
-          c.media[slot] = null;
-          persistCurrent();
-          renderMedia();
-          closePicker();
-          toast("Imagem removida", { type: "info" });
-        }}
-      }, ["🗑️ Confirmar remoção"]);
-      wrap.appendChild(btn);
-      return wrap;
-    }
-
-    function handleFile(file) {
-      if (!file) return;
-      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
-        return toast("Formato inválido. Use JPG, PNG ou WebP.", { type: "error" });
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        return toast("Imagem maior que 5 MB", { type: "error" });
-      }
-      // file IS a Blob (File estende Blob)
-      c.media[slot] = { kind: "blob", blob: file, mime: file.type };
-      persistCurrent();
-      renderMedia();
-      closePicker();
-      toast("✓ Imagem salva localmente", { type: "success" });
-    }
-
-    let closePicker = () => {};
-
-    root.appendChild(tabs);
-    root.appendChild(tabContent);
-    setTab("upload");
-
-    const m = modal({
+    window.CoC.mediaPicker.open({
       title: slot === "banner" ? "Banner do Investigador" : "Retrato do Investigador",
-      body: root,
-      width: "640px"
+      current: c.media[slot],
+      templatesKey: slot === "banner" ? "banners" : "portraits",
+      maxDim: slot === "banner" ? 1600 : 800,
+      onPick: (media) => {
+        c.media[slot] = media;
+        persistCurrent();
+        renderMedia();
+      }
     });
-    closePicker = () => m.close();
-  }
-
-  function fetchUrlAsBlob(url) {
-    return fetch(url, { mode: "cors" })
-      .then(resp => {
-        if (!resp.ok) throw new Error("HTTP " + resp.status);
-        return resp.blob().then(blob => ({ blob, mime: blob.type || "image/jpeg" }));
-      });
   }
 
   /**
-   * Renderiza banner e retrato no DOM com a fonte resolvida.
-   * Suporta blob (IndexedDB), URL externa, template.
+   * Renderiza banner e retrato no DOM. Fonte: data URI, URL externa, ou template.
    */
-  const _objectURLs = new Set();
   function renderMedia() {
     if (!state.character) return;
-    const c = state.character;
-    const media = c.media || {};
-
-    // Limpar object URLs antigos para evitar memory leak
-    _objectURLs.forEach(u => URL.revokeObjectURL(u));
-    _objectURLs.clear();
+    const media = state.character.media || {};
+    const resolve = window.CoC.mediaPicker.resolveSrc;
 
     const bannerEl = $("#character-banner");
     if (bannerEl) {
-      const src = resolveMediaSrc(media.banner, "banner");
-      bannerEl.style.backgroundImage = src ? `url('${src}')` : "";
+      const src = resolve(media.banner, "banners");
+      bannerEl.style.backgroundImage = src ? `url("${src}")` : "";
       bannerEl.classList.toggle("has-image", !!src);
     }
 
     const portraitEl = $("#character-portrait");
     if (portraitEl) {
-      const src = resolveMediaSrc(media.portrait, "portrait");
-      portraitEl.style.backgroundImage = src ? `url('${src}')` : "";
+      const src = resolve(media.portrait, "portraits");
+      portraitEl.style.backgroundImage = src ? `url("${src}")` : "";
       portraitEl.classList.toggle("has-image", !!src);
     }
-  }
-
-  function resolveMediaSrc(media, slot) {
-    if (!media) return null;
-    if (media.kind === "blob" && media.blob) {
-      const url = URL.createObjectURL(media.blob);
-      _objectURLs.add(url);
-      return url;
-    }
-    if (media.kind === "url" && media.url) {
-      return media.url;
-    }
-    if (media.kind === "template" && media.id) {
-      const list = window.CoCData?.imageTemplates?.[slot === "banner" ? "banners" : "portraits"] || [];
-      const tpl = list.find(t => t.id === media.id);
-      if (!tpl) return null;
-      if (tpl.svg) {
-        // SVG inline: converte para data URI
-        return "data:image/svg+xml;utf8," + encodeURIComponent(tpl.svg);
-      }
-      return tpl.path || null;
-    }
-    return null;
   }
 
   // ═════════════════════════════════════════════════════════════════════

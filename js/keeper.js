@@ -179,6 +179,7 @@
     ws.className = "workspace mode-" + state.mode;
     ws.innerHTML = renderCreatureHeader() + renderSimpleMode() + renderFullMode();
     bindWorkspaceEvents();
+    renderCreaturePortrait();
 
     // Primeira vez que o usuário abre QUALQUER criatura nesta sessão:
     // pulsa o toggle Simples↔Completo 3 vezes para chamar atenção.
@@ -190,6 +191,35 @@
         setTimeout(() => btn.classList.remove("first-attention"), 5500);
       }
     }
+  }
+
+  // ─── Retrato da criatura (Fase 6) ────────────────────────────────────
+  function renderCreaturePortrait() {
+    const node = $("#creature-portrait");
+    if (!node || !state.active) return;
+    const src = window.CoC.mediaPicker.resolveSrc(state.active.media?.portrait, "portraits");
+    node.style.backgroundImage = src ? `url("${src}")` : "";
+    node.classList.toggle("has-image", !!src);
+    node.onclick = () => {
+      if (state.mode !== "full") {
+        toast("Abra o Editor Completo para alterar o retrato", { type: "info" });
+        return;
+      }
+      const c = state.active;
+      c.media = c.media || { portrait: null };
+      window.CoC.mediaPicker.open({
+        title: `Retrato · ${c.name || "Criatura"}`,
+        current: c.media.portrait,
+        templatesKey: "portraits",
+        maxDim: 800,
+        onPick: (media) => {
+          c.media.portrait = media;
+          renderCreaturePortrait();
+          // Persiste se a criatura já está salva (instância da biblioteca)
+          if (state.activeSavedId) saveActive();
+        }
+      });
+    };
   }
 
   function renderCreatureHeader() {
@@ -206,8 +236,10 @@
       : "Modo atual: COMPLETO. Clique para voltar à visualização Simples (operacional em mesa).";
     const modePillLabel = isSimple ? "MODO SIMPLES" : "MODO EDITOR";
 
+    const portraitHint = state.mode === "full" ? "Clique para definir o retrato" : "Retrato — edite no Editor Completo";
     return `
       <div class="creature-header">
+        <div class="creature-portrait" id="creature-portrait" title="${escapeHtml(portraitHint)}"></div>
         <div class="creature-header-title">
           <div class="creature-type-row">
             <span class="creature-type">${escapeHtml(typeLabel)}${cat}</span>
