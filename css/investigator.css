@@ -71,6 +71,82 @@
   font-size: 0.95rem;
 }
 
+/* ─── Imagens: banner + retrato ──────────────────────────────────────── */
+.identity-wrapper {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.identity-wrapper .identity-grid { flex: 1 1 auto; min-width: 0; }
+
+.character-banner,
+.character-portrait {
+  position: relative;
+  background-color: var(--bg-card);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.character-banner {
+  width: 100%;
+  aspect-ratio: 5 / 1;
+  margin-bottom: 1rem;
+}
+.character-portrait {
+  flex: 0 0 auto;
+  width: 130px;
+  aspect-ratio: 3 / 4;
+}
+.character-banner:hover,
+.character-portrait:hover { border-color: var(--brass); }
+
+.character-banner:not(.has-image)::after,
+.character-portrait:not(.has-image)::after {
+  content: "＋ imagem";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-faded);
+  border: 1px dashed var(--ink-faded);
+  border-radius: var(--radius-lg);
+}
+
+.img-remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--brass);
+  background: rgba(10, 8, 7, 0.72);
+  color: var(--ink);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img-remove:hover { background: var(--blood); border-color: var(--blood); }
+
+@media (max-width: 600px) {
+  .identity-wrapper { flex-direction: column; }
+  .character-portrait { width: 100%; max-width: 200px; }
+  .character-banner { aspect-ratio: 3 / 1; }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ATRIBUTOS — Grid de cards
    ═══════════════════════════════════════════════════════════════════════════ */

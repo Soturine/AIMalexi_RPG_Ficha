@@ -18,7 +18,9 @@ window.CoCData.presets.empty = {
     residence: "",
     birthplace: "",
     pronouns: "",
-    tagline: ""
+    tagline: "",
+    bannerId: null,
+    portraitId: null
   },
 
   // Atributos zerados (devem ser rolados ou inseridos)

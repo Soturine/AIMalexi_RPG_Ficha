@@ -13,12 +13,29 @@ window.CoC = window.CoC || {};
   const fifth = (v) => Math.floor(v / 5);
 
   /**
+   * Fração aleatória em [0,1) via RNG criptográfico (crypto.getRandomValues).
+   * Melhor uniformidade que Math.random e mais resistente a manipulação.
+   * Fallback para Math.random em ambientes sem Web Crypto — offline-first:
+   * a rolagem nunca pode quebrar.
+   * @returns {number}
+   */
+  function randomFraction() {
+    try {
+      const a = new Uint32Array(1);
+      (self.crypto || self.msCrypto).getRandomValues(a);
+      return a[0] / (0xffffffff + 1);
+    } catch (e) {
+      return Math.random();
+    }
+  }
+
+  /**
    * Rola 1 dado de N lados (1..sides).
    * @param {number} sides
    * @returns {number}
    */
   function rollDie(sides) {
-    return Math.floor(Math.random() * sides) + 1;
+    return Math.floor(randomFraction() * sides) + 1;
   }
 
   /**

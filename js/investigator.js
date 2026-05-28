@@ -211,6 +211,10 @@
     $("#derived-bar").innerHTML = "";
     $("#skills-groups").innerHTML = "";
     $("#weapons-list").innerHTML = "";
+    if (window.CoC.mediaPicker) {
+      window.CoC.mediaPicker.render($("#character-banner"), null);
+      window.CoC.mediaPicker.render($("#character-portrait"), null);
+    }
     if (window.CoC.sanityFx) window.CoC.sanityFx.clear();
   }
 
@@ -245,6 +249,61 @@
       };
       node.onblur = persistCurrent;
     });
+
+    bindCharacterImages();
+  }
+
+  // ─── IMAGENS (banner + retrato) ───────────────────────────────────────
+  // Clique no slot → mediaPicker.pick (persiste blob) → render. Botão ✕ remove.
+  function bindCharacterImages() {
+    if (!window.CoC.mediaPicker) return;
+    setupImageSlot($("#character-banner"),   "bannerId",   { maxDim: 1280, label: "banner" });
+    setupImageSlot($("#character-portrait"), "portraitId", { maxDim: 640,  label: "retrato" });
+  }
+
+  function setupImageSlot(slotEl, field, opts) {
+    if (!slotEl) return;
+    const c = state.character;
+    const mp = window.CoC.mediaPicker;
+    mp.render(slotEl, c.investigator?.[field] || null);
+    refreshImageRemoveBtn(slotEl, field, opts);
+
+    slotEl.onclick = async (e) => {
+      // cliques no botão remover são tratados por ele mesmo
+      if (e.target && e.target.classList && e.target.classList.contains("img-remove")) return;
+      const blobId = await mp.pick({ maxDim: opts.maxDim });
+      if (!blobId) return;
+      c.investigator = c.investigator || {};
+      c.investigator[field] = blobId;
+      persistCurrent();
+      mp.render(slotEl, blobId);
+      refreshImageRemoveBtn(slotEl, field, opts);
+      toast(`Imagem de ${opts.label} atualizada.`, { type: "success", duration: 1800 });
+    };
+  }
+
+  function refreshImageRemoveBtn(slotEl, field, opts) {
+    const c = state.character;
+    const hasImg = !!(c.investigator && c.investigator[field]);
+    let btn = slotEl.querySelector(".img-remove");
+    if (hasImg && !btn) {
+      btn = el("button", { class: "img-remove no-print", title: `Remover ${opts.label}`, text: "✕", type: "button" });
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const oldId = c.investigator[field];
+        c.investigator[field] = null;
+        persistCurrent();
+        window.CoC.mediaPicker.render(slotEl, null);
+        // templates (data-URI) não vivem no storage; só blobIds de upload são apagáveis
+        if (oldId && typeof oldId === "string" && !oldId.startsWith("data:") && store.deleteBlob) {
+          store.deleteBlob(oldId);
+        }
+        refreshImageRemoveBtn(slotEl, field, opts);
+      };
+      slotEl.appendChild(btn);
+    } else if (!hasImg && btn) {
+      btn.remove();
+    }
   }
 
   // ─── ATRIBUTOS ────────────────────────────────────────────────────────
@@ -516,6 +575,7 @@
     // Renderiza grupos
     const container = $("#skills-groups");
     container.innerHTML = "";
+    ensureSkillsDelegation();   // listeners delegados (1x) — sobrevivem aos rebuilds
 
     const search = state.skillSearch.trim().toLowerCase();
     const filter = state.skillFilter;
@@ -626,29 +686,43 @@
     });
     container.appendChild(addBtn);
 
-    // Bind inputs — usa updateSkillUI (light update) em vez de renderSkills (rebuild)
-    // para evitar perda de foco enquanto o usuário digita.
-    $$("input[data-skill]").forEach(input => {
-      input.oninput = () => {
-        const name = input.dataset.skill;
-        const v = Math.max(0, Math.min(99, parseInt(input.value, 10) || 0));
-        c.skills = c.skills || {};
-        c.skills[name] = c.skills[name] || {};
-        c.skills[name].value = v;
-        updateSkillUI(name);   // não recria o DOM — só atualiza ½/⅕ e badges
-        markDirty();
-      };
-      input.onblur = persistCurrent;
+    // Inputs, rolagens e toggles de ocupação são tratados por DELEGAÇÃO de evento
+    // em #skills-groups (ver ensureSkillsDelegation): anexada 1x, sobrevive aos
+    // rebuilds de innerHTML e elimina o rebind por linha (sem listeners órfãos).
+  }
+
+  // Delegação de eventos das perícias — anexa UMA vez ao container.
+  // innerHTML="" remove os filhos (e seus handlers), mas o listener do container
+  // persiste; logo não há acúmulo nem órfãos a cada renderSkills().
+  function ensureSkillsDelegation() {
+    const container = $("#skills-groups");
+    if (!container || container._delegated) return;
+    container._delegated = true;
+
+    container.addEventListener("click", (e) => {
+      const rollBtn = e.target.closest(".skill-roll[data-roll-skill]");
+      if (rollBtn) { rollSkill(rollBtn.dataset.rollSkill); return; }
+      const occBtn = e.target.closest("[data-occ-toggle]");
+      if (occBtn) { e.preventDefault(); toggleOccupationSkill(occBtn.dataset.occToggle); }
     });
 
-    // Bind botões de rolar
-    $$("[data-roll-skill]").forEach(btn => {
-      btn.onclick = () => rollSkill(btn.dataset.rollSkill);
+    container.addEventListener("input", (e) => {
+      const input = e.target.closest("input[data-skill]");
+      if (!input) return;
+      const c = state.character;
+      if (!c) return;
+      const name = input.dataset.skill;
+      const v = Math.max(0, Math.min(99, parseInt(input.value, 10) || 0));
+      c.skills = c.skills || {};
+      c.skills[name] = c.skills[name] || {};
+      c.skills[name].value = v;
+      updateSkillUI(name);   // light update — mantém o foco enquanto digita
+      markDirty();
     });
 
-    // Bind toggles de "perícia da ocupação" (designação de perícias livres)
-    $$("[data-occ-toggle]").forEach(btn => {
-      btn.onclick = (e) => { e.preventDefault(); toggleOccupationSkill(btn.dataset.occToggle); };
+    // focusout borbulha (blur não) — persiste ao sair de um campo de perícia.
+    container.addEventListener("focusout", (e) => {
+      if (e.target.closest("input[data-skill]")) persistCurrent();
     });
   }
 

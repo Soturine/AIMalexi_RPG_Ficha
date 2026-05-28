@@ -267,6 +267,7 @@ window.CoC = window.CoC || {};
     const keys = await idbKeys();
     for (const key of keys) {
       if (typeof key !== "string" || !key.startsWith(KEY_PREFIX)) continue;
+      if (key.startsWith(KEY_PREFIX + "blobs/")) continue;   // blobs (imagens) são lazy-loaded via getBlob — não inflam o boot
       const val = await idbGet(key);
       placeInCache(key, val);
     }
@@ -651,6 +652,46 @@ window.CoC = window.CoC || {};
     return allKeys.length;
   }
 
+  // ─── BLOBS / IMAGENS (banner, retrato) ───────────────────────────────
+  // Imagens vivem como Blob no IndexedDB — NUNCA base64 no localStorage (estoura
+  // cota). API assíncrona: o cache síncrono não guarda binários. blobCache dá
+  // acesso rápido em memória e é o único armazenamento em backends sem IDB (nesses,
+  // a imagem não sobrevive a reload — caminho degradado aceitável).
+  const blobCache = new Map();
+  function blobKey(id) { return KEY_PREFIX + "blobs/" + id; }
+
+  async function saveBlob(id, blob) {
+    if (!(blob instanceof Blob)) return null;
+    if (!id) id = genId();
+    blobCache.set(id, blob);
+    if (backend === "indexeddb") {
+      try { await idbSet(blobKey(id), blob); }
+      catch (e) { emitError({ type: "write", key: blobKey(id), backend, error: e }); }
+    }
+    return id;
+  }
+
+  async function getBlob(id) {
+    if (!id) return null;
+    if (blobCache.has(id)) return blobCache.get(id);
+    if (backend === "indexeddb") {
+      try {
+        const b = await idbGet(blobKey(id));
+        if (b instanceof Blob) { blobCache.set(id, b); return b; }
+      } catch (e) { /* best-effort */ }
+    }
+    return null;
+  }
+
+  async function deleteBlob(id) {
+    if (!id) return false;
+    blobCache.delete(id);
+    if (backend === "indexeddb") {
+      try { await idbDelete(blobKey(id)); } catch (e) { /* best-effort */ }
+    }
+    return true;
+  }
+
   // ─── Inicialização ────────────────────────────────────────────────────
   const ready = init();
 
@@ -673,6 +714,8 @@ window.CoC = window.CoC || {};
     get backend() { return backend; },
     // Preferências de UI:
     getPref, setPref,
+    // Imagens (Blob):
+    saveBlob, getBlob, deleteBlob,
     // Resiliência / recuperação:
     forceFlush, onError, getGhost, recoverGhost, getCorruptedEntries,
     get lastErrorAt() { return lastErrorAt; }

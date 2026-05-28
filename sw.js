@@ -13,7 +13,7 @@
    Para forçar atualização imediata: incremente CACHE_VERSION abaixo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const CACHE_NAME = "aimalexi-rpg-" + CACHE_VERSION;
 
 // Assets que devem estar disponíveis offline imediatamente após instalação.
@@ -31,6 +31,7 @@ const PRECACHE_URLS = [
   "./js/shared/ui-components.js",
   "./js/shared/validators.js",
   "./js/shared/sanity-fx.js",
+  "./js/shared/media-picker.js",
   "./js/engine/storage.js",
   "./js/engine/dice.js",
   "./js/engine/coc7e-rules.js",
@@ -43,6 +44,7 @@ const PRECACHE_URLS = [
   "./data/damage-bonus-table.js",
   "./data/weapons-templates.js",
   "./data/name-pools.js",
+  "./data/image-templates.js",
   "./data/bestiary.js",
   "./data/npc-archetypes.js",
   "./data/presets/empty.js",
