@@ -615,6 +615,22 @@
     return Number(skill.base) || 0;
   }
 
+  function getSkillValue(c, skillName) {
+    const raw = c?.skills?.[skillName]?.value;
+    // Preserva 0 explícito; trata "" como ausente.
+    if (raw !== undefined && raw !== null && raw !== "") {
+      return Number(raw) || 0;
+    }
+    const attrs = Object.fromEntries(
+      Object.entries(c.attributes || {}).map(([k, x]) => [k, x.value])
+    );
+    const parentName = skillName.replace(/\s*\(.+\)$/, "");
+    const def =
+      window.CoCData.findSkill(skillName) ||
+      window.CoCData.findSkill(parentName);
+    return def ? computeBaseValue(def, attrs) : 0;
+  }
+
   function sumSkillSpend(c, occSkillSet) {
     let occSpent = 0, piSpent = 0;
     const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, v]) => [k, v.value]));
@@ -879,30 +895,45 @@
     const c = state.character;
     const w = c.weapons[idx];
     if (!w) return;
-    const skillVal = Number(c.skills?.[w.skill]?.value) || (window.CoCData.findSkill(w.skill)?.base || 0);
-    // Rola ataque
+
+    const skillVal = getSkillValue(c, w.skill);
+    const difficulty = state.rollMods.difficulty || "regular";
+
+    const target =
+      difficulty === "hard"    ? dice.half(skillVal)  :
+      difficulty === "extreme" ? dice.fifth(skillVal) :
+                                 skillVal;
+
     const result = dice.rollD100(state.rollMods.bp || null);
-    const level = dice.classifyRoll(result.value, skillVal);
-    const ok = ["crit", "extreme", "hard", "regular"].includes(level);
+    const level  = dice.classifyRoll(result.value, skillVal);
+    const ok     = dice.meetsDifficulty(difficulty, level);
+
     let dmgStr = "—";
-    let dmgTotal = 0;
     if (ok) {
-      const dbVal = c.derived?.DB?.value || "0";
+      const dbVal    = c.derived?.DB?.value || "0";
       const isImpale = (level === "extreme" || level === "crit") && w.impale;
-      const d = dice.rollDamage(w.damage || "0", dbVal, isImpale);
-      dmgTotal = d.total;
-      const diceStr = d.rolls.map(r => `(${r.dice.join("+")})`).join("+");
-      dmgStr = `${w.damage} → ${dmgTotal}${isImpale ? " ⚡EMPALA" : ""} ${diceStr}`;
+      const d        = dice.rollDamage(w.damage || "0", dbVal, isImpale);
+      const diceStr  = d.rolls.map(r => `(${r.dice.join("+")})`).join("+");
+      dmgStr = `${w.damage} → ${d.total}${isImpale ? " ⚡EMPALA" : ""} ${diceStr}`;
     }
-    logAndToast({
+
+    registerRoll({
+      kind: "weapon-attack",
       skill: `⚔ ${w.name}`,
-      target: skillVal,
+      skillRaw: w.skill,
+      target,
+      targetRaw: skillVal,
+      label: difficulty === "regular"
+        ? skillVal
+        : `${skillVal} → ${difficulty === "hard" ? "Difícil" : "Extremo"} ${target}`,
       d100: result.value,
       level,
       dmg: ok ? dmgStr : "(miss)",
-      note: state.rollMods.bp ? `[${state.rollMods.bp}]` : ""
+      note: [
+        state.rollMods.bp ? `[${state.rollMods.bp}]` : "",
+        difficulty !== "regular" ? `[${difficulty}]` : ""
+      ].filter(Boolean).join(" ")
     });
-    persistCurrent();
   }
 
   // ─── BACKGROUND ───────────────────────────────────────────────────────
@@ -976,13 +1007,7 @@
 
   function rollSkill(name, opts = {}) {
     const c = state.character;
-    const skillVal = Number(c?.skills?.[name]?.value);
-    let v = skillVal;
-    if (isNaN(v) || v === undefined) {
-      const def = window.CoCData.findSkill(name) || window.CoCData.findSkill(name.replace(/\s*\(.+\)$/, ""));
-      const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, x]) => [k, x.value]));
-      v = def ? computeBaseValue(def, attrs) : 0;
-    }
+    const v = getSkillValue(c, name);
     const result = dice.rollD100(state.rollMods.bp || null);
     const level = dice.classifyRoll(result.value, v);
     const entry = {

@@ -177,19 +177,28 @@ window.CoC = window.CoC || {};
    */
   function rollDamage(weaponDamageString, db = "0", impale = false) {
     if (impale) {
-      // Dano máximo (regra de empalar): substitui rolagens por valor máximo
-      const result = rollNotation(weaponDamageString, db);
-      // Re-calcular total como se cada dado fosse o máximo
+      // CoC7E (Cap.6, p.104): dano máximo da arma + dano máximo do DB
+      // + uma rolagem extra da arma (sem DB).
+      const base = rollNotation(weaponDamageString, db);
+
+      // Dano máximo de cada bloco de dados, preservando sinal:
       let max = 0;
-      for (const r of result.rolls) {
-        max += (r.n * r.sides) * (r.result < 0 ? -1 : 1);
+      for (const r of base.rolls) {
+        max += r.n * r.sides * (r.result < 0 ? -1 : 1);
       }
-      // Adiciona termos numéricos (constantes)
+      // Constantes numéricas estáticas da string (+1, +2 etc).
       const constants = (weaponDamageString.match(/[+-]\d+(?!D)/gi) || [])
         .reduce((acc, t) => acc + parseInt(t, 10), 0);
-      result.total = max + constants;
-      result.impale = true;
-      return result;
+
+      // Rolagem extra: dano da arma SEM DB.
+      const extra = rollNotation(weaponDamageString, "0");
+
+      return {
+        total: max + constants + extra.total,
+        rolls: [...base.rolls, ...extra.rolls],
+        expression: base.expression + " + " + extra.expression + " (extra empala)",
+        impale: true
+      };
     }
     return rollNotation(weaponDamageString, db);
   }

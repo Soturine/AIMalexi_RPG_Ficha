@@ -645,24 +645,45 @@
     const c = state.active;
     const a = c?.attacks?.[idx];
     if (!a) return;
+
     const chance = Number(a.chance) || 0;
-    const r = dice.rollD100(null);
+    // Hooks defensivos: hoje o keeper não tem UI de difficulty/bp.
+    const difficulty = state.rollMods?.difficulty || "regular";
+    const bp         = state.rollMods?.bp || null;
+
+    const target =
+      difficulty === "hard"    ? dice.half(chance)  :
+      difficulty === "extreme" ? dice.fifth(chance) :
+                                 chance;
+
+    const r     = dice.rollD100(bp);
     const level = dice.classifyRoll(r.value, chance);
-    const hit = ["crit", "extreme", "hard", "regular"].includes(level);
+    const hit   = dice.meetsDifficulty(difficulty, level);
+
+    // Empala: prioriza flag explícita; fallback em "empala" no NOTE
+    // (não no nome — nome é interface, não dados).
+    const impalingByFlag = a.impale === true;
+    const impalingByNote = /empala|impal/i.test(a.note || "");
+    const isImpale = (level === "crit" || level === "extreme") && (impalingByFlag || impalingByNote);
+
     let dmgStr = "(miss)";
     if (hit) {
       const db = c.derived?.db || "0";
-      const impale = (level === "crit" || level === "extreme") && /espada|faca|adaga|empala|rifle|garra|mordida|tridente/i.test(a.name + " " + (a.note || ""));
-      const d = dice.rollDamage(a.damage || "0", db, impale);
+      const d  = dice.rollDamage(a.damage || "0", db, isImpale);
       const diceStr = d.rolls.map(x => `(${x.dice.join("+")})`).join("+");
-      dmgStr = `${a.damage} → ${d.total}${impale ? " ⚡EMPALA" : ""} ${diceStr}`;
+      dmgStr = `${a.damage} → ${d.total}${isImpale ? " ⚡EMPALA" : ""} ${diceStr}`;
     }
+
     logRoll({
+      kind: "npc-attack",
       skill: `⚔ ${c.name} · ${a.name}`,
-      target: chance,
+      skillRaw: a.name,
+      target,
+      targetRaw: chance,
       d100: r.value,
       level,
-      dmg: dmgStr
+      dmg: dmgStr,
+      note: difficulty !== "regular" ? `[${difficulty}]` : (bp ? `[${bp}]` : "")
     });
   }
 
