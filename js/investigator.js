@@ -125,6 +125,7 @@
     state.character = JSON.parse(JSON.stringify(character));
     if (!state.character.id) state.character.id = null;
     store.setActiveCharacter(state.character.id);
+    applyTheme(state.character);
     renderAll();
   }
 
@@ -136,6 +137,7 @@
     fresh._meta = fresh._meta || {};
     fresh._meta.createdAt = new Date().toISOString();
     state.character = fresh;
+    applyTheme(state.character);
     persistCurrent();
     renderAll();
     toast(`Preset "${presetName}" carregado e salvo como novo personagem.`, { type: "success" });
@@ -150,12 +152,406 @@
   }
 
   // ═════════════════════════════════════════════════════════════════════
+  // PERSONALIZAÇÃO (Fase 6) — Tema + Cor de Acento + Imagens
+  // ═════════════════════════════════════════════════════════════════════
+
+  const THEME_PRESETS = [
+    { id: "brass",  name: "Brass",          swatch: "#b8924f", desc: "Latão vitoriano — padrão" },
+    { id: "mist",   name: "Gaslight Mist",  swatch: "#5a7a8a", desc: "Névoa costeira" },
+    { id: "blood",  name: "Blood Rite",     swatch: "#8b1a1a", desc: "Sangue ocultista" },
+    { id: "sepia",  name: "Burgundy Sépia", swatch: "#6b2a2a", desc: "Vinho envelhecido" },
+    { id: "noir",   name: "Noir Moderno",   swatch: "#4a90a5", desc: "Aço azulado" }
+  ];
+
+  function hexToRgba(hex, alpha) {
+    const h = String(hex).replace("#", "");
+    if (h.length !== 6) return `rgba(184, 146, 79, ${alpha})`;
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  function lightenHex(hex, amount = 0.2) {
+    const h = String(hex).replace("#", "");
+    if (h.length !== 6) return hex;
+    const ch = (i) => {
+      const v = Math.min(255, parseInt(h.slice(i, i + 2), 16) + Math.round(255 * amount));
+      return v.toString(16).padStart(2, "0");
+    };
+    return `#${ch(0)}${ch(2)}${ch(4)}`;
+  }
+
+  function applyTheme(c) {
+    const preset = c?.theme?.preset || "brass";
+    const accent = c?.theme?.accent || null;
+    document.documentElement.dataset.theme = preset;
+
+    if (accent) {
+      const bright = lightenHex(accent, 0.18);
+      const glow   = hexToRgba(accent, 0.5);
+      document.documentElement.style.setProperty("--brass", accent);
+      document.documentElement.style.setProperty("--brass-bright", bright);
+      document.documentElement.style.setProperty("--brass-glow", glow);
+      document.documentElement.style.setProperty("--accent", accent);
+      document.documentElement.style.setProperty("--accent-glow", glow);
+    } else {
+      ["--brass", "--brass-bright", "--brass-glow", "--accent", "--accent-glow"]
+        .forEach(p => document.documentElement.style.removeProperty(p));
+    }
+  }
+
+  function setTheme(presetId, accentHex) {
+    if (!state.character) return;
+    state.character.theme = state.character.theme || {};
+    if (presetId !== undefined) state.character.theme.preset = presetId;
+    if (accentHex !== undefined) state.character.theme.accent = accentHex;
+    applyTheme(state.character);
+    renderEditorPanel();
+    persistCurrent();
+  }
+
+  /**
+   * Painel de personalização — só visível no Modo Editar.
+   * Injetado dinamicamente depois da toolbar; removido quando Modo Editar desliga.
+   */
+  function renderEditorPanel() {
+    const existing = $("#editor-panel");
+    if (existing) existing.remove();
+    if (!state.editMode || !state.character) return;
+
+    const c = state.character;
+    const currentPreset = c.theme?.preset || "brass";
+    const currentAccent = c.theme?.accent || "";
+
+    const panel = el("section", { id: "editor-panel", class: "editor-panel no-print" });
+
+    panel.appendChild(el("h3", { class: "editor-panel-title" }, ["🎨 Personalização (Modo Editar)"]));
+
+    // === Temas ===
+    const themesRow = el("div", { class: "editor-row" });
+    themesRow.appendChild(el("span", { class: "editor-label" }, ["Tema:"]));
+    const themesGrid = el("div", { class: "theme-presets" });
+    THEME_PRESETS.forEach(t => {
+      const card = el("button", {
+        class: "theme-card" + (currentPreset === t.id ? " active" : ""),
+        title: t.desc,
+        on: { click: () => setTheme(t.id, undefined) }
+      });
+      card.appendChild(el("span", { class: "theme-swatch", style: { background: t.swatch } }));
+      card.appendChild(el("span", { class: "theme-name" }, [t.name]));
+      themesGrid.appendChild(card);
+    });
+    themesRow.appendChild(themesGrid);
+    panel.appendChild(themesRow);
+
+    // === Cor de Acento custom ===
+    const accentRow = el("div", { class: "editor-row" });
+    accentRow.appendChild(el("span", { class: "editor-label" }, ["Acento custom:"]));
+    const colorInput = el("input", {
+      type: "color",
+      class: "accent-color-input",
+      value: currentAccent || THEME_PRESETS.find(t => t.id === currentPreset)?.swatch || "#b8924f",
+      on: { input: (e) => setTheme(undefined, e.target.value) }
+    });
+    accentRow.appendChild(colorInput);
+    const resetBtn = el("button", {
+      class: "btn-ghost",
+      title: "Usar a cor padrão do tema",
+      on: { click: () => setTheme(undefined, null) }
+    }, ["↺ Resetar"]);
+    accentRow.appendChild(resetBtn);
+    panel.appendChild(accentRow);
+
+    // === Imagens (Fase 6.2) ===
+    const mediaRow = el("div", { class: "editor-row" });
+    mediaRow.appendChild(el("span", { class: "editor-label" }, ["Imagens:"]));
+    mediaRow.appendChild(el("button", {
+      class: "btn",
+      on: { click: () => openImagePicker("banner") }
+    }, ["🖼️ Banner"]));
+    mediaRow.appendChild(el("button", {
+      class: "btn",
+      on: { click: () => openImagePicker("portrait") }
+    }, ["👤 Retrato"]));
+    panel.appendChild(mediaRow);
+
+    // Injetar logo depois da toolbar
+    const toolbar = $(".toolbar");
+    if (toolbar && toolbar.parentNode) {
+      toolbar.parentNode.insertBefore(panel, toolbar.nextSibling);
+    }
+  }
+
+  // ─── Image picker (Fase 6.2) ─────────────────────────────────────────
+
+  /**
+   * Abre o modal de escolha de imagem para um slot (banner | portrait).
+   * 3 fontes: upload de arquivo (vira Blob no IDB), URL externa, biblioteca de templates.
+   */
+  function openImagePicker(slot) {
+    if (!state.character) return;
+    if (slot !== "banner" && slot !== "portrait") return;
+
+    const c = state.character;
+    c.media = c.media || { banner: null, portrait: null };
+    const current = c.media[slot];
+
+    const root = el("div", { class: "img-picker" });
+
+    // === Tabs ===
+    const tabs = el("div", { class: "img-picker-tabs" });
+    const tabContent = el("div", { class: "img-picker-content" });
+
+    let activeTab = "upload";
+    const setTab = (id) => {
+      activeTab = id;
+      tabs.querySelectorAll(".img-tab").forEach(t => {
+        t.classList.toggle("active", t.dataset.tab === id);
+      });
+      tabContent.innerHTML = "";
+      tabContent.appendChild(renderTab(id));
+    };
+
+    [
+      { id: "upload",   label: "📁 Upload",     desc: "Subir arquivo do dispositivo" },
+      { id: "url",      label: "🔗 URL",        desc: "Link externo (aviso offline)" },
+      { id: "template", label: "🖼️ Biblioteca", desc: "Templates pré-prontos" },
+      { id: "remove",   label: "🗑️ Remover",   desc: "Apagar imagem atual" }
+    ].forEach(t => {
+      const btn = el("button", {
+        class: "img-tab" + (activeTab === t.id ? " active" : ""),
+        title: t.desc,
+        on: { click: () => setTab(t.id) }
+      });
+      btn.dataset.tab = t.id;
+      btn.textContent = t.label;
+      tabs.appendChild(btn);
+    });
+
+    function renderTab(id) {
+      if (id === "upload") return renderUploadTab();
+      if (id === "url")    return renderUrlTab();
+      if (id === "template") return renderTemplateTab();
+      if (id === "remove") return renderRemoveTab();
+      return el("div");
+    }
+
+    function renderUploadTab() {
+      const wrap = el("div");
+      wrap.appendChild(el("p", { class: "img-picker-hint" },
+        ["Aceita JPG, PNG, WebP. Máximo 5 MB. Salvo localmente no IndexedDB (funciona offline)."]));
+      const input = el("input", {
+        type: "file",
+        accept: "image/jpeg,image/png,image/webp",
+        on: { change: (e) => handleFile(e.target.files?.[0]) }
+      });
+      wrap.appendChild(input);
+      return wrap;
+    }
+
+    function renderUrlTab() {
+      const wrap = el("div");
+      wrap.appendChild(el("p", { class: "img-picker-hint" }, [
+        navigator.onLine
+          ? "Cola uma URL pública. Recomendado: usar “Baixar e cachear” para funcionar offline depois."
+          : "⚠ Você está OFFLINE. URLs externas NÃO carregam agora. Use Upload ou Biblioteca."
+      ]));
+      const urlInput = el("input", {
+        type: "url",
+        placeholder: "https://exemplo.com/imagem.jpg",
+        style: { width: "100%", marginBottom: "0.5rem" }
+      });
+      wrap.appendChild(urlInput);
+
+      const row = el("div", { style: { display: "flex", gap: "0.5rem" } });
+      row.appendChild(el("button", {
+        class: "btn",
+        on: { click: () => {
+          const url = urlInput.value.trim();
+          if (!url) return;
+          if (!/^https?:\/\//i.test(url)) return toast("URL inválida", { type: "error" });
+          c.media[slot] = { kind: "url", url };
+          persistCurrent();
+          renderMedia();
+          closePicker();
+          toast("URL definida. Funcionará enquanto o link existir e você estiver online.", { type: "info" });
+        }}
+      }, ["Usar URL direta"]));
+      row.appendChild(el("button", {
+        class: "btn",
+        disabled: !navigator.onLine,
+        title: navigator.onLine ? "Baixa a imagem e salva localmente como Blob" : "Indisponível offline",
+        on: { click: () => {
+          const url = urlInput.value.trim();
+          if (!url || !/^https?:\/\//i.test(url)) return toast("URL inválida", { type: "error" });
+          fetchUrlAsBlob(url).then(({ blob, mime }) => {
+            if (blob.size > 5 * 1024 * 1024) return toast("Imagem maior que 5 MB", { type: "error" });
+            c.media[slot] = { kind: "blob", blob, mime };
+            persistCurrent();
+            renderMedia();
+            closePicker();
+            toast("✓ Imagem baixada e cacheada localmente", { type: "success" });
+          }).catch(err => toast("Falha ao baixar: " + err.message, { type: "error" }));
+        }}
+      }, ["⬇ Baixar e cachear"]));
+      wrap.appendChild(row);
+      return wrap;
+    }
+
+    function renderTemplateTab() {
+      const wrap = el("div");
+      const templates = window.CoCData?.imageTemplates?.[slot === "banner" ? "banners" : "portraits"] || [];
+      if (templates.length === 0) {
+        wrap.appendChild(el("p", { class: "img-picker-hint" }, ["Nenhum template disponível para este slot."]));
+        return wrap;
+      }
+      wrap.appendChild(el("p", { class: "img-picker-hint" },
+        [`${templates.length} templates curados. SVGs ornamentais e fotos de domínio público.`]));
+      const grid = el("div", { class: "template-grid" });
+      templates.forEach(t => {
+        const card = el("button", {
+          class: "template-card",
+          title: t.name + (t.credit ? ` · ${t.credit}` : ""),
+          on: { click: () => {
+            c.media[slot] = { kind: "template", id: t.id };
+            persistCurrent();
+            renderMedia();
+            closePicker();
+            toast(`Template "${t.name}" aplicado`, { type: "success" });
+          }}
+        });
+        const thumb = el("div", { class: "template-thumb" });
+        if (t.svg) {
+          thumb.innerHTML = t.svg;
+        } else if (t.path) {
+          thumb.style.backgroundImage = `url('${t.path}')`;
+        }
+        card.appendChild(thumb);
+        card.appendChild(el("span", { class: "template-name" }, [t.name]));
+        grid.appendChild(card);
+      });
+      wrap.appendChild(grid);
+      return wrap;
+    }
+
+    function renderRemoveTab() {
+      const wrap = el("div");
+      wrap.appendChild(el("p", { class: "img-picker-hint" },
+        [current ? "Remove a imagem atual e volta para o placeholder padrão." : "Nenhuma imagem definida ainda."]));
+      const btn = el("button", {
+        class: "btn-danger",
+        disabled: !current,
+        on: { click: () => {
+          c.media[slot] = null;
+          persistCurrent();
+          renderMedia();
+          closePicker();
+          toast("Imagem removida", { type: "info" });
+        }}
+      }, ["🗑️ Confirmar remoção"]);
+      wrap.appendChild(btn);
+      return wrap;
+    }
+
+    function handleFile(file) {
+      if (!file) return;
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+        return toast("Formato inválido. Use JPG, PNG ou WebP.", { type: "error" });
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        return toast("Imagem maior que 5 MB", { type: "error" });
+      }
+      // file IS a Blob (File estende Blob)
+      c.media[slot] = { kind: "blob", blob: file, mime: file.type };
+      persistCurrent();
+      renderMedia();
+      closePicker();
+      toast("✓ Imagem salva localmente", { type: "success" });
+    }
+
+    let closePicker = () => {};
+
+    root.appendChild(tabs);
+    root.appendChild(tabContent);
+    setTab("upload");
+
+    const m = modal({
+      title: slot === "banner" ? "Banner do Investigador" : "Retrato do Investigador",
+      body: root,
+      width: "640px"
+    });
+    closePicker = () => m.close();
+  }
+
+  function fetchUrlAsBlob(url) {
+    return fetch(url, { mode: "cors" })
+      .then(resp => {
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        return resp.blob().then(blob => ({ blob, mime: blob.type || "image/jpeg" }));
+      });
+  }
+
+  /**
+   * Renderiza banner e retrato no DOM com a fonte resolvida.
+   * Suporta blob (IndexedDB), URL externa, template.
+   */
+  const _objectURLs = new Set();
+  function renderMedia() {
+    if (!state.character) return;
+    const c = state.character;
+    const media = c.media || {};
+
+    // Limpar object URLs antigos para evitar memory leak
+    _objectURLs.forEach(u => URL.revokeObjectURL(u));
+    _objectURLs.clear();
+
+    const bannerEl = $("#character-banner");
+    if (bannerEl) {
+      const src = resolveMediaSrc(media.banner, "banner");
+      bannerEl.style.backgroundImage = src ? `url('${src}')` : "";
+      bannerEl.classList.toggle("has-image", !!src);
+    }
+
+    const portraitEl = $("#character-portrait");
+    if (portraitEl) {
+      const src = resolveMediaSrc(media.portrait, "portrait");
+      portraitEl.style.backgroundImage = src ? `url('${src}')` : "";
+      portraitEl.classList.toggle("has-image", !!src);
+    }
+  }
+
+  function resolveMediaSrc(media, slot) {
+    if (!media) return null;
+    if (media.kind === "blob" && media.blob) {
+      const url = URL.createObjectURL(media.blob);
+      _objectURLs.add(url);
+      return url;
+    }
+    if (media.kind === "url" && media.url) {
+      return media.url;
+    }
+    if (media.kind === "template" && media.id) {
+      const list = window.CoCData?.imageTemplates?.[slot === "banner" ? "banners" : "portraits"] || [];
+      const tpl = list.find(t => t.id === media.id);
+      if (!tpl) return null;
+      if (tpl.svg) {
+        // SVG inline: converte para data URI
+        return "data:image/svg+xml;utf8," + encodeURIComponent(tpl.svg);
+      }
+      return tpl.path || null;
+    }
+    return null;
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
   // RENDER GERAL
   // ═════════════════════════════════════════════════════════════════════
 
   function renderAll() {
     if (!state.character) return clearUI();
     renderIdentity();
+    renderMedia();              // banner + retrato (Fase 6)
     renderAttributes();
     recalcDerived();   // recalcular antes de renderizar
     renderDerived();
@@ -1210,7 +1606,8 @@
       $("#btn-edit-mode").style.color = state.editMode ? "var(--bg-deep)" : "";
       renderAttributes();
       renderSkills();
-      toast(state.editMode ? "Modo Editar ATIVO — atributos editáveis, caps até 90%" : "Modo Editar desligado", { type: "info" });
+      renderEditorPanel();
+      toast(state.editMode ? "Modo Editar ATIVO — atributos editáveis, caps até 90%, personalização disponível" : "Modo Editar desligado", { type: "info" });
     };
 
     $("#btn-print").onclick = () => window.print();

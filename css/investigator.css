@@ -585,3 +585,302 @@
 .center { text-align: center; }
 .flex { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .spacer { flex: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PERSONALIZAÇÃO (Fase 6) — Banner, Retrato, Painel de Edição, Image Picker
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Banner: full-width responsivo ──────────────────────────────────── */
+.character-banner {
+  aspect-ratio: 21 / 9;
+  width: 100%;
+  background-color: var(--bg-card);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 1px solid var(--brass);
+  border-radius: var(--radius);
+  margin-bottom: var(--gap-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.character-banner::after {
+  content: "Banner — clique em ✎ Modo Editar → 🖼️ Banner para personalizar";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ink-faded);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 1rem;
+  pointer-events: none;
+  opacity: 0.7;
+}
+.character-banner.has-image::after { display: none; }
+
+@media (max-width: 768px) {
+  .character-banner { aspect-ratio: 16 / 9; }
+}
+@media (max-width: 480px) {
+  .character-banner { aspect-ratio: 3 / 1; }
+  .character-banner::after { font-size: 0.65rem; }
+}
+
+/* ─── Identidade: agora wrapper grid (retrato + form) ────────────────── */
+.identity-wrapper {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: var(--gap-lg);
+  align-items: start;
+}
+
+.character-portrait {
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  background-color: var(--bg-card-hi);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 1px solid var(--brass);
+  border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.character-portrait::after {
+  content: "👤";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ink-faded);
+  font-size: 3rem;
+  opacity: 0.4;
+  pointer-events: none;
+}
+.character-portrait.has-image::after { display: none; }
+
+@media (max-width: 640px) {
+  .identity-wrapper {
+    grid-template-columns: 1fr;
+  }
+  .character-portrait {
+    aspect-ratio: 1 / 1;
+    max-width: 200px;
+    margin: 0 auto;
+  }
+}
+
+/* ─── Painel de Edição (visível só no Modo Editar) ──────────────────── */
+.editor-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: var(--gap);
+  box-shadow: 0 0 16px var(--brass-glow);
+  animation: editor-slide-in 0.2s ease;
+}
+
+@keyframes editor-slide-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.editor-panel-title {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  color: var(--brass-bright);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.08em;
+}
+
+.editor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.editor-row:last-child { margin-bottom: 0; }
+
+.editor-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  min-width: 110px;
+}
+
+/* ─── Theme presets ──────────────────────────────────────────────────── */
+.theme-presets {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.theme-card {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem 0.3rem 0.4rem;
+  background: var(--bg-card-hi);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--ink);
+  text-transform: none;
+  transition: all 0.2s;
+}
+
+.theme-card:hover {
+  border-color: var(--brass);
+  background: var(--bg-card);
+}
+
+.theme-card.active {
+  border-color: var(--brass-bright);
+  background: var(--bg-card);
+  box-shadow: 0 0 8px var(--brass-glow);
+}
+
+.theme-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.5);
+  flex-shrink: 0;
+}
+
+.theme-name {
+  white-space: nowrap;
+}
+
+.accent-color-input {
+  width: 40px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius);
+  background: var(--bg-card-hi);
+  cursor: pointer;
+}
+
+/* ─── Image picker modal ─────────────────────────────────────────────── */
+.img-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.img-picker-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--ink-faded);
+  flex-wrap: wrap;
+}
+
+.img-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.5rem 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  cursor: pointer;
+  text-transform: none;
+}
+
+.img-tab:hover {
+  color: var(--ink);
+}
+
+.img-tab.active {
+  color: var(--brass-bright);
+  border-bottom-color: var(--brass);
+}
+
+.img-picker-content {
+  min-height: 200px;
+  padding: 0.5rem 0;
+}
+
+.img-picker-hint {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  margin-bottom: 0.75rem;
+  font-style: italic;
+}
+
+/* ─── Template grid ──────────────────────────────────────────────────── */
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.template-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.35rem;
+  background: var(--bg-card-hi);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: none;
+  font-size: 0.75rem;
+}
+
+.template-card:hover {
+  border-color: var(--brass);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--brass-glow);
+}
+
+.template-thumb {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  background-color: var(--bg-mid);
+  background-size: cover;
+  background-position: center;
+  border-radius: 2px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.template-thumb svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.template-name {
+  font-family: var(--font-body);
+  color: var(--ink);
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+/* Print: esconde controles de edição mas mantém banner/retrato */
+@media print {
+  .editor-panel { display: none !important; }
+  .character-banner, .character-portrait {
+    border-color: #000 !important;
+    box-shadow: none !important;
+  }
+}

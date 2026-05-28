@@ -683,3 +683,58 @@ body.san-critical::after {
   body.san-low, body.san-critical { filter: none !important; }
   body.san-critical .app { animation: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TEMAS — variações curadas dentro da identidade gótica.
+   Aplicar via [data-theme="..."] no <html>. JS pode ainda sobrescrever
+   --brass inline para a cor de acento custom escolhida pelo jogador.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Brass (padrão) — explicitamente vazio, serve como reset. */
+[data-theme="brass"] { /* defaults do :root já valem */ }
+
+/* Gaslight Mist — Innsmouth, mar, neblina costeira. */
+[data-theme="mist"] {
+  --brass:        #5a7a8a;
+  --brass-bright: #8aa8b8;
+  --brass-glow:   rgba(90, 122, 138, 0.5);
+  --accent:       var(--brass);
+  --accent-glow:  var(--brass-glow);
+}
+
+/* Blood Rite — sacrifícios, sangue ocultista. */
+[data-theme="blood"] {
+  --brass:        #8b1a1a;
+  --brass-bright: #c83232;
+  --brass-glow:   rgba(139, 26, 26, 0.55);
+  --accent:       var(--brass);
+  --accent-glow:  var(--brass-glow);
+}
+
+/* Burgundy Sépia — aristocracia decadente, vinho envelhecido. */
+[data-theme="sepia"] {
+  --bg-deep:      #1a1208;
+  --bg-mid:       #221810;
+  --bg-card:      #2a1f15;
+  --bg-card-hi:   #34281c;
+  --brass:        #6b2a2a;
+  --brass-bright: #a05050;
+  --brass-glow:   rgba(160, 80, 80, 0.5);
+  --accent:       var(--brass);
+  --accent-glow:  var(--brass-glow);
+}
+
+/* Noir Moderno — investigação criminal contemporânea, aço azulado. */
+[data-theme="noir"] {
+  --bg-deep:      #0a0a0e;
+  --bg-mid:       #121218;
+  --bg-card:      #1a1a22;
+  --bg-card-hi:   #22222c;
+  --brass:        #4a90a5;
+  --brass-bright: #6ab0c5;
+  --brass-glow:   rgba(74, 144, 165, 0.5);
+  --ink:          #d8e0e8;
+  --ink-dim:      #8898a8;
+  --accent:       var(--brass);
+  --accent-glow:  var(--brass-glow);
+}

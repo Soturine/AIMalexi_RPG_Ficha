@@ -56,12 +56,17 @@
     <!-- ─── COLUNA PRINCIPAL ─── -->
     <div class="content-col">
 
+      <!-- BANNER + RETRATO (Fase 6 — personalização visual) -->
+      <div id="character-banner" class="character-banner" title="Banner do investigador"></div>
+
       <!-- IDENTIDADE -->
       <section class="section identity-section" data-tab="personagem">
         <h2 class="section-title">
           Identidade
           <span class="meta">Quem é o investigador?</span>
         </h2>
+        <div class="identity-wrapper">
+        <div id="character-portrait" class="character-portrait" title="Retrato do investigador"></div>
         <div class="identity-grid">
           <div>
             <label for="id-name">Nome</label>
@@ -98,6 +103,7 @@
             <input type="text" id="id-tagline" data-bind="investigator.tagline" placeholder="Ex: Médico cético perseguindo o impossível" />
           </div>
         </div>
+        </div><!-- /identity-wrapper -->
         <p class="identity-tagline" id="identity-display">—</p>
       </section>
 
@@ -275,6 +281,7 @@
 <script src="data/damage-bonus-table.js"></script>
 <script src="data/weapons-templates.js"></script>
 <script src="data/name-pools.js"></script>
+<script src="data/image-templates.js"></script>
 <script src="data/presets/empty.js"></script>
 <script src="data/presets/klein-moretti.js"></script>
 
