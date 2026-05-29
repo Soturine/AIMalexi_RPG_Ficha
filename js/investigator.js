@@ -202,6 +202,7 @@
     renderDerived();
     renderSkills();
     renderWeapons();
+    renderFinances();
     renderBackground();
     applySanityAtmosphere();   // ajusta filtro CSS de SAN baixa ao carregar
   }
@@ -211,6 +212,8 @@
     $("#derived-bar").innerHTML = "";
     $("#skills-groups").innerHTML = "";
     $("#weapons-list").innerHTML = "";
+    const finCard = $("#finances-card");
+    if (finCard) finCard.innerHTML = "";
     if (window.CoC.mediaPicker) {
       window.CoC.mediaPicker.render($("#character-banner"), null);
       window.CoC.mediaPicker.render($("#character-portrait"), null);
@@ -234,6 +237,7 @@
     $("#id-occupation").onchange = () => {
       c.investigator.occupation = $("#id-occupation").value;
       renderSkills();
+      renderFinances();   // atualiza a faixa de Posses exibida
       persistCurrent();
     };
 
@@ -1090,6 +1094,118 @@
         difficulty !== "regular" ? `[${difficulty}]` : ""
       ].filter(Boolean).join(" ")
     });
+  }
+
+  // ─── FINANÇAS ─────────────────────────────────────────────────────────
+  // Carteira do investigador: Crédito (Posses) → Caixa/Gasto/Patrimônio (regra
+  // CoC 7E em rules.calcFinances). "cash" é o dinheiro à mão, ajustável em jogo
+  // pelos botões ±100/±10/±1. Tudo vive em c.finances (viaja no JSON/backup).
+
+  function ensureFinances(c) {
+    if (!c.finances || typeof c.finances !== "object") c.finances = { creditRating: 0, cash: 0 };
+    c.finances.creditRating = Number(c.finances.creditRating) || 0;
+    c.finances.cash = Number(c.finances.cash) || 0;
+    return c.finances;
+  }
+
+  // Formata em pt-BR com prefixo "$" (milhar com ".", decimal só se fracionário).
+  function formatMoney(n) {
+    const v = Number(n) || 0;
+    const str = Number.isInteger(v)
+      ? v.toLocaleString("pt-BR")
+      : v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+    return "$" + str;
+  }
+
+  function renderFinances() {
+    const host = $("#finances-card");
+    if (!host) return;
+    const c = state.character;
+    if (!c) { host.innerHTML = ""; return; }
+    const fin = ensureFinances(c);
+
+    const occName = c.investigator?.occupation;
+    const occ = occName ? window.CoCData.findOccupation(occName) : null;
+    const range = occ && Array.isArray(occ.credit) ? occ.credit : null;
+    const derived = window.CoC.rules.calcFinances(fin.creditRating);
+
+    host.innerHTML = `
+      <div class="fin-credit-row">
+        <label class="fin-credit">Crédito (Posses)
+          <input type="number" id="fin-cr" min="0" max="99" step="1" inputmode="numeric" value="${fin.creditRating}" />
+          <span class="dim">/ 99</span>
+        </label>
+        ${range
+          ? `<span class="fin-hint">Faixa da ocupação: <b>${range[0]}–${range[1]}%</b></span>`
+          : `<span class="fin-hint dim">Defina a ocupação para ver a faixa de Posses</span>`}
+      </div>
+
+      <div class="fin-derived">
+        Nível: <b id="fin-tier">${derived.tierLabel}</b>
+        · Gasto/dia: <b id="fin-spend">${formatMoney(derived.spending)}</b>
+        · Patrimônio: <b id="fin-assets">${formatMoney(derived.assets)}</b>
+      </div>
+
+      <div class="fin-wallet">
+        <span class="fin-wallet-label">Dinheiro à mão</span>
+        <span class="fin-wallet-value" id="fin-cash">${formatMoney(fin.cash)}</span>
+        <button id="fin-seed" class="btn-ghost no-print" title="Definir o dinheiro à mão com a Caixa inicial do Crédito">↻ inicial</button>
+      </div>
+
+      <div class="fin-buttons no-print">
+        <div class="fin-btn-row">
+          <button type="button" data-cash="100" class="btn-cash gain">+100</button>
+          <button type="button" data-cash="10"  class="btn-cash gain">+10</button>
+          <button type="button" data-cash="1"   class="btn-cash gain">+1</button>
+        </div>
+        <div class="fin-btn-row">
+          <button type="button" data-cash="-100" class="btn-cash spend">−100</button>
+          <button type="button" data-cash="-10"  class="btn-cash spend">−10</button>
+          <button type="button" data-cash="-1"   class="btn-cash spend">−1</button>
+        </div>
+      </div>
+    `;
+
+    // Crédito: aplica no change (não no input) → não perde foco nem re-renderiza tudo.
+    const crInput = $("#fin-cr", host);
+    crInput.onchange = () => {
+      let v = Math.round(Number(crInput.value));
+      if (!isFinite(v) || v < 0) v = 0;
+      if (v > 99) v = 99;
+      crInput.value = v;
+      fin.creditRating = v;
+      const d = window.CoC.rules.calcFinances(v);
+      $("#fin-tier", host).textContent = d.tierLabel;
+      $("#fin-spend", host).textContent = formatMoney(d.spending);
+      $("#fin-assets", host).textContent = formatMoney(d.assets);
+      persistCurrent();
+    };
+
+    // Semeia a carteira com a Caixa inicial derivada do Crédito.
+    $("#fin-seed", host).onclick = () => {
+      const d = window.CoC.rules.calcFinances(fin.creditRating);
+      fin.cash = d.cash;
+      $("#fin-cash", host).textContent = formatMoney(fin.cash);
+      persistCurrent();
+      toast(`Dinheiro à mão definido em ${formatMoney(fin.cash)} (Caixa inicial do Crédito ${fin.creditRating}).`, { type: "success", duration: 2600 });
+    };
+
+    // ±100/±10/±1: muta cash e atualiza só o display (rápido, sem perder foco).
+    $$("[data-cash]", host).forEach(b => {
+      b.onclick = () => adjustCash(parseInt(b.dataset.cash, 10));
+    });
+  }
+
+  function adjustCash(delta) {
+    const c = state.character;
+    if (!c) return;
+    const fin = ensureFinances(c);
+    let next = fin.cash + delta;
+    if (next < 0) next = 0;   // dinheiro à mão não negativa
+    fin.cash = next;
+    const span = $("#fin-cash");
+    if (span) span.textContent = formatMoney(fin.cash);
+    persistCurrent();
   }
 
   // ─── BACKGROUND ───────────────────────────────────────────────────────

@@ -57,6 +57,13 @@ window.CoCData.presets.empty = {
     personalSpent: 0
   },
 
+  // Finanças (CoC 7E): Crédito define Caixa/Gasto/Patrimônio (ver coc7e-rules.calcFinances).
+  // "cash" é a carteira corrente, ajustável em jogo; parte do JSON → viaja no backup.
+  finances: {
+    creditRating: 0,   // 0–99, escolhido dentro da faixa de Posses da ocupação
+    cash: 0            // dinheiro atual à mão
+  },
+
   weapons: [],
 
   equipment: [],

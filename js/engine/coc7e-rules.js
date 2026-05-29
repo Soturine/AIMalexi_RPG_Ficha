@@ -386,6 +386,37 @@ window.CoC = window.CoC || {};
   }
 
   // ─── Expor no namespace global ─────────────────────────────────────────
+  /**
+   * Dinheiro e Patrimônio (CoC 7E) derivados do Crédito (Credit Rating 0–99).
+   *
+   * Tabela do livro básico ("Dinheiro e Patrimônio"):
+   *   Crédito 0      → Indigente  · Gasto 0,5 · Caixa 0,5      · Patrimônio —
+   *   Crédito 1–9    → Pobre      · Gasto 2   · Caixa CR×1     · Patrimônio CR×10
+   *   Crédito 10–49  → Médio      · Gasto 10  · Caixa CR×2     · Patrimônio CR×50
+   *   Crédito 50–89  → Rico       · Gasto 50  · Caixa CR×5     · Patrimônio CR×500
+   *   Crédito 90–98  → Muito Rico · Gasto 250 · Caixa CR×20    · Patrimônio CR×2.000
+   *   Crédito 99     → Ultra-Rico · Gasto 5000· Caixa 50.000   · Patrimônio 5.000.000
+   *
+   * "Caixa" (cash) é o dinheiro inicial à mão — ponto de partida da carteira.
+   * @param {number} creditRating - valor do Crédito (0–99)
+   * @returns {{creditRating, tier, tierLabel, spending, cash, assets}}
+   */
+  function calcFinances(creditRating) {
+    let cr = Math.round(Number(creditRating));
+    if (!isFinite(cr) || cr < 0) cr = 0;
+    if (cr > 99) cr = 99;
+
+    let tier, tierLabel, spending, cash, assets;
+    if (cr === 0)      { tier = "penniless"; tierLabel = "Indigente";  spending = 0.5;  cash = 0.5;   assets = 0; }
+    else if (cr <= 9)  { tier = "poor";      tierLabel = "Pobre";      spending = 2;    cash = cr * 1;  assets = cr * 10; }
+    else if (cr <= 49) { tier = "average";   tierLabel = "Médio";      spending = 10;   cash = cr * 2;  assets = cr * 50; }
+    else if (cr <= 89) { tier = "wealthy";   tierLabel = "Rico";       spending = 50;   cash = cr * 5;  assets = cr * 500; }
+    else if (cr <= 98) { tier = "rich";      tierLabel = "Muito Rico"; spending = 250;  cash = cr * 20; assets = cr * 2000; }
+    else               { tier = "superrich"; tierLabel = "Ultra-Rico"; spending = 5000; cash = 50000;  assets = 5000000; }
+
+    return { creditRating: cr, tier, tierLabel, spending, cash, assets };
+  }
+
   window.CoC.rules = {
     calcHP,
     calcMP,
@@ -395,6 +426,7 @@ window.CoC = window.CoC || {};
     calcDB,
     calcDodgeBase,
     calcOwnLanguageBase,
+    calcFinances,
     calcOccupationPoints,
     calcPersonalInterestPoints,
     buildOccupationContext,

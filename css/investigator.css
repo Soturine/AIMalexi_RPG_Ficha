@@ -682,3 +682,102 @@
 .center { text-align: center; }
 .flex { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .spacer { flex: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FINANÇAS (Crédito · carteira · patrimônio)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.finances-card {
+  background: var(--bg-card);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.fin-credit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.fin-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+}
+.fin-credit input {
+  width: 4.2rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  padding: 0.25rem 0.35rem;
+}
+.fin-hint { font-size: 0.8rem; color: var(--ink-dim); }
+.fin-hint b { color: var(--brass-bright); }
+
+.fin-derived {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  border-top: 1px dotted var(--ink-faded);
+  border-bottom: 1px dotted var(--ink-faded);
+  padding: 0.45rem 0;
+}
+.fin-derived b { color: var(--ink); font-weight: 600; }
+
+.fin-wallet {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.fin-wallet-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faded);
+}
+.fin-wallet-value {
+  font-family: var(--font-mono);
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--brass-bright);
+  text-shadow: 0 0 14px var(--brass-glow);
+}
+#fin-seed { margin-left: auto; font-size: 0.78rem; }
+
+.fin-buttons {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.fin-btn-row { display: flex; gap: 0.4rem; flex: 1; }
+.btn-cash {
+  flex: 1;
+  min-width: 3.2rem;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.55rem 0.4rem;
+  cursor: pointer;
+}
+.btn-cash.gain {
+  color: var(--ok);
+  border-color: var(--ok);
+  background: rgba(90, 138, 90, 0.10);
+}
+.btn-cash.gain:hover { background: var(--ok); color: var(--bg-deep); }
+.btn-cash.spend {
+  color: #c46a5e;
+  border-color: var(--blood);
+  background: rgba(139, 26, 26, 0.12);
+}
+.btn-cash.spend:hover { background: var(--blood); color: var(--ink); }
+
+@media (max-width: 600px) {
+  .fin-buttons { flex-direction: column; }
+}
