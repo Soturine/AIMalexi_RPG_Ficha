@@ -22,6 +22,11 @@ window.CoC = window.CoC || {};
   // ─── Constantes ──────────────────────────────────────────────────────
   const KEY_PREFIX = "aimalexi-rpg/";
 
+  // Versão do schema de dados persistidos. Incremente quando a estrutura mudar.
+  // A função runMigrations() deve adicionar um bloco para cada salto de versão.
+  //   v1 → v2: campo investigator.occupationSkills (perícias livres designadas da ocupação)
+  const SAVE_SCHEMA_VERSION = 2;
+
   // IndexedDB
   const DB_NAME = "aimalexi-rpg";
   const DB_VERSION = 1;
@@ -32,6 +37,8 @@ window.CoC = window.CoC || {};
   const KEY_KEEPER_LIBRARY    = KEY_PREFIX + "keeper/library";
   const KEY_ACTIVE_INV        = KEY_PREFIX + "investigators/active";
   const KEY_LAST_EXPORT       = KEY_PREFIX + "lastExportAt";
+  const KEY_PREFS             = KEY_PREFIX + "prefs";                // preferências de UI (efeitos, etc.)
+  const KEY_GHOST             = KEY_PREFIX + "backup/lastStable";    // backup-fantasma do último personagem salvo
 
   function characterKey(id) { return KEY_PREFIX + "investigators/" + id; }
   function creatureKey(id)  { return KEY_PREFIX + "keeper/creatures/" + id; }
@@ -43,7 +50,10 @@ window.CoC = window.CoC || {};
     characterList: [],   // [{id, name, occupation, updatedAt}]
     creatureList: [],    // [{id, name, type, hp, updatedAt}]
     activeCharacterId: null,
-    lastExportAt: 0
+    lastExportAt: 0,
+    prefs: {},           // preferências de UI (chave → valor)
+    ghost: null,         // { id, char, savedAt } — último personagem salvo (backup-fantasma)
+    corrupted: []        // [{ key, raw }] — entradas que falharam ao carregar (quarentena)
   };
 
   let backend = "memory";   // determinado em init()
@@ -53,6 +63,19 @@ window.CoC = window.CoC || {};
   const pendingWrites = new Map();
   let flushTimer = null;
   const FLUSH_DELAY_MS = 150;
+
+  // ─── Barramento de erros de persistência ─────────────────────────────
+  // A engine não toca no DOM (Constituição). Em vez de mostrar toasts, ela
+  // notifica handlers registrados pela camada de UI (ex.: quota excedida).
+  const errorHandlers = [];
+  let lastErrorAt = 0;
+  function onError(cb) { if (typeof cb === "function") errorHandlers.push(cb); }
+  function emitError(info) {
+    lastErrorAt = Date.now();
+    for (const cb of errorHandlers) {
+      try { cb(info); } catch (e) { /* handler nunca pode derrubar a persistência */ }
+    }
+  }
 
   // ─── Detecção de disponibilidade ─────────────────────────────────────
   function isLocalStorageAvailable() {
@@ -203,23 +226,39 @@ window.CoC = window.CoC || {};
           } else {
             const ok = lsSet(key, value);
             if (!ok) {
-              // localStorage cheio — alerta no console; usuário ainda tem o JSON export
+              // localStorage cheio — alerta no console E notifica a UI (usuário ainda tem o JSON export)
               console.error("⚠ localStorage quota excedida! Use Exportar JSON urgentemente.");
+              emitError({ type: "quota", key, backend });
             }
           }
         }
       } catch (e) {
         console.error("Persist failed for", key, e);
+        emitError({ type: "write", key, backend, error: e });
       }
     }
   }
 
-  // Em desligamento da página, força flush síncrono quando possível
+  /**
+   * Força a gravação imediata das pendências (best-effort).
+   * Em localStorage é síncrono e confiável; em IndexedDB dispara as transações
+   * mas não há garantia de conclusão se a página for descarregada no mesmo tick.
+   */
+  function forceFlush() {
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+    return flushPending();
+  }
+
+  // Em desligamento da página, força flush das pendências.
+  // pagehide + visibilitychange(hidden) são MUITO mais confiáveis que beforeunload
+  // em mobile (iOS suspende a aba sem disparar beforeunload), evitando perder as
+  // gravações ainda na janela de debounce (FLUSH_DELAY_MS).
   if (typeof window !== "undefined") {
-    window.addEventListener("beforeunload", () => {
-      // localStorage é síncrono; IDB não consegue garantir, mas tentamos
-      if (flushTimer) clearTimeout(flushTimer);
-      if (backend === "localstorage") flushPending();
+    const flushOnExit = () => { forceFlush(); };
+    window.addEventListener("beforeunload", flushOnExit);
+    window.addEventListener("pagehide", flushOnExit);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") forceFlush();
     });
   }
 
@@ -228,6 +267,7 @@ window.CoC = window.CoC || {};
     const keys = await idbKeys();
     for (const key of keys) {
       if (typeof key !== "string" || !key.startsWith(KEY_PREFIX)) continue;
+      if (key.startsWith(KEY_PREFIX + "blobs/")) continue;   // blobs (imagens) são lazy-loaded via getBlob — não inflam o boot
       const val = await idbGet(key);
       placeInCache(key, val);
     }
@@ -240,17 +280,29 @@ window.CoC = window.CoC || {};
 
   function placeInCache(key, val) {
     if (val == null) return;
-    if (key === KEY_INVESTIGATOR_LIST) cache.characterList = Array.isArray(val) ? val : [];
-    else if (key === KEY_KEEPER_LIBRARY) cache.creatureList = Array.isArray(val) ? val : [];
-    else if (key === KEY_ACTIVE_INV)     cache.activeCharacterId = val;
-    else if (key === KEY_LAST_EXPORT)    cache.lastExportAt = Number(val) || 0;
-    else if (key.startsWith(KEY_PREFIX + "investigators/")) {
-      const id = key.replace(KEY_PREFIX + "investigators/", "");
-      cache.characters[id] = val;
-    }
-    else if (key.startsWith(KEY_PREFIX + "keeper/creatures/")) {
-      const id = key.replace(KEY_PREFIX + "keeper/creatures/", "");
-      cache.creatures[id] = val;
+    // Defensivo: uma única entrada corrompida NUNCA pode derrubar o boot inteiro
+    // (Constituição: "sem White Screen of Death"). Quarentena + continua.
+    try {
+      if (key === KEY_INVESTIGATOR_LIST) cache.characterList = Array.isArray(val) ? val : [];
+      else if (key === KEY_KEEPER_LIBRARY) cache.creatureList = Array.isArray(val) ? val : [];
+      else if (key === KEY_ACTIVE_INV)     cache.activeCharacterId = val;
+      else if (key === KEY_LAST_EXPORT)    cache.lastExportAt = Number(val) || 0;
+      else if (key === KEY_PREFS)          cache.prefs = (val && typeof val === "object") ? val : {};
+      else if (key === KEY_GHOST)          cache.ghost = (val && typeof val === "object") ? val : null;
+      else if (key.startsWith(KEY_PREFIX + "investigators/")) {
+        const id = key.replace(KEY_PREFIX + "investigators/", "");
+        if (!val || typeof val !== "object") throw new Error("entrada de personagem inválida");
+        cache.characters[id] = runMigrations(val);
+      }
+      else if (key.startsWith(KEY_PREFIX + "keeper/creatures/")) {
+        const id = key.replace(KEY_PREFIX + "keeper/creatures/", "");
+        if (!val || typeof val !== "object") throw new Error("entrada de criatura inválida");
+        cache.creatures[id] = runMigrations(val);
+      }
+    } catch (e) {
+      console.error("[storage] Entrada corrompida posta em quarentena:", key, e);
+      cache.corrupted.push({ key, raw: val });
+      emitError({ type: "corrupted", key, error: e });
     }
   }
 
@@ -299,6 +351,38 @@ window.CoC = window.CoC || {};
     }
   }
 
+  // ─── Schema Migrations ───────────────────────────────────────────────
+  /**
+   * Aplica migrações de schema em dados carregados do storage.
+   * Cada bloco if migra de versão N para N+1 de forma idempotente.
+   * Chame antes de usar qualquer dado lido do IDB / localStorage.
+   *
+   * @param {object} data - Objeto de personagem ou criatura carregado
+   * @returns {object} data atualizado (mesma referência, modificado in-place)
+   */
+  function runMigrations(data) {
+    if (!data || typeof data !== "object") return data;
+    const v = data._schemaVersion || 0;
+
+    // v0 → v1: stampa a versão (primeiro deploy com versionamento).
+    // Não há mudanças estruturais — apenas garante que o campo existe.
+    if (v < 1) {
+      data._schemaVersion = 1;
+    }
+
+    // v1 → v2: investigadores ganham occupationSkills (perícias livres designadas
+    // da ocupação). Sem ele, o pool de pontos de ocupação fica impossível de gastar
+    // em ocupações com perícias livres (em especial a "Personalizada"). Idempotente.
+    if (data._schemaVersion < 2) {
+      if (data.investigator && !Array.isArray(data.occupationSkills)) {
+        data.occupationSkills = [];
+      }
+      data._schemaVersion = 2;
+    }
+
+    return data;
+  }
+
   // ─── Helpers ─────────────────────────────────────────────────────────
   function isStorageAvailable() {
     return backend !== "memory";
@@ -332,6 +416,14 @@ window.CoC = window.CoC || {};
 
     persistKey(characterKey(character.id), character);
     persistKey(KEY_INVESTIGATOR_LIST, cache.characterList);
+
+    // Backup-fantasma: snapshot do último personagem salvo. Se o registro principal
+    // corromper/sumir, recoverGhost() devolve a última versão estável conhecida.
+    try {
+      cache.ghost = { id: character.id, char: JSON.parse(JSON.stringify(character)), savedAt: Date.now() };
+      persistKey(KEY_GHOST, cache.ghost);
+    } catch (e) { /* ghost é best-effort; nunca bloqueia o save principal */ }
+
     return character.id;
   }
 
@@ -422,9 +514,32 @@ window.CoC = window.CoC || {};
   }
 
   // ─── EXPORT / IMPORT JSON ────────────────────────────────────────────
+  /**
+   * Exporta um objeto como download JSON.
+   * Sempre envelopa em um root com metadados de schema para permitir
+   * migração automática em imports futuros.
+   *
+   * Formato do arquivo exportado:
+   *   {
+   *     "_format":        "aimalexi-rpg",
+   *     "_schemaVersion": 1,
+   *     "_exportedAt":    "ISO string",
+   *     ...obj            (chaves do objeto original no root, sem nesting extra)
+   *   }
+   *
+   * Se o obj já tiver "_format", não duplica (suporte a re-export de imports antigos).
+   */
   function exportJSON(obj, filename) {
     try {
-      const json = JSON.stringify(obj, null, 2);
+      const envelope = obj && obj._format === "aimalexi-rpg"
+        ? obj
+        : {
+            _format:        "aimalexi-rpg",
+            _schemaVersion: SAVE_SCHEMA_VERSION,
+            _exportedAt:    new Date().toISOString(),
+            ...obj
+          };
+      const json = JSON.stringify(envelope, null, 2);
       const blob = new Blob([json], { type: "application/json;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -463,7 +578,9 @@ window.CoC = window.CoC || {};
     const creatures = Array.isArray(library) ? library : (library?.creatures || []);
     let added = 0, updated = 0;
     for (const c of creatures) {
-      if (c && c.id && loadCreature(c.id)) { saveCreature(c); updated++; }
+      if (!c) continue;
+      runMigrations(c);
+      if (c.id && loadCreature(c.id)) { saveCreature(c); updated++; }
       else { delete c.id; saveCreature(c); added++; }
     }
     return { added, updated };
@@ -476,6 +593,45 @@ window.CoC = window.CoC || {};
     if (!cache.lastExportAt) return Infinity;
     return Math.round((Date.now() - cache.lastExportAt) / 60000);
   }
+
+  // ─── PREFERÊNCIAS DE UI ──────────────────────────────────────────────
+  // Preferências globais (não atreladas a um personagem): modo dos efeitos de
+  // sanidade, etc. Persistidas via o mesmo backend resiliente (IDB/LS/memória).
+  function getPref(key, fallback = null) {
+    if (!key) return fallback;
+    return Object.prototype.hasOwnProperty.call(cache.prefs, key) ? cache.prefs[key] : fallback;
+  }
+
+  function setPref(key, value) {
+    if (!key) return false;
+    cache.prefs[key] = value;
+    persistKey(KEY_PREFS, cache.prefs);
+    return true;
+  }
+
+  // ─── RECUPERAÇÃO / RESILIÊNCIA ───────────────────────────────────────
+  /** Backup-fantasma do último personagem salvo (clone), ou null. */
+  function getGhost() {
+    if (!cache.ghost || !cache.ghost.char) return null;
+    try { return JSON.parse(JSON.stringify(cache.ghost.char)); } catch (e) { return null; }
+  }
+
+  /**
+   * Restaura o backup-fantasma como personagem ativo, regravando-o.
+   * @param {string} [id] - se informado, só restaura se o ghost for desse id.
+   * @returns {object|null} clone do personagem restaurado, ou null.
+   */
+  function recoverGhost(id) {
+    if (!cache.ghost || !cache.ghost.char) return null;
+    if (id && cache.ghost.id !== id) return null;
+    const clone = getGhost();
+    if (!clone) return null;
+    saveCharacter(clone);
+    return clone;
+  }
+
+  /** Entradas que falharam ao carregar (corrompidas, em quarentena). */
+  function getCorruptedEntries() { return cache.corrupted.slice(); }
 
   // ─── UTILITÁRIOS ─────────────────────────────────────────────────────
   function nuclearReset() {
@@ -496,6 +652,46 @@ window.CoC = window.CoC || {};
     return allKeys.length;
   }
 
+  // ─── BLOBS / IMAGENS (banner, retrato) ───────────────────────────────
+  // Imagens vivem como Blob no IndexedDB — NUNCA base64 no localStorage (estoura
+  // cota). API assíncrona: o cache síncrono não guarda binários. blobCache dá
+  // acesso rápido em memória e é o único armazenamento em backends sem IDB (nesses,
+  // a imagem não sobrevive a reload — caminho degradado aceitável).
+  const blobCache = new Map();
+  function blobKey(id) { return KEY_PREFIX + "blobs/" + id; }
+
+  async function saveBlob(id, blob) {
+    if (!(blob instanceof Blob)) return null;
+    if (!id) id = genId();
+    blobCache.set(id, blob);
+    if (backend === "indexeddb") {
+      try { await idbSet(blobKey(id), blob); }
+      catch (e) { emitError({ type: "write", key: blobKey(id), backend, error: e }); }
+    }
+    return id;
+  }
+
+  async function getBlob(id) {
+    if (!id) return null;
+    if (blobCache.has(id)) return blobCache.get(id);
+    if (backend === "indexeddb") {
+      try {
+        const b = await idbGet(blobKey(id));
+        if (b instanceof Blob) { blobCache.set(id, b); return b; }
+      } catch (e) { /* best-effort */ }
+    }
+    return null;
+  }
+
+  async function deleteBlob(id) {
+    if (!id) return false;
+    blobCache.delete(id);
+    if (backend === "indexeddb") {
+      try { await idbDelete(blobKey(id)); } catch (e) { /* best-effort */ }
+    }
+    return true;
+  }
+
   // ─── Inicialização ────────────────────────────────────────────────────
   const ready = init();
 
@@ -510,10 +706,19 @@ window.CoC = window.CoC || {};
     exportJSON, importJSONFromFile, mergeCreatureLibrary,
     getLastExportTimestamp, minutesSinceLastExport,
     nuclearReset,
+    runMigrations,
     KEY_PREFIX,
+    SAVE_SCHEMA_VERSION,
     // Novos:
     ready,                         // Promise<void> — resolve quando cache carregado
-    get backend() { return backend; }
+    get backend() { return backend; },
+    // Preferências de UI:
+    getPref, setPref,
+    // Imagens (Blob):
+    saveBlob, getBlob, deleteBlob,
+    // Resiliência / recuperação:
+    forceFlush, onError, getGhost, recoverGhost, getCorruptedEntries,
+    get lastErrorAt() { return lastErrorAt; }
   };
 
 })();

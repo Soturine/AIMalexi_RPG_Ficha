@@ -166,7 +166,7 @@
 /* Header da criatura ativa */
 .creature-header {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   gap: 0.75rem;
   align-items: start;
   padding-bottom: 0.75rem;
@@ -175,42 +175,6 @@
 }
 
 .creature-header-title { min-width: 0; }
-
-/* Retrato da criatura (Fase 6) */
-.creature-portrait {
-  width: 64px;
-  aspect-ratio: 3 / 4;
-  background-color: var(--bg-card-hi, #241e17);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  border: 1px solid var(--keeper-accent, var(--brass));
-  border-radius: var(--radius);
-  cursor: pointer;
-  position: relative;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.creature-portrait:hover {
-  border-color: var(--brass-bright);
-  box-shadow: 0 0 8px var(--brass-glow);
-}
-.creature-portrait::after {
-  content: "👤";
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 1.6rem;
-  opacity: 0.35;
-  pointer-events: none;
-}
-.creature-portrait.has-image::after { display: none; }
-
-@media (max-width: 520px) {
-  .creature-header { grid-template-columns: auto 1fr; }
-  .creature-header-actions { grid-column: 1 / -1; }
-  .creature-portrait { width: 52px; }
-}
 
 .creature-type-row {
   display: flex;

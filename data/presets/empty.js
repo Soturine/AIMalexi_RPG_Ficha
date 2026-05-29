@@ -18,7 +18,9 @@ window.CoCData.presets.empty = {
     residence: "",
     birthplace: "",
     pronouns: "",
-    tagline: ""
+    tagline: "",
+    bannerId: null,
+    portraitId: null
   },
 
   // Atributos zerados (devem ser rolados ou inseridos)
@@ -80,20 +82,6 @@ window.CoCData.presets.empty = {
     sanLossesToday: 0,
     unconscious: false,
     dying: false
-  },
-
-  // Personalização visual (Fase 6): tema + cor de acento + imagens.
-  // Estrutura defensiva: ausência de qualquer campo cai em defaults no render.
-  theme: {
-    preset: "brass",   // brass | mist | blood | sepia | noir
-    accent: null       // null = usa cor do preset; hex string = override custom
-  },
-
-  // Imagens: cada slot pode ser null, { kind: "blob", blob, mime }, { kind: "url", url },
-  // ou { kind: "template", id }. Render resolve em src/background-image.
-  media: {
-    banner: null,
-    portrait: null
   },
 
   _meta: {

@@ -13,12 +13,29 @@ window.CoC = window.CoC || {};
   const fifth = (v) => Math.floor(v / 5);
 
   /**
+   * Fração aleatória em [0,1) via RNG criptográfico (crypto.getRandomValues).
+   * Melhor uniformidade que Math.random e mais resistente a manipulação.
+   * Fallback para Math.random em ambientes sem Web Crypto — offline-first:
+   * a rolagem nunca pode quebrar.
+   * @returns {number}
+   */
+  function randomFraction() {
+    try {
+      const a = new Uint32Array(1);
+      (self.crypto || self.msCrypto).getRandomValues(a);
+      return a[0] / (0xffffffff + 1);
+    } catch (e) {
+      return Math.random();
+    }
+  }
+
+  /**
    * Rola 1 dado de N lados (1..sides).
    * @param {number} sides
    * @returns {number}
    */
   function rollDie(sides) {
-    return Math.floor(Math.random() * sides) + 1;
+    return Math.floor(randomFraction() * sides) + 1;
   }
 
   /**
@@ -177,28 +194,19 @@ window.CoC = window.CoC || {};
    */
   function rollDamage(weaponDamageString, db = "0", impale = false) {
     if (impale) {
-      // CoC7E (Cap.6, p.104): dano máximo da arma + dano máximo do DB
-      // + uma rolagem extra da arma (sem DB).
-      const base = rollNotation(weaponDamageString, db);
-
-      // Dano máximo de cada bloco de dados, preservando sinal:
+      // Dano máximo (regra de empalar): substitui rolagens por valor máximo
+      const result = rollNotation(weaponDamageString, db);
+      // Re-calcular total como se cada dado fosse o máximo
       let max = 0;
-      for (const r of base.rolls) {
-        max += r.n * r.sides * (r.result < 0 ? -1 : 1);
+      for (const r of result.rolls) {
+        max += (r.n * r.sides) * (r.result < 0 ? -1 : 1);
       }
-      // Constantes numéricas estáticas da string (+1, +2 etc).
+      // Adiciona termos numéricos (constantes)
       const constants = (weaponDamageString.match(/[+-]\d+(?!D)/gi) || [])
         .reduce((acc, t) => acc + parseInt(t, 10), 0);
-
-      // Rolagem extra: dano da arma SEM DB.
-      const extra = rollNotation(weaponDamageString, "0");
-
-      return {
-        total: max + constants + extra.total,
-        rolls: [...base.rolls, ...extra.rolls],
-        expression: base.expression + " + " + extra.expression + " (extra empala)",
-        impale: true
-      };
+      result.total = max + constants;
+      result.impale = true;
+      return result;
     }
     return rollNotation(weaponDamageString, db);
   }

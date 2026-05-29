@@ -28,8 +28,16 @@
     rollHistory: []
   };
 
-  if (!store.isStorageAvailable()) {
-    toast("⚠ localStorage indisponível — biblioteca não persistirá.", { type: "warn", duration: 6000 });
+  // A disponibilidade real do storage só é conhecida após store.ready (IndexedDB é
+  // assíncrono). A checagem correta vive no boot(), depois do await — evita o
+  // falso-positivo que disparava em quase todo carregamento. Registra só o handler
+  // de erro real de gravação (quota cheia).
+  if (store.onError) {
+    store.onError((info) => {
+      if (info && info.type === "quota") {
+        toast("⚠ Armazenamento cheio. Exporte a biblioteca e remova itens antigos para liberar espaço.", { type: "error", duration: 8000 });
+      }
+    });
   }
 
   // ═════════════════════════════════════════════════════════════════════
@@ -179,7 +187,6 @@
     ws.className = "workspace mode-" + state.mode;
     ws.innerHTML = renderCreatureHeader() + renderSimpleMode() + renderFullMode();
     bindWorkspaceEvents();
-    renderCreaturePortrait();
 
     // Primeira vez que o usuário abre QUALQUER criatura nesta sessão:
     // pulsa o toggle Simples↔Completo 3 vezes para chamar atenção.
@@ -191,35 +198,6 @@
         setTimeout(() => btn.classList.remove("first-attention"), 5500);
       }
     }
-  }
-
-  // ─── Retrato da criatura (Fase 6) ────────────────────────────────────
-  function renderCreaturePortrait() {
-    const node = $("#creature-portrait");
-    if (!node || !state.active) return;
-    const src = window.CoC.mediaPicker.resolveSrc(state.active.media?.portrait, "portraits");
-    node.style.backgroundImage = src ? `url("${src}")` : "";
-    node.classList.toggle("has-image", !!src);
-    node.onclick = () => {
-      if (state.mode !== "full") {
-        toast("Abra o Editor Completo para alterar o retrato", { type: "info" });
-        return;
-      }
-      const c = state.active;
-      c.media = c.media || { portrait: null };
-      window.CoC.mediaPicker.open({
-        title: `Retrato · ${c.name || "Criatura"}`,
-        current: c.media.portrait,
-        templatesKey: "portraits",
-        maxDim: 800,
-        onPick: (media) => {
-          c.media.portrait = media;
-          renderCreaturePortrait();
-          // Persiste se a criatura já está salva (instância da biblioteca)
-          if (state.activeSavedId) saveActive();
-        }
-      });
-    };
   }
 
   function renderCreatureHeader() {
@@ -236,10 +214,8 @@
       : "Modo atual: COMPLETO. Clique para voltar à visualização Simples (operacional em mesa).";
     const modePillLabel = isSimple ? "MODO SIMPLES" : "MODO EDITOR";
 
-    const portraitHint = state.mode === "full" ? "Clique para definir o retrato" : "Retrato — edite no Editor Completo";
     return `
       <div class="creature-header">
-        <div class="creature-portrait" id="creature-portrait" title="${escapeHtml(portraitHint)}"></div>
         <div class="creature-header-title">
           <div class="creature-type-row">
             <span class="creature-type">${escapeHtml(typeLabel)}${cat}</span>
@@ -677,45 +653,24 @@
     const c = state.active;
     const a = c?.attacks?.[idx];
     if (!a) return;
-
     const chance = Number(a.chance) || 0;
-    // Hooks defensivos: hoje o keeper não tem UI de difficulty/bp.
-    const difficulty = state.rollMods?.difficulty || "regular";
-    const bp         = state.rollMods?.bp || null;
-
-    const target =
-      difficulty === "hard"    ? dice.half(chance)  :
-      difficulty === "extreme" ? dice.fifth(chance) :
-                                 chance;
-
-    const r     = dice.rollD100(bp);
+    const r = dice.rollD100(null);
     const level = dice.classifyRoll(r.value, chance);
-    const hit   = dice.meetsDifficulty(difficulty, level);
-
-    // Empala: prioriza flag explícita; fallback em "empala" no NOTE
-    // (não no nome — nome é interface, não dados).
-    const impalingByFlag = a.impale === true;
-    const impalingByNote = /empala|impal/i.test(a.note || "");
-    const isImpale = (level === "crit" || level === "extreme") && (impalingByFlag || impalingByNote);
-
+    const hit = ["crit", "extreme", "hard", "regular"].includes(level);
     let dmgStr = "(miss)";
     if (hit) {
       const db = c.derived?.db || "0";
-      const d  = dice.rollDamage(a.damage || "0", db, isImpale);
+      const impale = (level === "crit" || level === "extreme") && /espada|faca|adaga|empala|rifle|garra|mordida|tridente/i.test(a.name + " " + (a.note || ""));
+      const d = dice.rollDamage(a.damage || "0", db, impale);
       const diceStr = d.rolls.map(x => `(${x.dice.join("+")})`).join("+");
-      dmgStr = `${a.damage} → ${d.total}${isImpale ? " ⚡EMPALA" : ""} ${diceStr}`;
+      dmgStr = `${a.damage} → ${d.total}${impale ? " ⚡EMPALA" : ""} ${diceStr}`;
     }
-
     logRoll({
-      kind: "npc-attack",
       skill: `⚔ ${c.name} · ${a.name}`,
-      skillRaw: a.name,
-      target,
-      targetRaw: chance,
+      target: chance,
       d100: r.value,
       level,
-      dmg: dmgStr,
-      note: difficulty !== "regular" ? `[${difficulty}]` : (bp ? `[${bp}]` : "")
+      dmg: dmgStr
     });
   }
 

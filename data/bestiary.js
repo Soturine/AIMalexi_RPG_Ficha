@@ -48,7 +48,7 @@ window.CoCData.bestiary = [
     armor: 0,
     sanLoss: "—",
     attacks: [
-      { name: "Faca de Cerimônia", type: "melee", chance: 40, damage: "1D4+2", impale: true },
+      { name: "Faca de Cerimônia", type: "melee", chance: 40, damage: "1D4+2" },
       { name: "Soco", type: "melee", chance: 50, damage: "1D3" }
     ],
     skills: [
@@ -74,7 +74,7 @@ window.CoCData.bestiary = [
     armor: 0,
     sanLoss: "0/1D3",
     attacks: [
-      { name: "Adaga Ritual", type: "melee", chance: 55, damage: "1D4+2+DB", impale: true, note: "Empala em Sucesso Extremo" },
+      { name: "Adaga Ritual", type: "melee", chance: 55, damage: "1D4+2+DB", note: "Empala em Sucesso Extremo" },
       { name: "Revólver .38", type: "firearm", chance: 40, damage: "1D10", note: "6 balas" }
     ],
     skills: [
@@ -184,8 +184,8 @@ window.CoCData.bestiary = [
     armor: 1,
     sanLoss: "—",
     attacks: [
-      { name: "Rifle .30-06", type: "firearm", chance: 65, damage: "2D6+4", impale: true, note: "Empala. 5 balas." },
-      { name: "Faca de Combate", type: "melee", chance: 60, damage: "1D4+2+DB", impale: true, note: "Empala" }
+      { name: "Rifle .30-06", type: "firearm", chance: 65, damage: "2D6+4", note: "Empala. 5 balas." },
+      { name: "Faca de Combate", type: "melee", chance: 60, damage: "1D4+2+DB", note: "Empala" }
     ],
     skills: [
       { name: "Esquivar", value: 60 },
@@ -241,7 +241,7 @@ window.CoCData.bestiary = [
     sanLoss: "0/1D6",
     attacks: [
       { name: "Garras", type: "melee", chance: 50, damage: "1D6+DB" },
-      { name: "Tridente", type: "melee", chance: 55, damage: "1D8+1+DB", impale: true, note: "Empala" }
+      { name: "Tridente", type: "melee", chance: 55, damage: "1D8+1+DB", note: "Empala" }
     ],
     skills: [
       { name: "Lutar (Garras)", value: 50 },

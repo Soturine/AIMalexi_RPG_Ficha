@@ -30,9 +30,6 @@ window.CoCData.skills = [
   { name: "Armas de Fogo (Rifle/Escopeta)", base: 25, category: "combat", era: "any" },
   { name: "Armas de Fogo (Submetralhadora)", base: 15, category: "combat", era: "any" },
   { name: "Armas de Fogo (Metralhadora)",    base: 10, category: "combat", era: "any" },
-  { name: "Armas de Fogo (Arco)",      base: 15, category: "combat", era: "any" },
-  { name: "Armas Pesadas",             base: 10, category: "combat", era: "any",
-    note: "Bazucas, lança-granadas, morteiros, canhões." },
   { name: "Arremessar",                base: 20, category: "combat", era: "any" },
 
   // ── INVESTIGAÇÃO / PERCEPÇÃO ──────────────────────────────────────────
@@ -41,8 +38,8 @@ window.CoCData.skills = [
   { name: "Pesquisar Bibliotecas",     base: 20, category: "investigative", era: "any" },
   { name: "Psicologia",                base: 10, category: "investigative", era: "any" },
   { name: "Rastrear",                  base: 10, category: "investigative", era: "any" },
-  { name: "Seguir Alguém",             base: 25, category: "investigative", era: "any",
-    note: "House-rule do projeto. CoC7e oficial usa Furtividade/Encontrar/Psicologia para shadowing." },
+  { name: "Seguir Alguém",             base: 25, category: "investigative", era: "any" },
+  { name: "Ciência Forense",           base: 5,  category: "investigative", era: "any" },
 
   // ── SOCIAL ─────────────────────────────────────────────────────────────
   { name: "Charme",                    base: 15, category: "social", era: "any" },
@@ -50,8 +47,6 @@ window.CoCData.skills = [
   { name: "Lábia",                     base: 5,  category: "social", era: "any" },
   { name: "Persuasão",                 base: 10, category: "social", era: "any" },
   { name: "Disfarce",                  base: 5,  category: "social", era: "any" },
-  { name: "Avaliação de Crédito",      base: 0,  category: "social", era: "any",
-    note: "Define classe social e limite de gastos. Relacionada à ocupação." },
 
   // ── FÍSICAS ────────────────────────────────────────────────────────────
   { name: "Escalar",                   base: 20, category: "physical", era: "any" },
@@ -59,8 +54,6 @@ window.CoCData.skills = [
   { name: "Nadar",                     base: 20, category: "physical", era: "any" },
   { name: "Saltar",                    base: 20, category: "physical", era: "any" },
   { name: "Cavalgar",                  base: 5,  category: "physical", era: "any" },
-  { name: "Prestidigitação",           base: 10, category: "physical", era: "any",
-    note: "Sleight of Hand — manipulação rápida de objetos pequenos." },
   { name: "Sobrevivência",             base: 10, category: "physical", era: "any", specializable: true,
     examples: ["Deserto", "Floresta", "Selva", "Mar", "Polar", "Montanha"] },
 
@@ -68,11 +61,9 @@ window.CoCData.skills = [
   { name: "Antropologia",              base: 1,  category: "knowledge", era: "any" },
   { name: "Arqueologia",               base: 1,  category: "knowledge", era: "any" },
   { name: "Biologia",                  base: 1,  category: "knowledge", era: "any" },
-  { name: "Mundo Natural",             base: 10, category: "knowledge", era: "any",
-    note: "Conhecimento amador de fauna, flora e meteorologia local. Distinto de Biologia (científico)." },
   { name: "Ciência",                   base: 1,  category: "knowledge", era: "any", specializable: true,
     examples: ["Astronomia", "Botânica", "Química", "Criptografia", "Engenharia", "Farmácia",
-               "Forense", "Física", "Geologia", "Matemática", "Meteorologia", "Mineralogia", "Zoologia"] },
+               "Física", "Geologia", "Matemática", "Meteorologia", "Mineralogia", "Zoologia"] },
   { name: "Direito",                   base: 5,  category: "knowledge", era: "any" },
   { name: "História",                  base: 5,  category: "knowledge", era: "any" },
   { name: "Medicina",                  base: 1,  category: "knowledge", era: "any" },

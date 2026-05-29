@@ -1,225 +1,287 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    AIMalexi RPG · js/shared/media-picker.js
-   Seletor de imagem compartilhado (Fase 6) — usado pela ficha e pelo keeper.
+   Seleção e exibição de imagens (banner + retrato do investigador).
 
-   Fontes: upload local, URL externa (aviso offline), biblioteca de templates.
-   Armazena SEMPRE como data URI base64 (clone-safe: sobrevive JSON.stringify,
-   export/import e o fallback localStorage). Upload/URL passam por downscale
-   via canvas para manter os saves leves.
+   Pipeline obrigatória (persistir ANTES de renderizar):
+     input[type=file] → guarda 2MB → resize canvas → Blob → saveBlob(IDB)
+                      → blobId → ObjectURL → render
 
-   Atribui a window.CoC.mediaPicker.
+   Princípios:
+   - Imagem grande NUNCA entra crua: limite HARD de 2MB no arquivo bruto.
+   - Resize client-side (canvas) p/ ~maxDim, WebP com fallback JPEG.
+   - Fallback Safari: se o canvas falhar, usa o arquivo original (já ≤2MB).
+   - ObjectURL registry com revoke obrigatório → sem memory leak.
+   - render() aceita blobId (upload) OU data-URI (template) pelo mesmo caminho.
+
+   Atribui a window.CoC.mediaPicker — sem dependências de rede.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 window.CoC = window.CoC || {};
 
 (function () {
 
-  const { el, modal, toast } = window.CoC.ui;
+  const store = window.CoC.storage;
+  const toast = (window.CoC.ui && window.CoC.ui.toast) ? window.CoC.ui.toast : function () {};
 
-  /**
-   * Converte File/Blob em data URI, redimensionando se exceder maxDim.
-   * Re-encoda JPEG 0.85.
-   */
-  function fileToDataUri(file, maxDim) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = reject;
-      reader.onload = () => {
-        const img = new Image();
-        img.onerror = reject;
-        img.onload = () => {
-          let w = img.naturalWidth, h = img.naturalHeight;
-          if (maxDim && Math.max(w, h) > maxDim) {
-            const s = maxDim / Math.max(w, h);
-            w = Math.round(w * s); h = Math.round(h * s);
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = w; canvas.height = h;
-          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-          try { resolve(canvas.toDataURL("image/jpeg", 0.85)); }
-          catch (e) { reject(e); }
-        };
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
+  const MAX_RAW_BYTES = 2 * 1024 * 1024;   // 2MB no arquivo bruto (antes do resize)
+
+  // ─── ObjectURL registry (anti-leak) ──────────────────────────────────
+  // urlByEl: a URL viva de CADA elemento (revogada ao trocar/limpar).
+  // activeUrls: todas as URLs vivas (revogadas em releaseAll / pagehide).
+  const urlByEl = new WeakMap();
+  const activeUrls = new Set();
+
+  function releaseEl(elm) {
+    const prev = urlByEl.get(elm);
+    if (prev) {
+      try { URL.revokeObjectURL(prev); } catch (e) {}
+      activeUrls.delete(prev);
+      urlByEl.delete(elm);
+    }
+  }
+
+  function releaseAll() {
+    for (const u of activeUrls) { try { URL.revokeObjectURL(u); } catch (e) {} }
+    activeUrls.clear();
+  }
+
+  if (typeof window !== "undefined") {
+    // Segurança extra: ao sair/suspender a página, revoga tudo.
+    window.addEventListener("pagehide", releaseAll);
+  }
+
+  // ─── Seleção de arquivo ───────────────────────────────────────────────
+  function chooseFile() {
+    return new Promise((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.style.position = "fixed";
+      input.style.left = "-9999px";
+      input.addEventListener("change", () => {
+        const f = (input.files && input.files[0]) ? input.files[0] : null;
+        input.remove();
+        resolve(f);
+      });
+      // append garante o disparo do seletor em mobile (Safari/iOS)
+      document.body.appendChild(input);
+      input.click();
     });
   }
 
-  function urlToDataUri(url, maxDim) {
-    return fetch(url, { mode: "cors" })
-      .then(resp => { if (!resp.ok) throw new Error("HTTP " + resp.status); return resp.blob(); })
-      .then(blob => fileToDataUri(blob, maxDim));
+  // ─── Carregar bitmap (createImageBitmap com fallback p/ <img>) ────────
+  function loadViaImg(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { img._srcUrl = url; resolve(img); };
+      img.onerror = () => { try { URL.revokeObjectURL(url); } catch (e) {} reject(new Error("falha ao carregar imagem")); };
+      img.src = url;
+    });
   }
 
-  /**
-   * Resolve um objeto media em uma src utilizável (data URI, URL, ou template).
-   * @param media  { kind: "data"|"url"|"template", uri?|url?|id? }
-   * @param templatesKey  "banners" | "portraits"
-   */
-  function resolveSrc(media, templatesKey) {
-    if (!media) return null;
-    if (media.kind === "data" && media.uri) return media.uri;
-    if (media.kind === "url" && media.url) return media.url;
-    if (media.kind === "template" && media.id) {
-      const list = window.CoCData?.imageTemplates?.[templatesKey] || [];
-      const tpl = list.find(t => t.id === media.id);
-      if (!tpl) return null;
-      if (tpl.svg) return "data:image/svg+xml;utf8," + encodeURIComponent(tpl.svg);
-      return tpl.path || null;
+  function loadBitmap(file) {
+    if (self.createImageBitmap) {
+      return createImageBitmap(file).catch(() => loadViaImg(file));
     }
-    return null;
+    return loadViaImg(file);
+  }
+
+  function scaleDims(w, h, maxDim) {
+    if (!w || !h) return { width: maxDim, height: maxDim };
+    if (w <= maxDim && h <= maxDim) return { width: w, height: h };
+    const r = w >= h ? maxDim / w : maxDim / h;
+    return { width: Math.max(1, Math.round(w * r)), height: Math.max(1, Math.round(h * r)) };
+  }
+
+  function canvasToBlob(canvas, mime, quality) {
+    return new Promise((resolve) => {
+      if (!canvas.toBlob) return resolve(null);
+      try { canvas.toBlob((b) => resolve(b), mime, quality); }
+      catch (e) { resolve(null); }
+    });
+  }
+
+  async function resizeToBlob(file, maxDim, quality) {
+    const bmp = await loadBitmap(file);
+    const w = bmp.width || bmp.naturalWidth;
+    const h = bmp.height || bmp.naturalHeight;
+    const dims = scaleDims(w, h, maxDim);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = dims.width;
+    canvas.height = dims.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      if (bmp._srcUrl) { try { URL.revokeObjectURL(bmp._srcUrl); } catch (e) {} }
+      throw new Error("sem contexto 2d");
+    }
+    ctx.drawImage(bmp, 0, 0, dims.width, dims.height);
+    if (bmp.close) bmp.close();
+    if (bmp._srcUrl) { try { URL.revokeObjectURL(bmp._srcUrl); } catch (e) {} }
+
+    // Tenta WebP; se o navegador não codificar (Safari antigo), cai p/ JPEG.
+    let blob = await canvasToBlob(canvas, "image/webp", quality);
+    if (!blob || blob.type !== "image/webp") {
+      blob = await canvasToBlob(canvas, "image/jpeg", quality);
+    }
+    if (!blob) throw new Error("toBlob indisponível");
+    return blob;
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // API
+  // ═════════════════════════════════════════════════════════════════════
+
+  /**
+   * Abre o seletor, processa e PERSISTE a imagem. Retorna o blobId salvo
+   * (string) ou null se cancelado/inválido. Render é responsabilidade do caller.
+   *
+   * @param {Object} [opts]
+   * @param {number} [opts.maxDim=768]  - maior dimensão após resize
+   * @param {number} [opts.quality=0.8] - qualidade de compressão (0..1)
+   * @returns {Promise<string|null>}
+   */
+  async function pick(opts = {}) {
+    const { maxDim = 768, quality = 0.8 } = opts;
+    if (!store || !store.saveBlob) {
+      toast("Armazenamento indisponível para imagens.", { type: "error" });
+      return null;
+    }
+    const file = await chooseFile();
+    if (!file) return null;
+    if (!/^image\//.test(file.type || "")) {
+      toast("Selecione um arquivo de imagem.", { type: "warn" });
+      return null;
+    }
+    if (file.size > MAX_RAW_BYTES) {
+      toast("Imagem muito grande (máx. 2MB). Escolha uma menor.", { type: "warn", duration: 5000 });
+      return null;
+    }
+
+    let blob;
+    try {
+      blob = await resizeToBlob(file, maxDim, quality);
+    } catch (e) {
+      // Fallback (Safari mobile etc.): o arquivo original já está ≤2MB.
+      console.warn("[media-picker] resize falhou, usando original:", e && e.message ? e.message : e);
+      blob = file;
+    }
+
+    try {
+      const id = await store.saveBlob(null, blob);   // persiste ANTES de renderizar
+      return id || null;
+    } catch (e) {
+      toast("Não foi possível salvar a imagem.", { type: "error" });
+      return null;
+    }
   }
 
   /**
-   * Abre o modal de escolha de imagem.
-   * @param opts.title         título do modal
-   * @param opts.current       objeto media atual (ou null)
-   * @param opts.templatesKey  "banners" | "portraits"
-   * @param opts.maxDim        dimensão máxima para downscale (px)
-   * @param opts.onPick        callback(mediaObj | null) — chamado ao escolher/remover
+   * Renderiza uma imagem num elemento (background-image cover).
+   * Aceita um blobId (upload, lazy via storage.getBlob) OU um data-URI (template).
+   * Gerencia o ObjectURL registry: revoga o anterior do elemento antes de criar novo.
+   *
+   * @param {HTMLElement} targetEl
+   * @param {string|null} ref - blobId, data:URI, ou null/"" para limpar
+   * @returns {Promise<void>}
    */
-  function open(opts) {
-    const { title, current, templatesKey, maxDim = 1200, onPick } = opts || {};
-    const pick = (media) => { if (typeof onPick === "function") onPick(media); };
+  async function render(targetEl, ref) {
+    if (!targetEl) return;
+    releaseEl(targetEl);   // revoga a URL anterior deste elemento
 
-    const root = el("div", { class: "img-picker" });
-    const tabs = el("div", { class: "img-picker-tabs" });
-    const content = el("div", { class: "img-picker-content" });
-
-    let m = null;
-    const closePicker = () => { if (m) m.close(); };
-
-    let activeTab = "upload";
-    const setTab = (id) => {
-      activeTab = id;
-      tabs.querySelectorAll(".img-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === id));
-      content.innerHTML = "";
-      content.appendChild(renderTab(id));
+    const clear = () => {
+      targetEl.style.backgroundImage = "";
+      targetEl.classList.remove("has-image");
     };
 
-    [
-      { id: "upload",   label: "📁 Upload" },
-      { id: "url",      label: "🔗 URL" },
-      { id: "template", label: "🖼️ Biblioteca" },
-      { id: "remove",   label: "🗑️ Remover" }
-    ].forEach(t => {
-      const btn = el("button", { class: "img-tab" + (activeTab === t.id ? " active" : ""), on: { click: () => setTab(t.id) } });
-      btn.dataset.tab = t.id;
-      btn.textContent = t.label;
-      tabs.appendChild(btn);
-    });
+    if (!ref) return clear();
 
-    function renderTab(id) {
-      if (id === "upload")   return uploadTab();
-      if (id === "url")      return urlTab();
-      if (id === "template") return templateTab();
-      if (id === "remove")   return removeTab();
-      return el("div");
+    // Template (data-URI) ou URL absoluta: aplica direto, sem ObjectURL.
+    if (typeof ref === "string" && (ref.startsWith("data:") || ref.startsWith("http"))) {
+      targetEl.style.backgroundImage = `url("${ref}")`;
+      targetEl.classList.add("has-image");
+      return;
     }
 
-    function uploadTab() {
-      const wrap = el("div");
-      wrap.appendChild(el("p", { class: "img-picker-hint" },
-        ["Aceita JPG, PNG, WebP. Máx 5 MB. A imagem é otimizada e salva localmente (funciona offline)."]));
-      wrap.appendChild(el("input", {
-        type: "file",
-        accept: "image/jpeg,image/png,image/webp",
-        on: { change: (e) => handleFile(e.target.files?.[0]) }
-      }));
-      return wrap;
-    }
+    // Caso contrário, é um blobId: busca no storage (lazy).
+    if (!store || !store.getBlob) return clear();
+    const blob = await store.getBlob(ref);
+    if (!(blob instanceof Blob)) return clear();
 
-    function urlTab() {
-      const wrap = el("div");
-      wrap.appendChild(el("p", { class: "img-picker-hint" }, [
-        navigator.onLine
-          ? "Cola uma URL pública. Recomendado “Baixar e cachear” para funcionar offline depois."
-          : "⚠ Você está OFFLINE. URLs externas não carregam agora. Use Upload ou Biblioteca."
-      ]));
-      const input = el("input", { type: "url", placeholder: "https://exemplo.com/imagem.jpg", style: { width: "100%", marginBottom: "0.5rem" } });
-      wrap.appendChild(input);
-      const row = el("div", { style: { display: "flex", gap: "0.5rem", flexWrap: "wrap" } });
-      row.appendChild(el("button", {
-        class: "btn",
-        on: { click: () => {
-          const url = input.value.trim();
-          if (!/^https?:\/\//i.test(url)) return toast("URL inválida", { type: "error" });
-          pick({ kind: "url", url });
-          closePicker();
-          toast("URL definida. Requer estar online e o link existir.", { type: "info" });
-        }}
-      }, ["Usar URL direta"]));
-      row.appendChild(el("button", {
-        class: "btn",
-        disabled: !navigator.onLine,
-        title: navigator.onLine ? "Baixa e salva localmente (offline depois)" : "Indisponível offline",
-        on: { click: () => {
-          const url = input.value.trim();
-          if (!/^https?:\/\//i.test(url)) return toast("URL inválida", { type: "error" });
-          urlToDataUri(url, maxDim)
-            .then(uri => { pick({ kind: "data", uri }); closePicker(); toast("✓ Imagem baixada e cacheada", { type: "success" }); })
-            .catch(err => toast("Falha ao baixar (CORS?): " + err.message, { type: "error" }));
-        }}
-      }, ["⬇ Baixar e cachear"]));
-      wrap.appendChild(row);
-      return wrap;
-    }
-
-    function templateTab() {
-      const wrap = el("div");
-      const templates = window.CoCData?.imageTemplates?.[templatesKey] || [];
-      if (!templates.length) {
-        wrap.appendChild(el("p", { class: "img-picker-hint" }, ["Nenhum template disponível."]));
-        return wrap;
-      }
-      wrap.appendChild(el("p", { class: "img-picker-hint" },
-        [`${templates.length} templates curados (SVGs ornamentais + fotos de domínio público).`]));
-      const grid = el("div", { class: "template-grid" });
-      templates.forEach(t => {
-        const card = el("button", {
-          class: "template-card",
-          title: t.name + (t.credit ? ` · ${t.credit}` : ""),
-          on: { click: () => { pick({ kind: "template", id: t.id }); closePicker(); toast(`Template "${t.name}" aplicado`, { type: "success" }); } }
-        });
-        const thumb = el("div", { class: "template-thumb" });
-        if (t.svg) thumb.innerHTML = t.svg;
-        else if (t.path) thumb.style.backgroundImage = `url("${t.path}")`;
-        card.appendChild(thumb);
-        card.appendChild(el("span", { class: "template-name" }, [t.name]));
-        grid.appendChild(card);
-      });
-      wrap.appendChild(grid);
-      return wrap;
-    }
-
-    function removeTab() {
-      const wrap = el("div");
-      wrap.appendChild(el("p", { class: "img-picker-hint" },
-        [current ? "Remove a imagem atual e volta ao placeholder." : "Nenhuma imagem definida ainda."]));
-      wrap.appendChild(el("button", {
-        class: "btn-danger",
-        disabled: !current,
-        on: { click: () => { pick(null); closePicker(); toast("Imagem removida", { type: "info" }); } }
-      }, ["🗑️ Confirmar remoção"]));
-      return wrap;
-    }
-
-    function handleFile(file) {
-      if (!file) return;
-      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return toast("Formato inválido. Use JPG, PNG ou WebP.", { type: "error" });
-      if (file.size > 5 * 1024 * 1024) return toast("Imagem maior que 5 MB", { type: "error" });
-      fileToDataUri(file, maxDim)
-        .then(uri => { pick({ kind: "data", uri }); closePicker(); toast("✓ Imagem salva localmente (otimizada)", { type: "success" }); })
-        .catch(() => toast("Falha ao processar a imagem", { type: "error" }));
-    }
-
-    root.appendChild(tabs);
-    root.appendChild(content);
-    setTab("upload");
-
-    m = modal({ title: title || "Imagem", body: root });
+    const url = URL.createObjectURL(blob);
+    urlByEl.set(targetEl, url);
+    activeUrls.add(url);
+    targetEl.style.backgroundImage = `url("${url}")`;
+    targetEl.classList.add("has-image");
   }
 
-  window.CoC.mediaPicker = { open, resolveSrc, fileToDataUri, urlToDataUri };
+  // ═════════════════════════════════════════════════════════════════════
+  // PONTE Blob <-> data-URI (persistência híbrida)
+  // ═════════════════════════════════════════════════════════════════════
+  // Em runtime as imagens vivem como blobId (Blob no IDB) — boot leve, lazy.
+  // No EXPORT, o JSON precisa ser PORTÁTIL: resolvemos cada blobId para um
+  // data-URI embutido (a imagem viaja junto no backup). No IMPORT, re-hidratamos
+  // o data-URI num Blob local novo. render() já aceita ambos os formatos.
+
+  // blobId → data-URI. Passa data-URI/URL adiante inalterado. null se não achar.
+  async function blobIdToDataURI(ref) {
+    if (!ref || typeof ref !== "string") return null;
+    if (ref.startsWith("data:") || ref.startsWith("http")) return ref;  // já portátil
+    if (!store || !store.getBlob) return null;
+    const blob = await store.getBlob(ref);
+    if (!(blob instanceof Blob)) return null;
+    return await new Promise((resolve) => {
+      const r = new FileReader();
+      r.onload  = () => resolve(typeof r.result === "string" ? r.result : null);
+      r.onerror = () => resolve(null);
+      r.readAsDataURL(blob);
+    });
+  }
+
+  // Decodifica data-URI (base64 ou texto) em Blob — sem fetch, robusto offline.
+  function decodeDataURI(dataURI) {
+    const comma = dataURI.indexOf(",");
+    if (comma < 0) return null;
+    const header = dataURI.slice(5, comma);            // ex.: "image/webp;base64"
+    const mime   = header.split(";")[0] || "application/octet-stream";
+    const data   = dataURI.slice(comma + 1);
+    let bytes;
+    if (/;base64/i.test(header)) {
+      const bin = atob(data);
+      bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    } else {
+      bytes = new TextEncoder().encode(decodeURIComponent(data));
+    }
+    return new Blob([bytes], { type: mime });
+  }
+
+  // data-URI → Blob → saveBlob → novo blobId. Best-effort: se não houver storage
+  // de blob (backend memória), devolve o próprio data-URI (render lida com ele).
+  // Valores não-data: (blobId já local, URL http) passam inalterados.
+  async function dataURIToBlobId(ref) {
+    if (!ref || typeof ref !== "string") return ref || null;
+    if (!ref.startsWith("data:")) return ref;          // já é id/URL
+    if (!store || !store.saveBlob) return ref;
+    try {
+      const blob = decodeDataURI(ref);
+      if (!(blob instanceof Blob)) return ref;
+      const id = await store.saveBlob(null, blob);
+      return id || ref;
+    } catch (e) {
+      return ref;
+    }
+  }
+
+  window.CoC.mediaPicker = {
+    pick,
+    render,
+    clear: releaseEl,
+    releaseAll,
+    blobIdToDataURI,
+    dataURIToBlobId,
+    MAX_RAW_BYTES
+  };
 
 })();

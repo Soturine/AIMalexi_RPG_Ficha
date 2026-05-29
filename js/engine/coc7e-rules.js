@@ -296,6 +296,48 @@ window.CoC = window.CoC || {};
   }
 
   /**
+   * Resolve o conjunto EFETIVO de perícias da ocupação para um personagem.
+   *
+   * Em CoC 7E uma ocupação tem perícias obrigatórias (fixas na lista) MAIS um
+   * número de perícias livres (`anySkillsCount`) que o jogador escolhe. As livres
+   * precisam ser "designadas" pelo personagem para contarem no pool da ocupação —
+   * é o que `character.occupationSkills` (array de nomes) representa. Sem isso,
+   * ocupações com perícias livres (e em especial a "Personalizada", cuja lista é
+   * vazia) ficam com pool de ocupação impossível de gastar.
+   *
+   * Função PURA: recebe dados, devolve conjuntos. Não toca no DOM.
+   *
+   * @param {Object|null} occ       - objeto da ocupação (window.CoCData.occupations[n])
+   * @param {Object|null} character - personagem (usa character.occupationSkills)
+   * @returns {{
+   *   mandatory: Set<string>,  // perícias fixas da ocupação (todas as opções de "A | B")
+   *   chosen:    Set<string>,  // perícias livres designadas pelo jogador (sem duplicar mandatórias)
+   *   effective: Set<string>,  // mandatory ∪ chosen — o que conta no pool da ocupação
+   *   freeBudget:number,       // anySkillsCount (quantas livres a ocupação permite)
+   *   freeUsed:  number        // quantas livres já foram designadas
+   * }}
+   */
+  function buildOccupationContext(occ, character) {
+    const mandatory = new Set();
+    if (occ && Array.isArray(occ.skills)) {
+      for (const s of occ.skills) {
+        // "Escalar | Nadar" = escolha uma; mantemos ambas elegíveis (lenient, não-bloqueante).
+        String(s).split("|").map((x) => x.trim()).filter(Boolean).forEach((x) => mandatory.add(x));
+      }
+    }
+    const chosen = new Set();
+    const list = character && Array.isArray(character.occupationSkills) ? character.occupationSkills : [];
+    for (const name of list) {
+      const n = String(name || "").trim();
+      if (n && !mandatory.has(n)) chosen.add(n);
+    }
+    const effective = new Set(mandatory);
+    chosen.forEach((n) => effective.add(n));
+    const freeBudget = occ ? num(occ.anySkillsCount) : 0;
+    return { mandatory, chosen, effective, freeBudget, freeUsed: chosen.size };
+  }
+
+  /**
    * Soma de pontos GASTOS em um conjunto de perícias.
    * @param {Array<{base?: number, value: number}>} skillList
    *   Cada item: { base: valor padrão da perícia, value: valor atual após alocação }
@@ -355,6 +397,7 @@ window.CoC = window.CoC || {};
     calcOwnLanguageBase,
     calcOccupationPoints,
     calcPersonalInterestPoints,
+    buildOccupationContext,
     sumSkillPointsSpent,
     validateCharacter
   };

@@ -4,11 +4,34 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ficha do Investigador · Chamado de Cthulhu 7E · AIMalexi RPG</title>
+
   <link rel="stylesheet" href="css/theme.css" />
   <link rel="stylesheet" href="css/investigator.css" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E" />
+
+  <link
+    rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E"
+  />
+
+  <link rel="manifest" href="manifest.json" />
+
+  <meta name="theme-color" content="#1a1510" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 </head>
+
 <body>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch((err) => {
+        console.warn("[PWA] Service Worker não registrado:", err);
+      });
+    });
+  }
+</script>
 
 <div class="app">
 
@@ -17,121 +40,278 @@
     <p class="app-subtitle">Chamado de Cthulhu · 7ª Edição</p>
   </header>
 
-  <!-- ═══ TOOLBAR (Multi-personagem + Ações) ═══ -->
+  <!-- ═══ TOOLBAR ═══ -->
   <div class="toolbar">
-    <a href="index.html" class="btn btn-ghost" title="Voltar ao portal">← Início</a>
+
+    <a href="index.html" class="btn btn-ghost" title="Voltar ao portal">
+      ← Início
+    </a>
 
     <div class="character-selector">
-      <label for="character-select" class="sr-only">Personagem ativo</label>
+      <label for="character-select" class="sr-only">
+        Personagem ativo
+      </label>
+
       <select id="character-select" title="Personagem ativo">
         <option value="">— Nenhum personagem —</option>
       </select>
     </div>
 
-    <button id="btn-new" title="Criar novo personagem (wizard)">+ Novo</button>
-    <button id="btn-load-klein" title="Carregar Klein Moretti (exemplo)">📜 Klein</button>
-    <button id="btn-import" title="Importar JSON">📁 Importar</button>
-    <input type="file" id="file-import" accept="application/json,.json" style="display:none" />
+    <button id="btn-new" title="Criar novo personagem (wizard)">
+      + Novo
+    </button>
+
+    <button id="btn-load-klein" title="Carregar Klein Moretti (exemplo)">
+      📜 Klein
+    </button>
+
+    <button id="btn-import" title="Importar JSON">
+      📁 Importar
+    </button>
+
+    <input
+      type="file"
+      id="file-import"
+      accept="application/json,.json"
+      style="display:none"
+    />
 
     <span class="toolbar-spacer"></span>
 
-    <button id="btn-edit-mode" title="Alternar Modo Editar (permite valores fora dos limites com aprovação)">✎ Modo Editar</button>
-    <button id="btn-print" class="btn-ghost" title="Imprimir / Salvar como PDF">🖨️ PDF</button>
-    <button id="btn-export" class="btn-export" title="Exportar personagem como JSON (BACKUP!)">💾 Exportar JSON</button>
-    <button id="btn-delete" class="btn-danger" title="Deletar este personagem">🗑️</button>
+    <button
+      id="btn-edit-mode"
+      title="Alternar Modo Editar (permite valores fora dos limites com aprovação)"
+    >
+      ✎ Modo Editar
+    </button>
+
+    <button
+      id="btn-sanity-fx"
+      class="btn-ghost"
+      title="Configurar efeitos visuais de insanidade"
+    >
+      🧠 Efeitos
+    </button>
+
+    <button
+      id="btn-print"
+      class="btn-ghost"
+      title="Imprimir / Salvar como PDF"
+    >
+      🖨️ PDF
+    </button>
+
+    <button
+      id="btn-export"
+      class="btn-export"
+      title="Exportar personagem como JSON (BACKUP!)"
+    >
+      💾 Exportar JSON
+    </button>
+
+    <button
+      id="btn-delete"
+      class="btn-danger"
+      title="Deletar este personagem"
+    >
+      🗑️
+    </button>
+
   </div>
 
-  <!-- ═══ MOBILE TABS (visível < 768px) ═══ -->
+  <!-- ═══ MOBILE TABS ═══ -->
   <nav class="mobile-tabs no-print" aria-label="Navegação móvel">
-    <button class="mobile-tab active" data-tab="personagem">👤 Personagem</button>
-    <button class="mobile-tab" data-tab="pericias">📜 Perícias</button>
-    <button class="mobile-tab" data-tab="combate">⚔️ Combate</button>
-    <button class="mobile-tab" data-tab="diario">📔 Diário</button>
-    <button class="mobile-tab" data-tab="log">🎲 Log</button>
+
+    <button class="mobile-tab active" data-tab="personagem">
+      👤 Personagem
+    </button>
+
+    <button class="mobile-tab" data-tab="pericias">
+      📜 Perícias
+    </button>
+
+    <button class="mobile-tab" data-tab="combate">
+      ⚔️ Combate
+    </button>
+
+    <button class="mobile-tab" data-tab="diario">
+      📔 Diário
+    </button>
+
+    <button class="mobile-tab" data-tab="log">
+      🎲 Log
+    </button>
+
   </nav>
 
   <!-- ═══ GRID PRINCIPAL ═══ -->
   <div class="investigator-grid">
 
-    <!-- ─── COLUNA PRINCIPAL ─── -->
+    <!-- ═══ CONTEÚDO PRINCIPAL ═══ -->
     <div class="content-col">
 
-      <!-- BANNER + RETRATO (Fase 6 — personalização visual) -->
-      <div id="character-banner" class="character-banner" title="Banner do investigador"></div>
+      <!-- BANNER -->
+      <div
+        id="character-banner"
+        class="character-banner"
+        title="Banner do investigador"
+      ></div>
 
       <!-- IDENTIDADE -->
       <section class="section identity-section" data-tab="personagem">
+
         <h2 class="section-title">
           Identidade
           <span class="meta">Quem é o investigador?</span>
         </h2>
+
         <div class="identity-wrapper">
-        <div id="character-portrait" class="character-portrait" title="Retrato do investigador"></div>
-        <div class="identity-grid">
-          <div>
-            <label for="id-name">Nome</label>
-            <input type="text" id="id-name" data-bind="investigator.name" placeholder="Nome do personagem" />
+
+          <div
+            id="character-portrait"
+            class="character-portrait"
+            title="Retrato do investigador"
+          ></div>
+
+          <div class="identity-grid">
+
+            <div>
+              <label for="id-name">Nome</label>
+              <input
+                type="text"
+                id="id-name"
+                data-bind="investigator.name"
+                placeholder="Nome do personagem"
+              />
+            </div>
+
+            <div>
+              <label for="id-player">Jogador</label>
+              <input
+                type="text"
+                id="id-player"
+                data-bind="investigator.playerName"
+                placeholder="Seu nome"
+              />
+            </div>
+
+            <div>
+              <label for="id-occupation">Ocupação</label>
+
+              <select
+                id="id-occupation"
+                data-bind="investigator.occupation"
+              >
+                <option value="">— escolher —</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="id-age">Idade</label>
+
+              <input
+                type="number"
+                id="id-age"
+                data-bind="investigator.age"
+                min="15"
+                max="99"
+              />
+            </div>
+
+            <div>
+              <label for="id-sex">Sexo / Pronomes</label>
+
+              <input
+                type="text"
+                id="id-sex"
+                data-bind="investigator.sex"
+                placeholder="ex: Masculino, ele/dele"
+              />
+            </div>
+
+            <div>
+              <label for="id-residence">Residência</label>
+
+              <input
+                type="text"
+                id="id-residence"
+                data-bind="investigator.residence"
+                placeholder="Cidade atual"
+              />
+            </div>
+
+            <div>
+              <label for="id-birthplace">Local de Nascimento</label>
+
+              <input
+                type="text"
+                id="id-birthplace"
+                data-bind="investigator.birthplace"
+                placeholder="Cidade natal"
+              />
+            </div>
+
+            <div class="full-width">
+              <label for="id-tagline">Conceito (1 frase)</label>
+
+              <input
+                type="text"
+                id="id-tagline"
+                data-bind="investigator.tagline"
+                placeholder="Ex: Médico cético perseguindo o impossível"
+              />
+            </div>
+
           </div>
-          <div>
-            <label for="id-player">Jogador</label>
-            <input type="text" id="id-player" data-bind="investigator.playerName" placeholder="Seu nome" />
-          </div>
-          <div>
-            <label for="id-occupation">Ocupação</label>
-            <select id="id-occupation" data-bind="investigator.occupation">
-              <option value="">— escolher —</option>
-            </select>
-          </div>
-          <div>
-            <label for="id-age">Idade</label>
-            <input type="number" id="id-age" data-bind="investigator.age" min="15" max="99" />
-          </div>
-          <div>
-            <label for="id-sex">Sexo / Pronomes</label>
-            <input type="text" id="id-sex" data-bind="investigator.sex" placeholder="ex: Masculino, ele/dele" />
-          </div>
-          <div>
-            <label for="id-residence">Residência</label>
-            <input type="text" id="id-residence" data-bind="investigator.residence" placeholder="Cidade atual" />
-          </div>
-          <div>
-            <label for="id-birthplace">Local de Nascimento</label>
-            <input type="text" id="id-birthplace" data-bind="investigator.birthplace" placeholder="Cidade natal" />
-          </div>
-          <div class="full-width">
-            <label for="id-tagline">Conceito (1 frase)</label>
-            <input type="text" id="id-tagline" data-bind="investigator.tagline" placeholder="Ex: Médico cético perseguindo o impossível" />
-          </div>
+
         </div>
-        </div><!-- /identity-wrapper -->
+
         <p class="identity-tagline" id="identity-display">—</p>
+
       </section>
 
       <!-- ATRIBUTOS -->
       <section class="section" data-tab="personagem">
+
         <h2 class="section-title">
           Atributos
+
           <span class="meta">
             Clique [R/D/E] para rolar testes
-            <button id="btn-roll-all" class="btn-primary" style="margin-left: 0.5rem;" title="Rola todos os atributos do zero">🎲 Rolar Tudo</button>
+
+            <button
+              id="btn-roll-all"
+              class="btn-primary"
+              style="margin-left: 0.5rem;"
+              title="Rola todos os atributos do zero"
+            >
+              🎲 Rolar Tudo
+            </button>
           </span>
         </h2>
+
         <div class="attr-grid" id="attr-grid"></div>
+
       </section>
 
       <!-- DERIVADOS -->
       <section class="section" data-tab="personagem">
+
         <h2 class="section-title">
           Estatísticas Derivadas
           <span class="meta">PV, PM, SAN são editáveis em jogo</span>
         </h2>
+
         <div class="derived-bar" id="derived-bar"></div>
+
       </section>
 
       <!-- PERÍCIAS -->
       <section class="section" data-tab="pericias">
+
         <h2 class="section-title">
           Perícias
+
           <span class="skills-pool-summary" id="skills-pool">
             <span class="badge" id="badge-occ">Ocupação: —</span>
             <span class="badge" id="badge-pi">Interesse: —</span>
@@ -139,143 +319,237 @@
         </h2>
 
         <div class="skill-search">
-          <input type="search" id="skill-search-input" placeholder="🔍 Buscar perícia..." />
-          <button class="filter-chip" data-filter="all">Todas</button>
-          <button class="filter-chip" data-filter="occupation">Ocupação</button>
-          <button class="filter-chip" data-filter="used">Com pontos</button>
+
+          <input
+            type="search"
+            id="skill-search-input"
+            placeholder="🔍 Buscar perícia..."
+          />
+
+          <button class="filter-chip" data-filter="all">
+            Todas
+          </button>
+
+          <button class="filter-chip" data-filter="occupation">
+            Ocupação
+          </button>
+
+          <button class="filter-chip" data-filter="used">
+            Com pontos
+          </button>
+
         </div>
 
         <div id="skills-groups"></div>
+
       </section>
 
       <!-- ARSENAL -->
       <section class="section" data-tab="combate">
+
         <h2 class="section-title">
           Arsenal
+
           <span class="meta">
             Clique numa arma para atacar
-            <button id="btn-add-weapon" style="margin-left: 0.5rem;">+ Arma</button>
+
+            <button id="btn-add-weapon" style="margin-left: 0.5rem;">
+              + Arma
+            </button>
           </span>
         </h2>
+
         <div class="weapons-list" id="weapons-list"></div>
+
       </section>
 
-      <!-- DIÁRIO / BACKGROUND -->
+      <!-- DIÁRIO -->
       <section class="section" data-tab="diario">
+
         <h2 class="section-title">
           Diário do Investigador
           <span class="meta">Background, ideologia, traços</span>
         </h2>
+
         <div class="background-grid">
+
           <div class="full-width">
             <label for="bg-description">Descrição Pessoal</label>
-            <textarea id="bg-description" data-bind="background.description" placeholder="Aparência, modos, primeira impressão..."></textarea>
+
+            <textarea
+              id="bg-description"
+              data-bind="background.description"
+              placeholder="Aparência, modos, primeira impressão..."
+            ></textarea>
           </div>
+
           <div>
             <label for="bg-ideology">Ideologia / Crenças</label>
             <textarea id="bg-ideology" data-bind="background.ideology"></textarea>
           </div>
+
           <div>
             <label for="bg-people">Pessoas Importantes</label>
             <textarea id="bg-people" data-bind="background.significantPeople"></textarea>
           </div>
+
           <div>
             <label for="bg-locations">Lugares Significativos</label>
             <textarea id="bg-locations" data-bind="background.meaningfulLocations"></textarea>
           </div>
+
           <div>
             <label for="bg-possessions">Posses Preciosas</label>
             <textarea id="bg-possessions" data-bind="background.treasuredPossessions"></textarea>
           </div>
+
           <div>
             <label for="bg-traits">Características / Traços</label>
             <textarea id="bg-traits" data-bind="background.traits"></textarea>
           </div>
+
           <div>
             <label for="bg-injuries">Ferimentos e Cicatrizes</label>
             <textarea id="bg-injuries" data-bind="background.injuriesScars"></textarea>
           </div>
+
           <div>
             <label for="bg-phobias">Fobias e Manias</label>
             <textarea id="bg-phobias" data-bind="background.phobiasManias"></textarea>
           </div>
+
           <div>
             <label for="bg-tomes">Tomos Lidos</label>
             <textarea id="bg-tomes" data-bind="background.tomes"></textarea>
           </div>
+
           <div>
             <label for="bg-encounters">Encontros Sobrenaturais</label>
             <textarea id="bg-encounters" data-bind="background.encounters"></textarea>
           </div>
+
           <div class="full-width">
             <label for="bg-equipment">Equipamento (um por linha)</label>
-            <textarea id="bg-equipment" placeholder="Lanterna&#10;Caderno e caneta&#10;Lupa..."></textarea>
+
+            <textarea
+              id="bg-equipment"
+              placeholder="Lanterna&#10;Caderno e caneta&#10;Lupa..."
+            ></textarea>
           </div>
+
         </div>
 
-        <div class="status-toggles">
-          <label><input type="checkbox" id="st-major-wound" data-bind="status.majorWound" /> Ferimento Grave</label>
-          <label><input type="checkbox" id="st-unconscious" data-bind="status.unconscious" /> Inconsciente</label>
-          <label><input type="checkbox" id="st-dying" data-bind="status.dying" /> Morrendo</label>
-        </div>
-
-        <div class="background-grid" style="margin-top: 0.75rem;">
-          <div>
-            <label for="st-temp-insanity">Loucura Temporária</label>
-            <textarea id="st-temp-insanity" data-bind="status.temporaryInsanity"></textarea>
-          </div>
-          <div>
-            <label for="st-indef-insanity">Loucura Indefinida</label>
-            <textarea id="st-indef-insanity" data-bind="status.indefiniteInsanity"></textarea>
-          </div>
-        </div>
       </section>
 
-    </div><!-- /content-col -->
+    </div>
 
-    <!-- ─── SIDEBAR ─── -->
+    <!-- ═══ SIDEBAR ═══ -->
     <aside class="sidebar-col" data-tab="log">
 
-      <!-- Modificadores de Rolagem -->
       <div class="modifier-panel no-print">
+
         <h3>Modificadores de Rolagem</h3>
+
         <div class="modifier-row" id="modifier-difficulty">
-          <button data-difficulty="regular" class="active" title="Sucesso Regular (≤ valor)">Regular</button>
-          <button data-difficulty="hard" title="Sucesso Difícil (≤ ½)">Difícil</button>
-          <button data-difficulty="extreme" title="Sucesso Extremo (≤ ⅕)">Extremo</button>
+
+          <button data-difficulty="regular" class="active">
+            Regular
+          </button>
+
+          <button data-difficulty="hard">
+            Difícil
+          </button>
+
+          <button data-difficulty="extreme">
+            Extremo
+          </button>
+
         </div>
+
         <div class="modifier-row" id="modifier-bonus">
-          <button data-bp="" class="active" title="Sem modificador">Normal</button>
-          <button data-bp="bonus" class="bonus" title="+ Dado de Bônus">+ Bônus</button>
-          <button data-bp="penalty" class="penalty" title="+ Dado de Penalidade">+ Penalidade</button>
+
+          <button data-bp="" class="active">
+            Normal
+          </button>
+
+          <button data-bp="bonus" class="bonus">
+            + Bônus
+          </button>
+
+          <button data-bp="penalty" class="penalty">
+            + Penalidade
+          </button>
+
         </div>
+
       </div>
 
-      <!-- Roll Log -->
+      <!-- LOG -->
       <div class="roll-log" id="roll-log">
+
         <div class="roll-log-header">
-          <strong style="font-family: var(--font-serif); color: var(--brass);">🎲 Log de Rolagens</strong>
+
+          <strong
+            style="font-family: var(--font-serif); color: var(--brass);"
+          >
+            🎲 Log de Rolagens
+          </strong>
+
           <div style="display:flex; gap: 0.25rem;">
-            <button class="btn-ghost btn-icon" id="btn-copy-log" title="Copiar log como markdown">↗</button>
-            <button class="btn-ghost btn-icon" id="btn-clear-log" title="Limpar log">✕</button>
+
+            <button
+              class="btn-ghost btn-icon"
+              id="btn-copy-log"
+              title="Copiar log como markdown"
+            >
+              ↗
+            </button>
+
+            <button
+              class="btn-ghost btn-icon"
+              id="btn-clear-log"
+              title="Limpar log"
+            >
+              ✕
+            </button>
+
           </div>
+
         </div>
+
         <ul style="list-style:none; padding:0; margin:0;"></ul>
+
       </div>
 
     </aside>
 
-  </div><!-- /investigator-grid -->
+  </div>
 
-  <footer style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--ink-faded); font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-faded);">
-    <a href="index.html">← Portal</a> · <a href="guia-iniciante.html">Guia do Iniciante</a> · <a href="keeper.html">Ficha do Mestre →</a>
+  <!-- FOOTER -->
+  <footer
+    style="
+      text-align: center;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--ink-faded);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--ink-faded);
+    "
+  >
+    <a href="index.html">← Portal</a>
+    ·
+    <a href="guia-iniciante.html">Guia do Iniciante</a>
+    ·
+    <a href="keeper.html">Ficha do Mestre →</a>
   </footer>
 
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
-     DADOS (carregam ANTES da engine — atribuem a window.CoCData)
-     ═══════════════════════════════════════════════════════════════════════ -->
+     DADOS
+═══════════════════════════════════════════════════════════════════════ -->
+
 <script src="data/skills.js"></script>
 <script src="data/occupations.js"></script>
 <script src="data/damage-bonus-table.js"></script>
@@ -286,8 +560,9 @@
 <script src="data/presets/klein-moretti.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
-     ENGINE (depende de CoCData)
-     ═══════════════════════════════════════════════════════════════════════ -->
+     ENGINE
+═══════════════════════════════════════════════════════════════════════ -->
+
 <script src="js/engine/dice.js"></script>
 <script src="js/engine/coc7e-rules.js"></script>
 <script src="js/engine/storage.js"></script>
@@ -295,14 +570,19 @@
 
 <!-- ═══════════════════════════════════════════════════════════════════════
      UI COMPARTILHADA
-     ═══════════════════════════════════════════════════════════════════════ -->
+═══════════════════════════════════════════════════════════════════════ -->
+
 <script src="js/shared/ui-components.js"></script>
 <script src="js/shared/validators.js"></script>
+
+<!-- RESOLVIDO O CONFLITO DE MERGE -->
+<script src="js/shared/sanity-fx.js"></script>
 <script src="js/shared/media-picker.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
-     ORQUESTRADOR DA FICHA
-     ═══════════════════════════════════════════════════════════════════════ -->
+     ORQUESTRADOR
+═══════════════════════════════════════════════════════════════════════ -->
+
 <script src="js/investigator.js"></script>
 
 </body>
