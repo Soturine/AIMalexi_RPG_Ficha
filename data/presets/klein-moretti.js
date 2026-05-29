@@ -39,7 +39,7 @@ window.CoCData.presets.klein = {
     PV:    { label: "Pontos de Vida",  value: 10, current: 10 },
     PM:    { label: "Pontos de Magia", value: 18, current: 18 },
     SAN:   { label: "Sanidade",        value: 90, current: 90, max: 99 },
-    Mitos: { label: "Mitos de Cthulhu", value: 0 },
+    Mitos: { label: "Mythos de Cthulhu", value: 0 },
     MOV:   { label: "Movimento",       value: 8 },
     DB:    { label: "Bônus de Dano",   value: "0" },
     Build: { label: "Corpo",           value: 0 }
@@ -51,7 +51,7 @@ window.CoCData.presets.klein = {
     "Psicologia":              { value: 75, note: "Desarmar mentiras, ler intenções" },
     "Encontrar":               { value: 80, note: "Cada pista é uma confissão silenciosa" },
     "Disfarce":                { value: 75, note: "Trocar de persona em segundos" },
-    "Pesquisar Bibliotecas":   { value: 70 },
+    "Usar Bibliotecas":        { value: 70 },
     "Lábia":                   { value: 65, note: "Perícia interpessoal escolhida da Ocupação" },
     "Arte/Ofício (Atuação)":   { value: 65, note: "Mecânica central — manter a máscara sob horror cósmico" },
     "Direito":                 { value: 15, note: "Obrigatória do Detetive" },
@@ -61,7 +61,7 @@ window.CoCData.presets.klein = {
     "Chaveiro":                { value: 10 },
     "História":                { value: 15, note: "Era vitoriana, instituições" },
     "Outra Língua (Hermes)":   { value: 5 },
-    "Armas de Fogo (Pistola)": { value: 25, note: "Para o Revólver .38" },
+    "Armas de Fogo (Pistolas)": { value: 25, note: "Para o Revólver .38" },
     "Lutar":                   { value: 25 },
     "Lutar (Espada)":          { value: 20, note: "Para a Bengala-Espada" },
     "Arremessar":              { value: 20, note: "Para o Tarô de Prata" },
@@ -79,7 +79,7 @@ window.CoCData.presets.klein = {
   weapons: [
     {
       name: "Revólver .38",
-      skill: "Armas de Fogo (Pistola)",
+      skill: "Armas de Fogo (Pistolas)",
       damage: "1D10",
       range: "15m",
       shots: 2,
@@ -195,7 +195,7 @@ window.CoCData.presets.klein = {
       {
         name: "Fardo do Conhecimento",
         cost: {},
-        description: "Cada revelação aumenta Mitos de Cthulhu, reduzindo SAN máxima (99 − Mitos)."
+        description: "Cada revelação aumenta Mythos de Cthulhu, reduzindo SAN máxima (99 − Mythos)."
       },
       {
         name: "Fachada de O Louco",

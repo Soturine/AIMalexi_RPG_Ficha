@@ -25,7 +25,7 @@ window.CoC = window.CoC || {};
   // Versão do schema de dados persistidos. Incremente quando a estrutura mudar.
   // A função runMigrations() deve adicionar um bloco para cada salto de versão.
   //   v1 → v2: campo investigator.occupationSkills (perícias livres designadas da ocupação)
-  const SAVE_SCHEMA_VERSION = 2;
+  const SAVE_SCHEMA_VERSION = 3;
 
   // IndexedDB
   const DB_NAME = "aimalexi-rpg";
@@ -378,6 +378,80 @@ window.CoC = window.CoC || {};
         data.occupationSkills = [];
       }
       data._schemaVersion = 2;
+    }
+
+    // v2 → v3: nomes de perícia canônicos do PDF oficial 7E (correção de tradução).
+    // Renomeia chaves de perícia em fichas (objeto) e criaturas (array) salvas, para
+    // não orfanar pontos já gastos; migra o Crédito (campo) → perícia "Nível de
+    // Crédito"; e normaliza o rótulo do Mythos. Idempotente.
+    if (data._schemaVersion < 3) {
+      const RENAMES = {
+        "Pesquisar Bibliotecas": "Usar Bibliotecas",
+        "Uso de Bibliotecas (Internet)": "Usar Bibliotecas",
+        "Nadar": "Natação",
+        "Conduzir Veículo": "Dirigir Automóveis",
+        "Eletricidade": "Consertos Elétricos",
+        "Mecânica": "Consertos Mecânicos",
+        "Computadores": "Usar Computadores",
+        "Idioma Próprio": "Língua Nativa",
+        "Mitos de Cthulhu": "Mythos de Cthulhu",
+        "Seguir Alguém": "Furtividade",
+        "Biologia": "Ciência (Biologia)",
+        "Ciência Forense": "Ciência (Forense)",
+        "Armas de Fogo (Pistola)": "Armas de Fogo (Pistolas)",
+        "Armas de Fogo (Rifle/Escopeta)": "Armas de Fogo (Rifles/Espingardas)",
+        "Armas de Fogo (Submetralhadora)": "Armas de Fogo (Submetralhadoras)",
+        "Armas de Fogo (Metralhadora)": "Armas de Fogo (Metralhadoras)"
+      };
+
+      // Perícias de FICHA: objeto { "Nome": { value, ... } }. Em colisão (ex.: dois
+      // nomes antigos → mesmo novo), mantém o MAIOR valor para não perder pontos.
+      if (data.skills && !Array.isArray(data.skills) && typeof data.skills === "object") {
+        for (const oldName in RENAMES) {
+          if (!Object.prototype.hasOwnProperty.call(data.skills, oldName)) continue;
+          const newName = RENAMES[oldName];
+          const oldEntry = data.skills[oldName] || {};
+          const cur = data.skills[newName];
+          if (cur && typeof cur === "object") {
+            const a = Number(cur.value) || 0;
+            const b = Number(oldEntry.value) || 0;
+            if (b > a) cur.value = b;
+          } else {
+            data.skills[newName] = oldEntry;
+          }
+          delete data.skills[oldName];
+        }
+      }
+
+      // Perícias de CRIATURA: array [{ name, value }].
+      if (Array.isArray(data.skills)) {
+        for (const s of data.skills) { if (s && RENAMES[s.name]) s.name = RENAMES[s.name]; }
+      }
+
+      // Armas da ficha referenciam a perícia pelo nome.
+      if (Array.isArray(data.weapons)) {
+        for (const w of data.weapons) { if (w && RENAMES[w.skill]) w.skill = RENAMES[w.skill]; }
+      }
+
+      // Crédito: campo finances.creditRating → perícia "Nível de Crédito".
+      if (data.finances && typeof data.finances === "object" && data.finances.creditRating != null) {
+        const crVal = Number(data.finances.creditRating) || 0;
+        if (crVal > 0) {
+          if (data.skills && !Array.isArray(data.skills) && typeof data.skills === "object") {
+            const ex = data.skills["Nível de Crédito"];
+            if (ex && typeof ex === "object") { if (crVal > (Number(ex.value) || 0)) ex.value = crVal; }
+            else data.skills["Nível de Crédito"] = { value: crVal };
+          }
+        }
+        delete data.finances.creditRating;   // a carteira (cash) permanece
+      }
+
+      // Rótulo do Mythos no bloco derivado (a chave interna segue "Mitos").
+      if (data.derived && data.derived.Mitos && typeof data.derived.Mitos === "object") {
+        data.derived.Mitos.label = "Mythos de Cthulhu";
+      }
+
+      data._schemaVersion = 3;
     }
 
     return data;

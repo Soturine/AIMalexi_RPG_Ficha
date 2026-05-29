@@ -166,7 +166,7 @@ window.CoCData.weapons = [
   {
     name: "Revólver .22",
     category: "firearm",
-    skill: "Armas de Fogo (Pistola)",
+    skill: "Armas de Fogo (Pistolas)",
     damage: "1D6",
     range: "10m",
     ammo: 6,
@@ -178,7 +178,7 @@ window.CoCData.weapons = [
   {
     name: "Revólver .38",
     category: "firearm",
-    skill: "Armas de Fogo (Pistola)",
+    skill: "Armas de Fogo (Pistolas)",
     damage: "1D10",
     range: "15m",
     ammo: 6,
@@ -190,7 +190,7 @@ window.CoCData.weapons = [
   {
     name: "Revólver .45",
     category: "firearm",
-    skill: "Armas de Fogo (Pistola)",
+    skill: "Armas de Fogo (Pistolas)",
     damage: "1D10+2",
     range: "15m",
     ammo: 6,
@@ -202,7 +202,7 @@ window.CoCData.weapons = [
   {
     name: "Pistola Semiautomática 9mm",
     category: "firearm",
-    skill: "Armas de Fogo (Pistola)",
+    skill: "Armas de Fogo (Pistolas)",
     damage: "1D10",
     range: "15m",
     ammo: 15,
@@ -216,7 +216,7 @@ window.CoCData.weapons = [
   {
     name: "Espingarda Cal. 12 (chumbo grosso)",
     category: "firearm",
-    skill: "Armas de Fogo (Rifle/Escopeta)",
+    skill: "Armas de Fogo (Rifles/Espingardas)",
     damage: "4D6/2D6/1D6",
     range: "10/20/50m",
     ammo: 2,
@@ -228,7 +228,7 @@ window.CoCData.weapons = [
   {
     name: "Rifle .30-06",
     category: "firearm",
-    skill: "Armas de Fogo (Rifle/Escopeta)",
+    skill: "Armas de Fogo (Rifles/Espingardas)",
     damage: "2D6+4",
     range: "110m",
     ammo: 5,
@@ -240,7 +240,7 @@ window.CoCData.weapons = [
   {
     name: "Carabina .30 (Winchester)",
     category: "firearm",
-    skill: "Armas de Fogo (Rifle/Escopeta)",
+    skill: "Armas de Fogo (Rifles/Espingardas)",
     damage: "2D6",
     range: "60m",
     ammo: 6,
@@ -254,7 +254,7 @@ window.CoCData.weapons = [
   {
     name: "Submetralhadora Thompson .45",
     category: "firearm",
-    skill: "Armas de Fogo (Submetralhadora)",
+    skill: "Armas de Fogo (Submetralhadoras)",
     damage: "1D10+2",
     range: "20m",
     ammo: 30,

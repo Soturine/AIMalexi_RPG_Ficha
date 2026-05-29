@@ -31,7 +31,7 @@ window.CoCData.occupations = [
   {
     name: "Antiquário",
     pointsFormula: "EDU*4",
-    skills: ["Avaliação", "Arte/Ofício", "História", "Pesquisar Bibliotecas",
+    skills: ["Avaliação", "Arte/Ofício", "História", "Usar Bibliotecas",
              "Outra Língua", "Outra Língua", "Encontrar"],
     anySkillsCount: 1,
     credit: [30, 70],
@@ -52,7 +52,7 @@ window.CoCData.occupations = [
     name: "Arqueólogo",
     pointsFormula: "EDU*4",
     skills: ["Arqueologia", "Avaliação", "História", "Ciência",
-             "Outra Língua", "Encontrar", "Mecânica"],
+             "Outra Língua", "Encontrar", "Consertos Mecânicos"],
     anySkillsCount: 1,
     credit: [10, 40],
     era: "any",
@@ -71,7 +71,7 @@ window.CoCData.occupations = [
   {
     name: "Atleta",
     pointsFormula: "EDU*2+DES*2",
-    skills: ["Saltar", "Escalar", "Nadar", "Lutar", "Cavalgar",
+    skills: ["Saltar", "Escalar", "Natação", "Lutar", "Cavalgar",
              "Primeiros Socorros", "Psicologia"],
     anySkillsCount: 1,
     credit: [9, 70],
@@ -81,8 +81,8 @@ window.CoCData.occupations = [
   {
     name: "Autor",
     pointsFormula: "EDU*4",
-    skills: ["Arte/Ofício", "História", "Outra Língua", "Idioma Próprio",
-             "Pesquisar Bibliotecas", "Psicologia"],
+    skills: ["Arte/Ofício", "História", "Outra Língua", "Língua Nativa",
+             "Usar Bibliotecas", "Psicologia"],
     anySkillsCount: 2,
     credit: [9, 30],
     era: "any",
@@ -91,7 +91,7 @@ window.CoCData.occupations = [
   {
     name: "Clérigo",
     pointsFormula: "EDU*4",
-    skills: ["Contabilidade", "História", "Outra Língua", "Idioma Próprio",
+    skills: ["Contabilidade", "História", "Outra Língua", "Língua Nativa",
              "Ocultismo", "Psicologia", "Lábia"],
     anySkillsCount: 2,
     credit: [9, 60],
@@ -111,8 +111,8 @@ window.CoCData.occupations = [
   {
     name: "Detetive da Polícia",
     pointsFormula: "EDU*2 + (DES*2 | FOR*2)",
-    skills: ["Armas de Fogo (Pistola)", "Direito", "Escutar", "Psicologia",
-             "Encontrar", "Persuasão", "Seguir Alguém"],
+    skills: ["Armas de Fogo (Pistolas)", "Direito", "Escutar", "Psicologia",
+             "Encontrar", "Persuasão", "Furtividade"],
     anySkillsCount: 1,
     credit: [20, 50],
     era: "any",
@@ -122,7 +122,7 @@ window.CoCData.occupations = [
     name: "Detetive Particular",
     pointsFormula: "EDU*2+DES*2",
     skills: ["Direito", "Arte/Ofício (Fotografia)", "Disfarce", "Lábia",
-             "Psicologia", "Encontrar", "Seguir Alguém"],
+             "Psicologia", "Encontrar", "Furtividade"],
     anySkillsCount: 1,
     credit: [9, 30],
     era: "any",
@@ -131,7 +131,7 @@ window.CoCData.occupations = [
   {
     name: "Diletante",
     pointsFormula: "EDU*2+APA*2",
-    skills: ["Outra Língua", "Cavalgar", "Armas de Fogo (Rifle/Escopeta)",
+    skills: ["Outra Língua", "Cavalgar", "Armas de Fogo (Rifles/Espingardas)",
              "Arte/Ofício"],
     anySkillsCount: 3,
     credit: [50, 99],
@@ -141,7 +141,7 @@ window.CoCData.occupations = [
   {
     name: "Engenheiro",
     pointsFormula: "EDU*4",
-    skills: ["Arte/Ofício (Desenho Técnico)", "Mecânica", "Operar Maquinário Pesado",
+    skills: ["Arte/Ofício (Desenho Técnico)", "Consertos Mecânicos", "Operar Maquinário Pesado",
              "Ciência (Engenharia)", "Ciência (Física)", "Encontrar"],
     anySkillsCount: 2,
     credit: [30, 60],
@@ -151,7 +151,7 @@ window.CoCData.occupations = [
   {
     name: "Jornalista",
     pointsFormula: "EDU*4",
-    skills: ["Arte/Ofício (Fotografia)", "História", "Idioma Próprio",
+    skills: ["Arte/Ofício (Fotografia)", "História", "Língua Nativa",
              "Outra Língua", "Psicologia", "Lábia"],
     anySkillsCount: 2,
     credit: [9, 30],
@@ -171,8 +171,8 @@ window.CoCData.occupations = [
   {
     name: "Militar",
     pointsFormula: "EDU*2 + (DES*2 | FOR*2)",
-    skills: ["Armas de Fogo (Rifle/Escopeta)", "Sobrevivência", "Primeiros Socorros",
-             "Navegação", "Escutar", "Encontrar", "Mecânica"],
+    skills: ["Armas de Fogo (Rifles/Espingardas)", "Sobrevivência", "Primeiros Socorros",
+             "Navegação", "Escutar", "Encontrar", "Consertos Mecânicos"],
     anySkillsCount: 1,
     credit: [20, 70],
     era: "any",
@@ -181,7 +181,7 @@ window.CoCData.occupations = [
   {
     name: "Missionário",
     pointsFormula: "EDU*2 + (FOR*2 | APA*2 | DES*2 | CON*2)",
-    skills: ["Arte/Ofício", "Medicina", "Mecânica", "Outra Língua",
+    skills: ["Arte/Ofício", "Medicina", "Consertos Mecânicos", "Outra Língua",
              "Primeiros Socorros", "Psicologia"],
     anySkillsCount: 2,
     credit: [0, 30],
@@ -191,8 +191,8 @@ window.CoCData.occupations = [
   {
     name: "Operário",
     pointsFormula: "EDU*2 + (DES*2 | FOR*2)",
-    skills: ["Operar Maquinário Pesado", "Mecânica", "Lutar", "Primeiros Socorros",
-             "Escutar", "Arte/Ofício", "Conduzir Veículo"],
+    skills: ["Operar Maquinário Pesado", "Consertos Mecânicos", "Lutar", "Primeiros Socorros",
+             "Escutar", "Arte/Ofício", "Dirigir Automóveis"],
     anySkillsCount: 1,
     credit: [9, 30],
     era: "any",
@@ -201,7 +201,7 @@ window.CoCData.occupations = [
   {
     name: "Professor",
     pointsFormula: "EDU*4",
-    skills: ["Idioma Próprio", "Outra Língua", "Outra Língua", "Pesquisar Bibliotecas",
+    skills: ["Língua Nativa", "Outra Língua", "Outra Língua", "Usar Bibliotecas",
              "Psicologia", "Arte/Ofício"],
     anySkillsCount: 2,
     credit: [20, 70],
@@ -211,7 +211,7 @@ window.CoCData.occupations = [
   {
     name: "Repórter",
     pointsFormula: "EDU*2 + (DES*2 | APA*2)",
-    skills: ["Arte/Ofício (Fotografia)", "História", "Idioma Próprio",
+    skills: ["Arte/Ofício (Fotografia)", "História", "Língua Nativa",
              "Outra Língua", "Psicologia", "Lábia", "Encontrar"],
     anySkillsCount: 1,
     credit: [9, 30],
@@ -221,7 +221,7 @@ window.CoCData.occupations = [
   {
     name: "Soldado",
     pointsFormula: "EDU*2 + (DES*2 | FOR*2)",
-    skills: ["Escalar | Nadar", "Esquivar", "Armas de Fogo (Rifle/Escopeta) | Armas de Fogo (Submetralhadora)",
+    skills: ["Escalar | Nadar", "Esquivar", "Armas de Fogo (Rifles/Espingardas) | Armas de Fogo (Submetralhadoras)",
              "Sobrevivência", "Lutar (Briga)", "Furtividade"],
     anySkillsCount: 1,
     credit: [9, 30],
@@ -233,8 +233,8 @@ window.CoCData.occupations = [
   {
     name: "Hacker",
     pointsFormula: "EDU*4",
-    skills: ["Computadores", "Eletrônica", "Pesquisar Bibliotecas",
-             "Uso de Bibliotecas (Internet)", "Outra Língua", "Encontrar"],
+    skills: ["Usar Computadores", "Eletrônica", "Usar Bibliotecas",
+             "Consertos Elétricos", "Outra Língua", "Encontrar"],
     anySkillsCount: 2,
     credit: [10, 70],
     era: "modern",
@@ -243,8 +243,8 @@ window.CoCData.occupations = [
   {
     name: "Programador",
     pointsFormula: "EDU*4",
-    skills: ["Computadores", "Eletrônica", "Ciência (Matemática)", "Pesquisar Bibliotecas",
-             "Idioma Próprio", "Uso de Bibliotecas (Internet)"],
+    skills: ["Usar Computadores", "Eletrônica", "Ciência (Matemática)", "Usar Bibliotecas",
+             "Língua Nativa", "Encontrar"],
     anySkillsCount: 2,
     credit: [10, 70],
     era: "modern",

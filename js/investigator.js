@@ -377,7 +377,7 @@
     c.derived.PV = c.derived.PV || { label: "Pontos de Vida" };
     c.derived.PM = c.derived.PM || { label: "Pontos de Magia" };
     c.derived.SAN = c.derived.SAN || { label: "Sanidade" };
-    c.derived.Mitos = c.derived.Mitos || { label: "Mitos de Cthulhu", value: 0 };
+    c.derived.Mitos = c.derived.Mitos || { label: "Mythos de Cthulhu", value: 0 };
     c.derived.MOV = c.derived.MOV || { label: "Movimento" };
     c.derived.DB = c.derived.DB || { label: "Bônus de Dano" };
     c.derived.Build = c.derived.Build || { label: "Corpo" };
@@ -1102,10 +1102,19 @@
   // pelos botões ±100/±10/±1. Tudo vive em c.finances (viaja no JSON/backup).
 
   function ensureFinances(c) {
-    if (!c.finances || typeof c.finances !== "object") c.finances = { creditRating: 0, cash: 0 };
-    c.finances.creditRating = Number(c.finances.creditRating) || 0;
+    if (!c.finances || typeof c.finances !== "object") c.finances = { cash: 0 };
     c.finances.cash = Number(c.finances.cash) || 0;
     return c.finances;
+  }
+
+  // Nível de Crédito é uma PERÍCIA (CoC 7E) — a carteira e os derivados leem dela.
+  function getCreditRating(c) {
+    return Number(c && c.skills && c.skills["Nível de Crédito"] && c.skills["Nível de Crédito"].value) || 0;
+  }
+  function setCreditRating(c, v) {
+    c.skills = c.skills || {};
+    c.skills["Nível de Crédito"] = c.skills["Nível de Crédito"] || {};
+    c.skills["Nível de Crédito"].value = v;
   }
 
   // Formata em pt-BR com prefixo "$" (milhar com ".", decimal só se fracionário).
@@ -1127,12 +1136,13 @@
     const occName = c.investigator?.occupation;
     const occ = occName ? window.CoCData.findOccupation(occName) : null;
     const range = occ && Array.isArray(occ.credit) ? occ.credit : null;
-    const derived = window.CoC.rules.calcFinances(fin.creditRating);
+    const cr = getCreditRating(c);
+    const derived = window.CoC.rules.calcFinances(cr);
 
     host.innerHTML = `
       <div class="fin-credit-row">
-        <label class="fin-credit">Crédito (Posses)
-          <input type="number" id="fin-cr" min="0" max="99" step="1" inputmode="numeric" value="${fin.creditRating}" />
+        <label class="fin-credit">Nível de Crédito
+          <input type="number" id="fin-cr" min="0" max="99" step="1" inputmode="numeric" value="${cr}" />
           <span class="dim">/ 99</span>
         </label>
         ${range
@@ -1142,12 +1152,12 @@
 
       <div class="fin-derived">
         Nível: <b id="fin-tier">${derived.tierLabel}</b>
-        · Gasto/dia: <b id="fin-spend">${formatMoney(derived.spending)}</b>
+        · Nível de Gastos: <b id="fin-spend">${formatMoney(derived.spending)}</b>
         · Patrimônio: <b id="fin-assets">${formatMoney(derived.assets)}</b>
       </div>
 
       <div class="fin-wallet">
-        <span class="fin-wallet-label">Dinheiro à mão</span>
+        <span class="fin-wallet-label">Dinheiro em Mãos</span>
         <span class="fin-wallet-value" id="fin-cash">${formatMoney(fin.cash)}</span>
         <button id="fin-seed" class="btn-ghost no-print" title="Definir o dinheiro à mão com a Caixa inicial do Crédito">↻ inicial</button>
       </div>
@@ -1173,21 +1183,22 @@
       if (!isFinite(v) || v < 0) v = 0;
       if (v > 99) v = 99;
       crInput.value = v;
-      fin.creditRating = v;
+      setCreditRating(c, v);
       const d = window.CoC.rules.calcFinances(v);
       $("#fin-tier", host).textContent = d.tierLabel;
       $("#fin-spend", host).textContent = formatMoney(d.spending);
       $("#fin-assets", host).textContent = formatMoney(d.assets);
+      renderSkills();        // "Nível de Crédito" é perícia — mantém a aba sincronizada
       persistCurrent();
     };
 
     // Semeia a carteira com a Caixa inicial derivada do Crédito.
     $("#fin-seed", host).onclick = () => {
-      const d = window.CoC.rules.calcFinances(fin.creditRating);
+      const d = window.CoC.rules.calcFinances(getCreditRating(c));
       fin.cash = d.cash;
       $("#fin-cash", host).textContent = formatMoney(fin.cash);
       persistCurrent();
-      toast(`Dinheiro à mão definido em ${formatMoney(fin.cash)} (Caixa inicial do Crédito ${fin.creditRating}).`, { type: "success", duration: 2600 });
+      toast(`Dinheiro em Mãos definido em ${formatMoney(fin.cash)} (inicial do Nível de Crédito ${getCreditRating(c)}).`, { type: "success", duration: 2600 });
     };
 
     // ±100/±10/±1: muta cash e atualiza só o display (rápido, sem perder foco).

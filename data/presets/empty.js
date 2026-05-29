@@ -41,7 +41,7 @@ window.CoCData.presets.empty = {
     PV:    { label: "Pontos de Vida",  value: 0, current: 0 },
     PM:    { label: "Pontos de Magia", value: 0, current: 0 },
     SAN:   { label: "Sanidade",        value: 0, current: 0, max: 99 },
-    Mitos: { label: "Mitos de Cthulhu", value: 0 },
+    Mitos: { label: "Mythos de Cthulhu", value: 0 },
     MOV:   { label: "Movimento",       value: 0 },
     DB:    { label: "Bônus de Dano",   value: "0" },
     Build: { label: "Corpo",           value: 0 }
@@ -57,11 +57,11 @@ window.CoCData.presets.empty = {
     personalSpent: 0
   },
 
-  // Finanças (CoC 7E): Crédito define Caixa/Gasto/Patrimônio (ver coc7e-rules.calcFinances).
-  // "cash" é a carteira corrente, ajustável em jogo; parte do JSON → viaja no backup.
+  // Finanças (CoC 7E): a perícia "Nível de Crédito" define Gasto/Dinheiro/Patrimônio
+  // (ver coc7e-rules.calcFinances). "cash" é a carteira corrente, ajustável em jogo;
+  // parte do JSON → viaja no backup. O Crédito vive em skills["Nível de Crédito"].
   finances: {
-    creditRating: 0,   // 0–99, escolhido dentro da faixa de Posses da ocupação
-    cash: 0            // dinheiro atual à mão
+    cash: 0            // dinheiro em mãos
   },
 
   weapons: [],

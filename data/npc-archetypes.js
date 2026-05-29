@@ -22,7 +22,7 @@ window.CoCData.npcArchetypes = [
     name: "Civil",
     profile: "average",
     occupationHint: "Operário, comerciante, secretária, professor primário",
-    suggestedSkills: ["Encontrar 30%", "Conduzir Veículo 30%", "Psicologia 25%"],
+    suggestedSkills: ["Encontrar 30%", "Dirigir Automóveis 30%", "Psicologia 25%"],
     notes: "Foge de violência. Útil como testemunha ou informante."
   },
   {
@@ -30,7 +30,7 @@ window.CoCData.npcArchetypes = [
     name: "Acadêmico / Profissional",
     profile: "intellectual",
     occupationHint: "Médico, professor universitário, antiquário, advogado",
-    suggestedSkills: ["Idioma Próprio 70%", "Pesquisar Bibliotecas 50%", "Persuasão 40%", "Ciência 50%"],
+    suggestedSkills: ["Língua Nativa 70%", "Usar Bibliotecas 50%", "Persuasão 40%", "Ciência 50%"],
     notes: "Conhece pessoas em alta sociedade. Pode reconhecer símbolos básicos."
   },
   {
@@ -46,7 +46,7 @@ window.CoCData.npcArchetypes = [
     name: "Lei / Ordem",
     profile: "combatant",
     occupationHint: "Policial, detetive, segurança, juiz",
-    suggestedSkills: ["Armas de Fogo (Pistola) 50%", "Direito 40%", "Intimidação 50%", "Encontrar 45%"],
+    suggestedSkills: ["Armas de Fogo (Pistolas) 50%", "Direito 40%", "Intimidação 50%", "Encontrar 45%"],
     notes: "Pode ajudar ou atrapalhar. Cético com sobrenatural."
   },
   {
@@ -115,7 +115,7 @@ window.CoCData.npcModifiers = [
         { name: "Revólver", type: "firearm", chance: 35, damage: "1D10", note: "6 balas" }
       ],
       skills: [
-        { name: "Armas de Fogo (Pistola)", delta: 0 }   // garante perícia presente
+        { name: "Armas de Fogo (Pistolas)", delta: 0 }   // garante perícia presente
       ]
     }
   },
@@ -191,7 +191,7 @@ window.CoCData.npcModifiers = [
       stats: { pow: +10, int: +5 },
       skills: [
         { name: "Ocultismo", delta: +30 },
-        { name: "Mitos de Cthulhu", delta: +15 }
+        { name: "Mythos de Cthulhu", delta: +15 }
       ],
       sanLoss: "0/1D3",
       notes: [
@@ -207,7 +207,7 @@ window.CoCData.npcModifiers = [
     apply: {
       stats: { str: -10, con: -10, dex: -15, edu: +20 },
       skills: [
-        { name: "Pesquisar Bibliotecas", delta: +20 },
+        { name: "Usar Bibliotecas", delta: +20 },
         { name: "História", delta: +20 }
       ],
       notes: [

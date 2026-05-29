@@ -79,7 +79,7 @@ window.CoCData.bestiary = [
     ],
     skills: [
       { name: "Ocultismo", value: 60 },
-      { name: "Mitos de Cthulhu", value: 10 },
+      { name: "Mythos de Cthulhu", value: 10 },
       { name: "Intimidação", value: 55 },
       { name: "Esquivar", value: 30 }
     ],
@@ -109,7 +109,7 @@ window.CoCData.bestiary = [
       { name: "Encontrar", value: 45 },
       { name: "Direito", value: 35 },
       { name: "Intimidação", value: 45 },
-      { name: "Conduzir Veículo", value: 50 }
+      { name: "Dirigir Automóveis", value: 50 }
     ],
     notes: [
       "Pode chamar reforço (rádio/apito).",
@@ -137,7 +137,7 @@ window.CoCData.bestiary = [
       { name: "Encontrar", value: 60 },
       { name: "Persuasão", value: 50 },
       { name: "Direito", value: 50 },
-      { name: "Seguir Alguém", value: 55 }
+      { name: "Furtividade", value: 55 }
     ],
     notes: [
       "Pode ser aliado ou rival dos investigadores.",
@@ -163,7 +163,7 @@ window.CoCData.bestiary = [
     skills: [
       { name: "Intimidação", value: 60 },
       { name: "Furtividade", value: 45 },
-      { name: "Conduzir Veículo", value: 55 },
+      { name: "Dirigir Automóveis", value: 55 },
       { name: "Lábia", value: 40 }
     ],
     notes: [
@@ -245,7 +245,7 @@ window.CoCData.bestiary = [
     ],
     skills: [
       { name: "Lutar (Garras)", value: 50 },
-      { name: "Nadar", value: 90 },
+      { name: "Natação", value: 90 },
       { name: "Furtividade", value: 40 }
     ],
     notes: [
