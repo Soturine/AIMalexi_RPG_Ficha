@@ -83,6 +83,13 @@
       persistCurrent();
     });
     window.CoC.bus.subscribe("roll:logged", logAndToast);
+    // M3.2 — Luck slice: re-render Sorte card + persist after spend
+    window.CoC.bus.subscribe("store:dispatch", function (event) {
+      if (event.changed && event.action.type === "SPEND_LUCK") {
+        renderAttributes();
+        persistCurrent();
+      }
+    });
 
     populateOccupationDropdown();
     bindToolbar();
@@ -1301,7 +1308,7 @@
       const btn = el("button", {
         class: "btn-primary",
         title: `Reduz sua Sorte em ${cost} para tornar este teste um sucesso Regular.`,
-        on: { click: () => spendLuck(entry, cost) }
+        on: { click: () => window.CoC.views.luck.spendLuck(entry, cost) }
       }, [`🍀 Gastar ${cost} Sorte (vira Regular)`]);
       row.appendChild(btn);
     }
@@ -1326,25 +1333,6 @@
     if (log) log.insertBefore(panel, log.firstChild.nextSibling || null);
   }
 
-  /**
-   * Gasta Sorte para converter uma falha em sucesso Regular.
-   */
-  function spendLuck(entry, cost) {
-    const c = state.character;
-    if (!c?.attributes?.Sorte) return;
-    cocStore.dispatch({ type: "SPEND_LUCK", payload: { amount: cost } });
-    const old = $("#post-roll-actions");
-    if (old) old.remove();
-    logAndToast({
-      skill: `🍀 Sorte gasta: ${entry.skillRaw || entry.skill}`,
-      target: cost,
-      d100: null,
-      level: "regular",
-      note: `${cost} pontos de Sorte usados para virar Regular`
-    });
-    renderAttributes();   // atualiza o card de Sorte
-    persistCurrent();
-  }
 
   /**
    * Forçar Rolagem (Push) — relança com flag pushed=true.
