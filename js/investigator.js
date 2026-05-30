@@ -83,6 +83,14 @@
     const active = store.getActiveCharacter();
     if (active) {
       loadCharacter(active);
+      // BUG-01 fix: surface hard rule violations from previous session
+      const vBoot = validators.validateCharacter(state.character, { editMode: state.editMode });
+      if (vBoot.issues.length > 0) {
+        const summary = vBoot.issues.length === 1
+          ? vBoot.issues[0]
+          : `${vBoot.issues.length} violações de regra — primeira: ${vBoot.issues[0]}`;
+        toast("⚠ " + summary, { type: "warn", duration: 7000 });
+      }
     } else {
       // Ficha vazia inicial — mostra wizard se for primeira visita
       const list = store.listCharacters();
@@ -184,6 +192,14 @@
 
   function persistCurrent() {
     if (!state.character) return;
+    // BUG-01 fix: validate before persisting — surface hard cap violations
+    const vPersist = validators.validateCharacter(state.character, { editMode: state.editMode });
+    if (vPersist.issues.length > 0) {
+      const summary = vPersist.issues.length === 1
+        ? vPersist.issues[0]
+        : `${vPersist.issues.length} violações de regra — primeira: ${vPersist.issues[0]}`;
+      toast("⚠ " + summary, { type: "warn", duration: 5000 });
+    }
     const id = store.saveCharacter(state.character);
     state.character.id = id;
     store.setActiveCharacter(id);
