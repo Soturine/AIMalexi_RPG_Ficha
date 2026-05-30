@@ -21,6 +21,10 @@ window.CoC = window.CoC || {};
 (function () {
 
   const TYPES = Object.freeze({
+    // ── Personagem (carga/meta) ──────────────────────────────────────────
+    SET_CHARACTER:   "SET_CHARACTER",
+    SET_CHARACTER_ID:"SET_CHARACTER_ID",
+
     // ── Vitais ──────────────────────────────────────────────────────────
     APPLY_DAMAGE:    "APPLY_DAMAGE",
     HEAL_DAMAGE:     "HEAL_DAMAGE",
@@ -69,6 +73,10 @@ window.CoC = window.CoC || {};
   }
 
   const creators = {
+    // Personagem
+    setCharacter:    (character)                   => make(TYPES.SET_CHARACTER,    character),
+    setCharacterId:  (id)                          => make(TYPES.SET_CHARACTER_ID, id),
+
     // Vitais
     applyDamage:    (amount, source = null)        => make(TYPES.APPLY_DAMAGE,    { amount, source }),
     healDamage:     (amount)                       => make(TYPES.HEAL_DAMAGE,     { amount }),

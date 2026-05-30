@@ -23,10 +23,11 @@
   const store = window.CoC.storage;
   const nameGen = window.CoC.names;
   const validators = window.CoC.validators;
+  const cocStore = window.CoC.store;
 
   // ─── Estado ───────────────────────────────────────────────────────────
   const state = {
-    character: null,           // dados do personagem ativo
+    // character é exposto via getter/setter abaixo — cocStore é a fonte de verdade
     rollMods: {
       difficulty: "regular",   // regular | hard | extreme
       bp: ""                   // "" | "bonus" | "penalty"
@@ -40,6 +41,16 @@
 
   // Cap mínimo do PV antes de morrer
   const PV_MIN = -2;
+
+  // state.character lê e escreve no cocStore (única fonte de verdade).
+  // Todos os `state.character = X` auto-dispatcham SET_CHARACTER.
+  // Todos os `state.character` lidos retornam o estado atual do store.
+  Object.defineProperty(state, "character", {
+    get()  { return cocStore.getState().character; },
+    set(v) { cocStore.dispatch({ type: "SET_CHARACTER", payload: v }); },
+    configurable: true,
+    enumerable:   true,
+  });
 
   // Persistência: a disponibilidade REAL do storage só é conhecida após store.ready
   // resolver — o IndexedDB abre de forma assíncrona e, até lá, backend === "memory".
@@ -201,7 +212,7 @@
       toast("⚠ " + summary, { type: "warn", duration: 5000 });
     }
     const id = store.saveCharacter(state.character);
-    state.character.id = id;
+    cocStore.dispatch({ type: "SET_CHARACTER_ID", payload: id });
     store.setActiveCharacter(id);
     refreshCharacterSelector();
   }
@@ -512,19 +523,20 @@
     }
 
     if (key === "Mitos") {
+      // Mitos ainda sem action própria — mutação direta aceita no M1
       c.derived.Mitos.value = Math.max(0, (c.derived.Mitos.value || 0) + delta);
       recalcDerived();
     } else {
-      const cur = c.derived[key].current ?? c.derived[key].value;
-      let newVal = cur + delta;
-      if (key === "PV") newVal = Math.max(PV_MIN, Math.min(c.derived.PV.value, newVal));
-      else if (key === "PM") newVal = Math.max(0, Math.min(c.derived.PM.value, newVal));
-      else if (key === "SAN") newVal = Math.max(0, Math.min(c.derived.SAN.max, newVal));
-      c.derived[key].current = newVal;
-      if (key === "SAN" && delta < -4) {
-        c.status = c.status || {};
-        c.status.sanLossesToday = (c.status.sanLossesToday || 0) + Math.abs(delta);
-        toast(`⚠ Perda de ${Math.abs(delta)} SAN: Teste de Loucura Temporária (INT×5)!`, { type: "warn", duration: 6000 });
+      const amount = Math.abs(delta);
+      if (key === "PV") {
+        cocStore.dispatch({ type: delta < 0 ? "APPLY_DAMAGE" : "HEAL_DAMAGE", payload: { amount } });
+      } else if (key === "SAN") {
+        cocStore.dispatch({ type: delta < 0 ? "LOSE_SANITY" : "RECOVER_SANITY", payload: { amount } });
+        if (delta < -4) {
+          toast(`⚠ Perda de ${amount} SAN: Teste de Loucura Temporária (INT×5)!`, { type: "warn", duration: 6000 });
+        }
+      } else if (key === "PM") {
+        cocStore.dispatch({ type: delta < 0 ? "SPEND_MAGIC" : "RESTORE_MAGIC", payload: { amount } });
       }
     }
 
@@ -1440,7 +1452,7 @@
   function spendLuck(entry, cost) {
     const c = state.character;
     if (!c?.attributes?.Sorte) return;
-    c.attributes.Sorte.value = Math.max(0, Number(c.attributes.Sorte.value) - cost);
+    cocStore.dispatch({ type: "SPEND_LUCK", payload: { amount: cost } });
     const old = $("#post-roll-actions");
     if (old) old.remove();
     logAndToast({
