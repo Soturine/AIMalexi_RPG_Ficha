@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Baseline Generator — AIMalexi CoC 7e</title>
+  <style>
+    body { font-family: monospace; background: #111; color: #ccc; padding: 2rem; }
+    h1 { color: #7cf; margin-bottom: 0.25rem; }
+    p.sub { color: #888; margin-top: 0; font-size: 0.85rem; }
+    .card { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; margin: 1.5rem 0; padding: 1.25rem; }
+    .card h2 { margin-top: 0; color: #fc8; }
+    .bug-present { color: #f77; font-weight: bold; }
+    .bug-na { color: #7c7; }
+    pre { background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 4px; padding: 1rem;
+          max-height: 380px; overflow: auto; font-size: 0.78rem; white-space: pre; }
+    button { background: #2a4a7a; color: #9cf; border: 1px solid #4a7aaa; border-radius: 4px;
+             padding: 0.5rem 1.25rem; cursor: pointer; font-family: monospace; margin-right: 0.5rem; }
+    button:hover { background: #3a5a9a; }
+    .meta-row { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 0.75rem; font-size: 0.82rem; color: #aaa; }
+    .meta-row span strong { color: #eee; }
+    table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; }
+    td, th { padding: 0.3rem 0.75rem; text-align: right; border-bottom: 1px solid #2a2a2a; }
+    th { text-align: left; color: #9cf; font-weight: normal; }
+    td:first-child { text-align: left; }
+  </style>
+</head>
+<body>
+
+<h1>Baseline Generator — AIMalexi CoC 7e</h1>
+<p class="sub">Documenta o comportamento ATUAL do motor de regras (com bugs conhecidos). Seed: 12345 · PRNG: Mulberry32</p>
+
+<!-- Load data and engine from parent directory -->
+<script src="../data/damage-bonus-table.js"></script>
+<script src="../js/engine/coc7e-rules.js"></script>
+
+<script>
+"use strict";
+
+const SEED = 12345;
+
+// Mulberry32 — PRNG determinística (mesma usada no gen-baseline.js Node)
+function mulberry32(seed) {
+  let s = seed >>> 0;
+  return function () {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function makeRoller(rng) {
+  const d6 = () => Math.floor(rng() * 6) + 1;
+
+  function roll3d6x5(attr) {
+    const dice = [d6(), d6(), d6()];
+    const rawSum = dice.reduce((a, b) => a + b, 0);
+    return { attr, formula: "3d6x5", dice, rawSum, total: rawSum * 5 };
+  }
+
+  function roll2d6plus6x5(attr) {
+    const dice = [d6(), d6()];
+    const rawSum = dice.reduce((a, b) => a + b, 0) + 6;
+    return { attr, formula: "2d6+6x5", dice, rawSum, total: rawSum * 5 };
+  }
+
+  return { roll3d6x5, roll2d6plus6x5 };
+}
+
+function ageAdjustmentExpectation(age) {
+  if (age >= 15 && age <= 19) {
+    return { affectedAttributes: ["STR","CON","DEX"], totalReduction: 5,
+             note: "Distribute -5 freely across STR, CON, DEX (player choice)" };
+  }
+  const reductions = { 40: 5, 50: 10, 60: 20, 70: 40, 80: 80 };
+  const bracket = Math.min(Math.floor(age / 10) * 10, 80);
+  if (bracket >= 40) {
+    return { affectedAttributes: ["STR","CON","DEX","APP"], totalReduction: reductions[bracket],
+             note: `Distribute -${reductions[bracket]} freely across STR, CON, DEX, APP (player choice)` };
+  }
+  return null;
+}
+
+function generateBaseline(age) {
+  const rng = mulberry32(SEED);
+  const { roll3d6x5, roll2d6plus6x5 } = makeRoller(rng);
+
+  const rawRolls = {
+    STR:  roll3d6x5("STR"),
+    CON:  roll3d6x5("CON"),
+    SIZ:  roll2d6plus6x5("SIZ"),
+    DEX:  roll3d6x5("DEX"),
+    APP:  roll3d6x5("APP"),
+    INT:  roll2d6plus6x5("INT"),
+    POW:  roll3d6x5("POW"),
+    EDU:  roll2d6plus6x5("EDU"),
+    Luck: roll3d6x5("Luck"),
+  };
+
+  const g = {};
+  for (const [k, r] of Object.entries(rawRolls)) g[k] = r.total;
+
+  const rules = window.CoC.rules;
+  const dbResult = window.CoCData.lookupDB(g.STR + g.SIZ);
+
+  const derived = {
+    HP:          rules.calcHP(g.CON, g.SIZ),
+    MP:          rules.calcMP(g.POW),
+    SAN_initial: rules.calcSANInit(g.POW),
+    SAN_max:     rules.calcSANMax(0),
+    MOV:         rules.calcMOV(g.STR, g.DEX, g.SIZ, age),
+    Build:       dbResult.build,
+    DamageBonus: dbResult.db,
+    Dodge:       rules.calcDodgeBase(g.DEX),
+    OwnLanguage: rules.calcOwnLanguageBase(g.EDU),
+  };
+
+  const adjExpect = ageAdjustmentExpectation(age);
+  const adjustments = {
+    ageModifiersApplied: false,
+    luckRerollUsed:      false,
+    eduImprovementChecks: age >= 20 ? Math.floor((age - 20) / 10) : 0,
+    bugState: {
+      "BUG-02": adjExpect
+        ? `PRESENT — ${adjExpect.affectedAttributes.join("/")} should lose ${adjExpect.totalReduction} pts total (${adjExpect.note})`
+        : "N/A — no age reduction expected at this age",
+      "BUG-03": (age >= 15 && age <= 19)
+        ? "PRESENT — Luck should be rolled twice, higher value used; currently rolled once"
+        : "N/A — age not in 15-19 range",
+    }
+  };
+
+  const rollRecord = {};
+  for (const [k, r] of Object.entries(rawRolls)) {
+    rollRecord[k] = { formula: r.formula, dice: r.dice, rawSum: r.rawSum, total: r.total };
+  }
+
+  return {
+    meta: {
+      projectVersion: "M0.8",
+      seed: SEED, prng: "Mulberry32", age,
+      generatedAt: new Date().toISOString(),
+      knownBugsPresent: [
+        "BUG-02: age attribute adjustment not applied for STR/CON/DEX/APP",
+        "BUG-03: luck re-roll for 15-19 not implemented"
+      ],
+      purpose: "Reference snapshot of CURRENT behavior (including known bugs)."
+    },
+    generated: g,
+    rolls:     rollRecord,
+    adjustments,
+    derived,
+  };
+}
+
+function download(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function renderCard(age, data) {
+  const g = data.generated;
+  const d = data.derived;
+  const adj = data.adjustments;
+
+  const bug02 = adj.bugState["BUG-02"];
+  const bug03 = adj.bugState["BUG-03"];
+  const bug02class = bug02.startsWith("PRESENT") ? "bug-present" : "bug-na";
+  const bug03class = bug03.startsWith("PRESENT") ? "bug-present" : "bug-na";
+
+  const filename = `investigator-age-${age}.json`;
+
+  return `
+    <div class="card">
+      <h2>Age ${age}</h2>
+      <div class="meta-row">
+        <span><strong>Seed:</strong> ${SEED}</span>
+        <span><strong>PRNG:</strong> Mulberry32</span>
+        <span><strong>BUG-02:</strong> <span class="${bug02class}">${bug02.split("—")[0].trim()}</span></span>
+        <span><strong>BUG-03:</strong> <span class="${bug03class}">${bug03.split("—")[0].trim()}</span></span>
+      </div>
+      <table>
+        <tr><th>Atributo</th><th>Valor</th><th>Rolls</th></tr>
+        ${Object.entries(g).map(([k, v]) => {
+          const r = data.rolls[k];
+          return `<tr><td>${k}</td><td>${v}</td><td>[${r.dice.join(",")}] rawSum=${r.rawSum}</td></tr>`;
+        }).join("")}
+      </table>
+      <table style="margin-top:0.75rem">
+        <tr><th>Derivado</th><th>Valor</th></tr>
+        ${Object.entries(d).map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}
+      </table>
+      <div style="margin-top:0.75rem;font-size:0.8rem;color:#aaa">
+        <div class="${bug02class}">BUG-02: ${bug02}</div>
+        <div class="${bug03class}" style="margin-top:0.25rem">BUG-03: ${bug03}</div>
+      </div>
+      <div style="margin-top:1rem">
+        <button onclick="download('${filename}', baselines[${age}])">⬇ Download ${filename}</button>
+        <button onclick="copyJSON(${age})">⎘ Copiar JSON</button>
+      </div>
+      <pre id="pre-${age}">${JSON.stringify(data, null, 2)}</pre>
+    </div>
+  `;
+}
+
+window.baselines = {};
+window.copyJSON = (age) => {
+  navigator.clipboard.writeText(JSON.stringify(baselines[age], null, 2))
+    .then(() => alert(`JSON age-${age} copiado!`))
+    .catch(() => alert("Clipboard indisponível — copie manualmente do pre."));
+};
+
+window.addEventListener("DOMContentLoaded", () => {
+  const ages = [15, 25, 50, 80];
+  ages.forEach(age => { baselines[age] = generateBaseline(age); });
+
+  const container = document.getElementById("results");
+  container.innerHTML = ages.map(age => renderCard(age, baselines[age])).join("");
+
+  document.getElementById("dl-all").addEventListener("click", () => {
+    ages.forEach(age => download(`investigator-age-${age}.json`, baselines[age]));
+  });
+});
+</script>
+
+<div style="margin:1rem 0">
+  <button id="dl-all">⬇ Download todos (4 arquivos)</button>
+</div>
+<div id="results"></div>
+
+</body>
+</html>
