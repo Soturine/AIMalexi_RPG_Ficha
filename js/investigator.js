@@ -69,7 +69,21 @@
   // BOOT
   // ═════════════════════════════════════════════════════════════════════
 
+  // SACRED vitals actions that need persist + Mitos side-effects (decoupled from vitals module)
+  const _VITALS_PERSIST = new Set(["APPLY_DAMAGE", "HEAL_DAMAGE", "LOSE_SANITY", "RECOVER_SANITY", "SPEND_MAGIC", "RESTORE_MAGIC"]);
+
   async function boot() {
+    // M3.1 — Vitals slice init + bus hooks (wired before character load)
+    window.CoC.views.vitals.init();
+    window.CoC.bus.subscribe("store:dispatch", function (event) {
+      if (event.changed && _VITALS_PERSIST.has(event.action.type)) persistCurrent();
+    });
+    window.CoC.bus.subscribe("vitals:mitos-changed", function () {
+      recalcDerived();
+      persistCurrent();
+    });
+    window.CoC.bus.subscribe("roll:logged", logAndToast);
+
     populateOccupationDropdown();
     bindToolbar();
     bindModifiers();
@@ -226,12 +240,11 @@
     renderIdentity();
     renderAttributes();
     recalcDerived();   // recalcular antes de renderizar
-    renderDerived();
+    window.CoC.views.vitals.render();
     renderSkills();
     renderWeapons();
     renderFinances();
     renderBackground();
-    applySanityAtmosphere();   // ajusta filtro CSS de SAN baixa ao carregar
   }
 
   function clearUI() {
@@ -277,7 +290,7 @@
         if (f === "tagline") $("#identity-display").textContent = node.value ? "“" + node.value + "”" : "";
         if (f === "age") {
           recalcDerived();
-          renderDerived();
+          window.CoC.views.vitals.render();
           // BUG-02 fix: advisory when age change implies attribute reduction
           const newAge = Number(node.value) || 25;
           const adj = rules.calcAgeAdjustments(newAge);
@@ -388,7 +401,7 @@
         state.character.attributes[code].value = v;
         renderAttributes();
         recalcDerived();
-        renderDerived();
+        window.CoC.views.vitals.render();
         renderSkills();
         persistCurrent();
       };
@@ -441,139 +454,6 @@
     const db = rules.calcDB(v("FOR"), v("TAM"));
     c.derived.DB.value = db.db;
     c.derived.Build.value = db.build;
-  }
-
-  function renderDerived() {
-    const bar = $("#derived-bar");
-    bar.innerHTML = "";
-    const c = state.character;
-    if (!c?.derived) return;
-
-    const order = ["PV", "PM", "SAN", "Mitos", "MOV", "DB", "Build"];
-    for (const key of order) {
-      const d = c.derived[key];
-      if (!d) continue;
-      const isTracker = key === "PV" || key === "PM" || key === "SAN";
-      const card = el("div", {
-        class: "derived-card" + (isTracker ? " tracker " + key.toLowerCase() : ""),
-        "data-key": key
-      });
-
-      const cur = d.current ?? d.value;
-      const max = key === "SAN" ? d.max : d.value;
-      const fill = (isTracker && max > 0) ? Math.max(0, Math.min(100, (cur / max) * 100)) : 100;
-      if (isTracker) card.style.setProperty("--fill", fill + "%");
-
-      let actions = "";
-      if (isTracker) {
-        actions = `<div class="derived-actions no-print">
-          <button data-derived="${key}" data-op="-1">-1</button>
-          <button data-derived="${key}" data-op="+1">+1</button>
-          <button data-derived="${key}" data-op="X">-X</button>
-        </div>`;
-      } else if (key === "Mitos") {
-        actions = `<div class="derived-actions no-print">
-          <button data-derived="Mitos" data-op="-1">-1</button>
-          <button data-derived="Mitos" data-op="+1">+1</button>
-        </div>`;
-      }
-
-      let valueHTML;
-      if (isTracker) {
-        valueHTML = `<div class="derived-value">${cur}<span class="derived-max"> / ${max}</span></div>`;
-      } else {
-        valueHTML = `<div class="derived-value">${d.value}</div>`;
-      }
-
-      card.innerHTML = `
-        <div class="derived-label">${escapeHtml(d.label || key)}</div>
-        ${valueHTML}
-        ${actions}
-      `;
-      bar.appendChild(card);
-    }
-
-    // Bind ações
-    $$("[data-derived]").forEach(btn => {
-      btn.onclick = async () => {
-        const key = btn.dataset.derived;
-        const op = btn.dataset.op;
-        await applyDerivedDelta(key, op);
-      };
-    });
-  }
-
-  async function applyDerivedDelta(key, op) {
-    const c = state.character;
-    if (!c?.derived?.[key]) return;
-    let delta = 0;
-    if (op === "+1") delta = 1;
-    else if (op === "-1") delta = -1;
-    else if (op === "X") {
-      const v = await prompt(`Quanto deduzir de ${key}? (aceita números, 1D6, 2D10+3)`, { title: `Ajustar ${key}` });
-      if (v == null || v.trim() === "") return;
-      const trimmed = v.trim();
-      if (/^-?\d+$/.test(trimmed)) {
-        delta = -Math.abs(parseInt(trimmed, 10));
-      } else {
-        const r = dice.rollNotation(trimmed);
-        delta = -Math.abs(r.total);
-        logAndToast({ skill: `Perda ${key}`, d100: null, level: "fail", dmg: `${trimmed} → ${r.total}` });
-      }
-    }
-
-    if (key === "Mitos") {
-      // Mitos ainda sem action própria — mutação direta aceita no M1
-      c.derived.Mitos.value = Math.max(0, (c.derived.Mitos.value || 0) + delta);
-      recalcDerived();
-    } else {
-      const amount = Math.abs(delta);
-      if (key === "PV") {
-        cocStore.dispatch({ type: delta < 0 ? "APPLY_DAMAGE" : "HEAL_DAMAGE", payload: { amount } });
-      } else if (key === "SAN") {
-        cocStore.dispatch({ type: delta < 0 ? "LOSE_SANITY" : "RECOVER_SANITY", payload: { amount } });
-        if (delta < -4) {
-          toast(`⚠ Perda de ${amount} SAN: Teste de Loucura Temporária (INT×5)!`, { type: "warn", duration: 6000 });
-        }
-      } else if (key === "PM") {
-        cocStore.dispatch({ type: delta < 0 ? "SPEND_MAGIC" : "RESTORE_MAGIC", payload: { amount } });
-      }
-    }
-
-    renderDerived();
-    flashDerivedCard(key, delta);   // feedback visual: vermelho perdeu, verde ganhou
-    applySanityAtmosphere();        // filtro sutil quando SAN < 50% do máximo
-    persistCurrent();
-  }
-
-  /**
-   * Adiciona classe transiente .flash-loss / .flash-gain ao card derivado.
-   * Cleanup automático após animação CSS terminar.
-   */
-  function flashDerivedCard(key, delta) {
-    if (!delta) return;
-    const card = $(`#derived-bar .derived-card[data-key="${key}"]`);
-    if (!card) return;
-    const cls = delta < 0 ? "flash-loss" : "flash-gain";
-    card.classList.remove("flash-loss", "flash-gain");
-    // Força reflow para reiniciar a animação se chamada em sequência rápida
-    void card.offsetWidth;
-    card.classList.add(cls);
-    setTimeout(() => card.classList.remove(cls), 900);
-  }
-
-  /**
-   * Atualiza os efeitos visuais de insanidade conforme a SAN atual/máxima.
-   * A lógica de níveis (0-4), camadas e acessibilidade vive em js/shared/sanity-fx.js.
-   */
-  function applySanityAtmosphere() {
-    const fx = window.CoC.sanityFx;
-    if (!fx) return;
-    const c = state.character;
-    if (!c?.derived?.SAN) { fx.clear(); return; }
-    const cur = Number(c.derived.SAN.current) || 0;
-    const max = Number(c.derived.SAN.max) || 99;
-    fx.apply(cur, max);
   }
 
   // ─── PERÍCIAS ─────────────────────────────────────────────────────────
@@ -1702,7 +1582,7 @@
 
     recalcDerived();
     renderAttributes();
-    renderDerived();
+    window.CoC.views.vitals.render();
     renderSkills();
     persistCurrent();
   }
