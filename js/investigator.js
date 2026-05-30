@@ -1648,9 +1648,22 @@
       c.attributes[code].rolled = `${formula} → ${r.raw.join("+")}=${r.rawSum}, ×5 = ${r.total}`;
     }
 
+    // BUG-03 fix: Luck re-roll for young investigators (age 15-19)
+    // PDF p.36: roll Luck twice, use the higher value
+    const age = Number(c.investigator?.age) || 25;
+    if (age >= 15 && age <= 19) {
+      const reroll = dice.rollAttribute("3d6x5");
+      const first = c.attributes.Sorte.value;
+      if (reroll.total > first) {
+        c.attributes.Sorte.value = reroll.total;
+        c.attributes.Sorte.rolled += ` | re-roll: ${reroll.raw.join("+")}=${reroll.rawSum}, ×5 = ${reroll.total} ✓ (usado)`;
+      } else {
+        c.attributes.Sorte.rolled += ` | re-roll: ${reroll.raw.join("+")}=${reroll.rawSum}, ×5 = ${reroll.total} (descartado)`;
+      }
+    }
+
     // BUG-02 fix: apply age adjustments to primary attributes
     // Distribution: highest-value affected attr absorbs each point (never below 0)
-    const age = Number(c.investigator?.age) || 25;
     const adj = rules.calcAgeAdjustments(age);
     if (adj) {
       const before = {};
