@@ -151,6 +151,25 @@ window.CoC = window.CoC || {};
   }
 
   /**
+   * Ajustes de atributos primários por idade (CoC 7E p.35-36).
+   * Retorna o total de pontos a distribuir e quais atributos são afetados,
+   * ou null se a idade não requer redução.
+   *
+   * @param {number} age
+   * @returns {{ totalReduction: number, attrs: string[] } | null}
+   */
+  function calcAgeAdjustments(age) {
+    age = num(age);
+    if (age >= 15 && age <= 19) return { totalReduction: 5,  attrs: ["FOR", "CON", "DES"] };
+    if (age >= 80)              return { totalReduction: 80, attrs: ["FOR", "CON", "DES", "APA"] };
+    if (age >= 70)              return { totalReduction: 40, attrs: ["FOR", "CON", "DES", "APA"] };
+    if (age >= 60)              return { totalReduction: 20, attrs: ["FOR", "CON", "DES", "APA"] };
+    if (age >= 50)              return { totalReduction: 10, attrs: ["FOR", "CON", "DES", "APA"] };
+    if (age >= 40)              return { totalReduction: 5,  attrs: ["FOR", "CON", "DES", "APA"] };
+    return null;
+  }
+
+  /**
    * Movimento (MOV) — depende da idade e da relação entre FOR/DES/TAM.
    *
    * Regra base (CoC 7E):
@@ -432,7 +451,8 @@ window.CoC = window.CoC || {};
     calcPersonalInterestPoints,
     buildOccupationContext,
     sumSkillPointsSpent,
-    validateCharacter
+    validateCharacter,
+    calcAgeAdjustments
   };
 
 })();

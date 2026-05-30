@@ -264,7 +264,19 @@
       node.oninput = () => {
         c.investigator[f] = node.value;
         if (f === "tagline") $("#identity-display").textContent = node.value ? "“" + node.value + "”" : "";
-        if (f === "age") recalcDerived(), renderDerived();
+        if (f === "age") {
+          recalcDerived();
+          renderDerived();
+          // BUG-02 fix: advisory when age change implies attribute reduction
+          const newAge = Number(node.value) || 25;
+          const adj = rules.calcAgeAdjustments(newAge);
+          if (adj) {
+            toast(
+              `Idade ${newAge} anos: redistribua -${adj.totalReduction} pts entre ${adj.attrs.join("/")} manualmente ou clique "Rolar Tudo".`,
+              { type: "info", duration: 8000 }
+            );
+          }
+        }
         markDirty();
       };
       node.onblur = persistCurrent;
@@ -1635,12 +1647,39 @@
       c.attributes[code].value = r.total;
       c.attributes[code].rolled = `${formula} → ${r.raw.join("+")}=${r.rawSum}, ×5 = ${r.total}`;
     }
+
+    // BUG-02 fix: apply age adjustments to primary attributes
+    // Distribution: highest-value affected attr absorbs each point (never below 0)
+    const age = Number(c.investigator?.age) || 25;
+    const adj = rules.calcAgeAdjustments(age);
+    if (adj) {
+      const before = {};
+      adj.attrs.forEach(k => { before[k] = c.attributes[k]?.value || 0; });
+      let remaining = adj.totalReduction;
+      while (remaining > 0) {
+        const eligible = adj.attrs.filter(k => (c.attributes[k]?.value || 0) > 0);
+        if (!eligible.length) break;
+        const highest = eligible.reduce((a, b) =>
+          (c.attributes[a]?.value || 0) >= (c.attributes[b]?.value || 0) ? a : b
+        );
+        const cut = Math.min(remaining, c.attributes[highest].value);
+        c.attributes[highest].value -= cut;
+        remaining -= cut;
+      }
+      const detail = adj.attrs
+        .filter(k => before[k] !== (c.attributes[k]?.value || 0))
+        .map(k => `${codeToLabel(k)} ${before[k]}→${c.attributes[k].value}`)
+        .join(", ");
+      toast(`Atributos rolados — ajuste de idade (${age} anos): -${adj.totalReduction} pts em ${adj.attrs.join("/")} · ${detail}`, { type: "success", duration: 7000 });
+    } else {
+      toast("Atributos rolados! PV, MP, SAN, MOV, DB recalculados.", { type: "success" });
+    }
+
     recalcDerived();
     renderAttributes();
     renderDerived();
     renderSkills();
     persistCurrent();
-    toast("Atributos rolados! PV, MP, SAN, MOV, DB recalculados.", { type: "success" });
   }
 
   function codeToLabel(code) {
