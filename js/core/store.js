@@ -113,17 +113,47 @@ window.CoC = window.CoC || {};
     }
   }
 
-  // ─── Signal interno ───────────────────────────────────────────────────────
-  const _signal = window.CoC.createSignal({ character: null });
+  // ─── Clock de alta resolução (fallback para Node.js em testes) ──────────
+  function now() {
+    return (typeof performance !== "undefined" && performance.now)
+      ? performance.now()
+      : Date.now();
+  }
+
+  // ─── Signal interno + métricas ────────────────────────────────────────────
+  const _signal  = window.CoC.createSignal({ character: null });
+  const _metrics = { dispatches: 0, effective: 0, noop: 0, totalDurationMs: 0 };
 
   function dispatch(action) {
+    const t0   = now();
     const prev = _signal.get();
     const next = reducer(prev, action);
-    _signal.set(next);
+    const changed    = next !== prev;
+    const durationMs = now() - t0;
+
+    _metrics.dispatches++;
+    if (changed) {
+      _metrics.effective++;
+      _signal.set(next);
+    } else {
+      _metrics.noop++;
+    }
+    _metrics.totalDurationMs += durationMs;
+
+    // Publica no Bus para observabilidade — event-log e trace subscrevem aqui
+    const bus = window.CoC.bus;
+    if (bus) bus.publish("store:dispatch", { action, changed, durationMs });
   }
 
   function getState() {
     return _signal.get();
+  }
+
+  function getMetrics() {
+    const avg = _metrics.dispatches > 0
+      ? _metrics.totalDurationMs / _metrics.dispatches
+      : 0;
+    return Object.assign({}, _metrics, { avgDurationMs: Math.round(avg * 100) / 100 });
   }
 
   /**
@@ -138,6 +168,6 @@ window.CoC = window.CoC || {};
     });
   }
 
-  window.CoC.store = Object.freeze({ dispatch, getState, subscribe });
+  window.CoC.store = Object.freeze({ dispatch, getState, getMetrics, subscribe });
 
 })();
