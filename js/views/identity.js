@@ -5,7 +5,7 @@
    Responsabilidades:
    - Preencher campos de texto da identidade (nome, ocupação, idade, etc.)
    - Atualizar sidebar (nome e ocupação)
-   - Bindar imagens (portrait + banner) via mediaPicker
+   - Bindar imagem de retrato via mediaPicker
    - Publicar bus events em vez de chamar markDirty/persistCurrent diretamente
    - Disparar RECALC_DERIVED via store ao mudar idade
 
@@ -113,15 +113,14 @@ window.CoC.views = window.CoC.views || {};
       node.onblur = _persist;
     });
 
-    // Imagens (portrait + banner)
+    // Imagem de retrato
     _bindImages(c);
   }
 
   // ── Image slots ─────────────────────────────────────────────────────────────
   function _bindImages(c) {
     if (!window.CoC.mediaPicker) return;
-    _setupSlot($s('#character-banner'),   'bannerId',   c, { maxDim: 1280, label: 'banner' });
-    _setupSlot($s('#character-portrait'), 'portraitId', c, { maxDim: 640,  label: 'retrato' });
+    _setupSlot($s('#character-portrait'), 'portraitId', c, { maxDim: 640, label: 'retrato' });
   }
 
   function _setupSlot(slotEl, field, c, opts) {

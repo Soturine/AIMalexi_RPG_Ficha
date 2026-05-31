@@ -342,7 +342,6 @@
     const finCard = $("#finances-card");
     if (finCard) finCard.innerHTML = "";
     if (window.CoC.mediaPicker) {
-      window.CoC.mediaPicker.render($("#character-banner"), null);
       window.CoC.mediaPicker.render($("#character-portrait"), null);
     }
     const invList = $("#inventory-list");
@@ -465,12 +464,8 @@
         // Híbrido: imagens chegam embutidas como data-URI; re-hidrata em Blob
         // local (novo blobId). Sem storage de blob, mantém o data-URI (render lida).
         const mp = window.CoC.mediaPicker;
-        if (mp && char.investigator) {
-          for (const f of ["bannerId", "portraitId"]) {
-            if (char.investigator[f]) {
-              char.investigator[f] = await mp.dataURIToBlobId(char.investigator[f]);
-            }
-          }
+        if (mp && char.investigator && char.investigator.portraitId) {
+          char.investigator.portraitId = await mp.dataURIToBlobId(char.investigator.portraitId);
         }
 
         applyTheme(char._meta?.theme || "arkham");
@@ -504,12 +499,8 @@
       // Híbrido: embute as imagens (blobId → data-URI) para o backup ser portátil.
       const exportData = JSON.parse(JSON.stringify(state.character));
       const mp = window.CoC.mediaPicker;
-      if (mp && exportData.investigator) {
-        for (const f of ["bannerId", "portraitId"]) {
-          if (exportData.investigator[f]) {
-            exportData.investigator[f] = (await mp.blobIdToDataURI(exportData.investigator[f])) || exportData.investigator[f];
-          }
-        }
+      if (mp && exportData.investigator && exportData.investigator.portraitId) {
+        exportData.investigator.portraitId = (await mp.blobIdToDataURI(exportData.investigator.portraitId)) || exportData.investigator.portraitId;
       }
       const ok = store.exportJSON(exportData, filename);
       if (ok) toast("✓ JSON exportado — guarde este arquivo como backup!", { type: "success", duration: 4000 });

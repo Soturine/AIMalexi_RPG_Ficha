@@ -62,7 +62,7 @@
   justify-content: space-between;
   align-items: baseline;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: var(--text-sm);
   margin-bottom: 0.1rem;
 }
 .svital-label { color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.06em; }
@@ -92,7 +92,7 @@
   padding-top: 0.5rem;
   margin-top: 0.1rem;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: var(--text-sm);
   color: var(--ink-dim);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -112,7 +112,7 @@
 .sattr-row:hover { background: var(--bg-card-hi); }
 .sattr-label {
   font-family: var(--font-mono);
-  font-size: 0.67rem;
+  font-size: var(--text-sm);
   color: var(--ink-dim);
   letter-spacing: 0.07em;
   width: 2.7rem;
@@ -135,7 +135,7 @@
 .sattr-fracs {
   margin-left: auto;
   font-family: var(--font-mono);
-  font-size: 0.63rem;
+  font-size: var(--text-xs);
   color: var(--ink-faded);
   white-space: nowrap;
 }
@@ -320,7 +320,7 @@
   font-size: 0.95rem;
 }
 
-/* ─── Imagens: banner + retrato ──────────────────────────────────────── */
+/* ─── Imagens: retrato ───────────────────────────────────────────────── */
 .identity-wrapper {
   display: flex;
   gap: 1rem;
@@ -328,7 +328,6 @@
 }
 .identity-wrapper .identity-grid { flex: 1 1 auto; min-width: 0; }
 
-.character-banner,
 .character-portrait {
   position: relative;
   background-color: var(--bg-card);
@@ -340,21 +339,12 @@
   cursor: pointer;
   overflow: hidden;
   transition: border-color 0.15s;
-}
-.character-banner {
-  width: 100%;
-  aspect-ratio: 5 / 1;
-  margin-bottom: 1rem;
-}
-.character-portrait {
   flex: 0 0 auto;
   width: 130px;
   aspect-ratio: 3 / 4;
 }
-.character-banner:hover,
 .character-portrait:hover { border-color: var(--brass); }
 
-.character-banner:not(.has-image)::after,
 .character-portrait:not(.has-image)::after {
   content: "＋ imagem";
   position: absolute;
@@ -393,7 +383,6 @@
 @media (max-width: 600px) {
   .identity-wrapper { flex-direction: column; }
   .character-portrait { width: 100%; max-width: 200px; }
-  .character-banner { aspect-ratio: 3 / 1; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -419,7 +408,7 @@
 
 .attr-card .attr-label {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: var(--text-sm);
   color: var(--ink-dim);
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -466,7 +455,7 @@
 }
 .attr-card .attr-actions button {
   padding: 0.2rem 0.4rem;
-  font-size: 0.7rem;
+  font-size: var(--text-sm);
   min-width: 26px;
 }
 
@@ -490,7 +479,7 @@
 
 .derived-card .derived-label {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: var(--text-sm);
   color: var(--ink-dim);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -618,7 +607,7 @@
 }
 .skill-row .skill-name .skill-tag {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: var(--text-xs);
   color: var(--brass);
   margin-left: 0.3rem;
 }
