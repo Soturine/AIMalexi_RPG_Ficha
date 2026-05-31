@@ -188,7 +188,7 @@
     <!-- ═══ CONTEÚDO ═══ -->
     <div class="content-col">
 
-      <!-- IDENTIDADE -->
+      <!-- IDENTIDADE + BACKGROUND -->
       <section class="section identity-section" data-tab="personagem">
 
         <h2 class="section-title">
@@ -196,102 +196,183 @@
           <span class="meta">Quem é o investigador?</span>
         </h2>
 
-        <div class="identity-wrapper">
+        <div class="identity-grid">
 
-          <div class="identity-grid">
+          <div>
+            <label for="id-name">Nome</label>
+            <input
+              type="text"
+              id="id-name"
+              data-bind="investigator.name"
+              placeholder="Nome do personagem"
+            />
+          </div>
 
-            <div>
-              <label for="id-name">Nome</label>
-              <input
-                type="text"
-                id="id-name"
-                data-bind="investigator.name"
-                placeholder="Nome do personagem"
-              />
-            </div>
+          <div>
+            <label for="id-player">Jogador</label>
+            <input
+              type="text"
+              id="id-player"
+              data-bind="investigator.playerName"
+              placeholder="Seu nome"
+            />
+          </div>
 
-            <div>
-              <label for="id-player">Jogador</label>
-              <input
-                type="text"
-                id="id-player"
-                data-bind="investigator.playerName"
-                placeholder="Seu nome"
-              />
-            </div>
+          <div>
+            <label for="id-occupation">Ocupação</label>
 
-            <div>
-              <label for="id-occupation">Ocupação</label>
+            <select
+              id="id-occupation"
+              data-bind="investigator.occupation"
+            >
+              <option value="">— escolher —</option>
+            </select>
+          </div>
 
-              <select
-                id="id-occupation"
-                data-bind="investigator.occupation"
-              >
-                <option value="">— escolher —</option>
-              </select>
-            </div>
+          <div>
+            <label for="id-age">Idade</label>
 
-            <div>
-              <label for="id-age">Idade</label>
+            <input
+              type="number"
+              id="id-age"
+              data-bind="investigator.age"
+              min="15"
+              max="99"
+            />
+          </div>
 
-              <input
-                type="number"
-                id="id-age"
-                data-bind="investigator.age"
-                min="15"
-                max="99"
-              />
-            </div>
+          <div>
+            <label for="id-sex">Sexo / Pronomes</label>
 
-            <div>
-              <label for="id-sex">Sexo / Pronomes</label>
+            <input
+              type="text"
+              id="id-sex"
+              data-bind="investigator.sex"
+              placeholder="ex: Masculino, ele/dele"
+            />
+          </div>
 
-              <input
-                type="text"
-                id="id-sex"
-                data-bind="investigator.sex"
-                placeholder="ex: Masculino, ele/dele"
-              />
-            </div>
+          <div>
+            <label for="id-residence">Residência</label>
 
-            <div>
-              <label for="id-residence">Residência</label>
+            <input
+              type="text"
+              id="id-residence"
+              data-bind="investigator.residence"
+              placeholder="Cidade atual"
+            />
+          </div>
 
-              <input
-                type="text"
-                id="id-residence"
-                data-bind="investigator.residence"
-                placeholder="Cidade atual"
-              />
-            </div>
+          <div>
+            <label for="id-birthplace">Local de Nascimento</label>
 
-            <div>
-              <label for="id-birthplace">Local de Nascimento</label>
+            <input
+              type="text"
+              id="id-birthplace"
+              data-bind="investigator.birthplace"
+              placeholder="Cidade natal"
+            />
+          </div>
 
-              <input
-                type="text"
-                id="id-birthplace"
-                data-bind="investigator.birthplace"
-                placeholder="Cidade natal"
-              />
-            </div>
+          <div class="full-width">
+            <label for="id-tagline">Conceito (1 frase)</label>
 
-            <div class="full-width">
-              <label for="id-tagline">Conceito (1 frase)</label>
-
-              <input
-                type="text"
-                id="id-tagline"
-                data-bind="investigator.tagline"
-                placeholder="Ex: Médico cético perseguindo o impossível"
-              />
-            </div>
-
+            <input
+              type="text"
+              id="id-tagline"
+              data-bind="investigator.tagline"
+              placeholder="Ex: Médico cético perseguindo o impossível"
+            />
           </div>
 
         </div>
 
         <p class="identity-tagline" id="identity-display">—</p>
+
+        <!-- Retrato + Background lado a lado -->
+        <div class="portrait-bg-layout">
+
+          <div class="portrait-col">
+            <div
+              id="portrait-main"
+              class="character-portrait portrait-main"
+              title="Retrato · clique para alterar"
+            ></div>
+          </div>
+
+          <div class="bg-col">
+
+            <h3 class="bg-col-title">Background &amp; Conceito</h3>
+
+            <div>
+              <label for="bg-description">Descrição Pessoal</label>
+              <textarea
+                id="bg-description"
+                data-bind="background.description"
+                placeholder="Aparência, modos, primeira impressão..."
+              ></textarea>
+            </div>
+
+            <div class="background-grid-mini">
+
+              <div>
+                <label for="bg-ideology">Ideologia / Crenças</label>
+                <textarea id="bg-ideology" data-bind="background.ideology"></textarea>
+              </div>
+
+              <div>
+                <label for="bg-people">Pessoas Importantes</label>
+                <textarea id="bg-people" data-bind="background.significantPeople"></textarea>
+              </div>
+
+              <div>
+                <label for="bg-locations">Lugares Significativos</label>
+                <textarea id="bg-locations" data-bind="background.meaningfulLocations"></textarea>
+              </div>
+
+              <div>
+                <label for="bg-possessions">Posses Preciosas</label>
+                <textarea id="bg-possessions" data-bind="background.treasuredPossessions"></textarea>
+              </div>
+
+              <div>
+                <label for="bg-traits">Características / Traços</label>
+                <textarea id="bg-traits" data-bind="background.traits"></textarea>
+              </div>
+
+              <div>
+                <label for="bg-injuries">Ferimentos e Cicatrizes</label>
+                <textarea id="bg-injuries" data-bind="background.injuriesScars"></textarea>
+              </div>
+
+              <div>
+                <label for="bg-phobias">Fobias e Manias</label>
+                <textarea id="bg-phobias" data-bind="background.phobiasManias"></textarea>
+              </div>
+
+              <div>
+                <label for="bg-tomes">Tomos Lidos</label>
+                <textarea id="bg-tomes" data-bind="background.tomes"></textarea>
+              </div>
+
+              <div>
+                <label for="bg-encounters">Encontros Sobrenaturais</label>
+                <textarea id="bg-encounters" data-bind="background.encounters"></textarea>
+              </div>
+
+            </div>
+
+            <div>
+              <label for="bg-equipment">Equipamento (um por linha)</label>
+              <textarea
+                id="bg-equipment"
+                placeholder="Lanterna&#10;Caderno e caneta&#10;Lupa..."
+              ></textarea>
+            </div>
+
+          </div>
+
+        </div>
 
       </section>
 
@@ -402,82 +483,6 @@
       </section>
 
       <!-- DIÁRIO -->
-      <section class="section" data-tab="personagem">
-
-        <h2 class="section-title">
-          Background & Conceito
-          <span class="meta">Origem, traços, convicções, pessoas importantes</span>
-        </h2>
-
-        <div class="background-grid">
-
-          <div class="full-width">
-            <label for="bg-description">Descrição Pessoal</label>
-
-            <textarea
-              id="bg-description"
-              data-bind="background.description"
-              placeholder="Aparência, modos, primeira impressão..."
-            ></textarea>
-          </div>
-
-          <div>
-            <label for="bg-ideology">Ideologia / Crenças</label>
-            <textarea id="bg-ideology" data-bind="background.ideology"></textarea>
-          </div>
-
-          <div>
-            <label for="bg-people">Pessoas Importantes</label>
-            <textarea id="bg-people" data-bind="background.significantPeople"></textarea>
-          </div>
-
-          <div>
-            <label for="bg-locations">Lugares Significativos</label>
-            <textarea id="bg-locations" data-bind="background.meaningfulLocations"></textarea>
-          </div>
-
-          <div>
-            <label for="bg-possessions">Posses Preciosas</label>
-            <textarea id="bg-possessions" data-bind="background.treasuredPossessions"></textarea>
-          </div>
-
-          <div>
-            <label for="bg-traits">Características / Traços</label>
-            <textarea id="bg-traits" data-bind="background.traits"></textarea>
-          </div>
-
-          <div>
-            <label for="bg-injuries">Ferimentos e Cicatrizes</label>
-            <textarea id="bg-injuries" data-bind="background.injuriesScars"></textarea>
-          </div>
-
-          <div>
-            <label for="bg-phobias">Fobias e Manias</label>
-            <textarea id="bg-phobias" data-bind="background.phobiasManias"></textarea>
-          </div>
-
-          <div>
-            <label for="bg-tomes">Tomos Lidos</label>
-            <textarea id="bg-tomes" data-bind="background.tomes"></textarea>
-          </div>
-
-          <div>
-            <label for="bg-encounters">Encontros Sobrenaturais</label>
-            <textarea id="bg-encounters" data-bind="background.encounters"></textarea>
-          </div>
-
-          <div class="full-width">
-            <label for="bg-equipment">Equipamento (um por linha)</label>
-
-            <textarea
-              id="bg-equipment"
-              placeholder="Lanterna&#10;Caderno e caneta&#10;Lupa..."
-            ></textarea>
-          </div>
-
-        </div>
-
-      </section>
 
       <!-- INVENTÁRIO — M4.1 -->
       <section class="section" data-tab="inventario">
@@ -683,10 +688,19 @@
 <script src="js/views/attributes.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
+     CAMPANHA (multiplayer — BroadcastChannel local, slot Supabase M5)
+═══════════════════════════════════════════════════════════════════════ -->
+
+<script src="js/campaign/pin-system.js"></script>
+<script src="js/campaign/transport.js"></script>
+<script src="js/campaign/campaign-store.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
      ORQUESTRADOR
 ═══════════════════════════════════════════════════════════════════════ -->
 
 <script src="js/investigator.js"></script>
+<script src="js/campaign/player-sync.js"></script>
 
 </body>
 </html>

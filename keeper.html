@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ficha do Mestre · Chamado de Cthulhu 7E · AIMalexi RPG</title>
+  <title>Centro de Campanha · Chamado de Cthulhu 7E · AIMalexi RPG</title>
   <link rel="stylesheet" href="css/theme.css" />
   <link rel="stylesheet" href="css/keeper.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9C%3C/text%3E%3C/svg%3E" />
@@ -27,8 +27,15 @@
 <div class="app">
 
   <header class="app-header">
-    <h1 class="app-title">Ficha do Mestre</h1>
-    <p class="app-subtitle">Bestiário & NPCs · Chamado de Cthulhu · 7ª Edição</p>
+    <div class="header-main">
+      <h1 class="app-title">Guardião · Centro de Campanha</h1>
+      <p class="app-subtitle" id="campaign-subtitle">Chamado de Cthulhu · 7ª Edição</p>
+    </div>
+    <div class="campaign-badge" id="campaign-badge" style="display:none">
+      <span class="cb-name" id="cb-name"></span>
+      <span class="cb-pin">PIN <strong id="cb-pin"></strong></span>
+      <span class="cb-players" id="cb-players"></span>
+    </div>
   </header>
 
   <!-- Toolbar -->
@@ -42,11 +49,58 @@
 
     <span class="toolbar-spacer"></span>
 
+    <a href="compendium.html" class="btn btn-ghost" title="Compêndio de Regras">📚 Compêndio</a>
+    <button id="btn-campaign" class="btn-campaign" title="Gerenciar Campanha">🌐 Campanha</button>
     <button id="btn-print" class="btn-ghost" title="Imprimir / PDF">🖨️</button>
     <button id="btn-export" class="btn-export" title="Exportar biblioteca completa como JSON (BACKUP)">💾 Exportar</button>
   </div>
 
-  <!-- Grid 3 colunas -->
+  <!-- ═══ PAINEL DE CAMPANHA ═══ -->
+  <!-- Estado: sem campanha -->
+  <div class="campaign-setup" id="campaign-setup">
+    <div class="cs-inner">
+      <div class="cs-host">
+        <button id="btn-create-campaign" class="btn-primary cs-btn">
+          🌐 Criar Campanha
+        </button>
+        <p class="cs-hint">Gera PIN · você é o Guardião</p>
+      </div>
+      <div class="cs-divider">ou</div>
+      <div class="cs-join">
+        <div class="cs-pin-row">
+          <input
+            type="text"
+            id="pin-input"
+            class="pin-input"
+            placeholder="PIN de 6 dígitos"
+            maxlength="6"
+            pattern="\d{6}"
+            inputmode="numeric"
+          />
+          <button id="btn-join-campaign" class="btn-primary">Entrar</button>
+        </div>
+        <p class="cs-hint">Para jogadores — entre com o PIN do Guardião</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado: campanha ativa (dashboard) -->
+  <div class="campaign-dashboard" id="campaign-dashboard" style="display:none">
+
+    <!-- Painel dos Investigadores -->
+    <div class="investigators-strip" id="investigators-strip">
+      <div class="is-header">
+        <span class="is-title">Investigadores</span>
+        <span class="is-count" id="is-count">0 conectados</span>
+      </div>
+      <div class="investigators-cards" id="investigators-cards">
+        <div class="inv-card-empty">Aguardando investigadores...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Keeper Grid (3 colunas) -->
   <div class="keeper-grid">
 
     <!-- ─── BIBLIOTECA ─── -->
@@ -79,8 +133,10 @@
       </div>
     </div>
 
-    <!-- ─── ENCONTRO + ROLL LOG ─── -->
+    <!-- ─── ENCONTRO + TIMELINE + LOG ─── -->
     <aside class="encounter-col">
+
+      <!-- Tracker de Encontro -->
       <div class="encounter-panel">
         <h3>
           ⚔️ Encontro
@@ -89,24 +145,50 @@
         <div class="encounter-list" id="encounter-list">
           <div class="encounter-empty">Nenhuma criatura ativa.<br>Use <b>+ Encontro</b>.</div>
         </div>
-
-        <div class="roll-log" id="roll-log" style="margin-top: 1rem;">
-          <div class="roll-log-header">
-            <strong style="font-family: var(--font-serif); color: var(--keeper-accent-bright);">🎲 Log</strong>
-            <div style="display:flex; gap: 0.25rem;">
-              <button class="btn-ghost btn-icon" id="btn-copy-log" title="Copiar log">↗</button>
-              <button class="btn-ghost btn-icon" id="btn-clear-log" title="Limpar log">✕</button>
-            </div>
-          </div>
-          <ul style="list-style:none; padding:0; margin:0;"></ul>
-        </div>
       </div>
+
+      <!-- Timeline de Eventos -->
+      <div class="timeline-panel" id="timeline-panel">
+        <div class="tp-header">
+          <strong class="tp-title">📜 Timeline</strong>
+          <button class="btn-ghost btn-icon" id="btn-clear-timeline" title="Limpar timeline">✕</button>
+        </div>
+        <ul class="timeline-list" id="timeline-list">
+          <li class="tl-empty">Sem eventos ainda.</li>
+        </ul>
+      </div>
+
+      <!-- Roll Log -->
+      <div class="roll-log" id="roll-log">
+        <div class="roll-log-header">
+          <strong style="font-family: var(--font-serif); color: var(--keeper-accent-bright);">🎲 Log</strong>
+          <div style="display:flex; gap: 0.25rem;">
+            <button class="btn-ghost btn-icon" id="btn-copy-log" title="Copiar log">↗</button>
+            <button class="btn-ghost btn-icon" id="btn-clear-log" title="Limpar log">✕</button>
+          </div>
+        </div>
+        <ul style="list-style:none; padding:0; margin:0;"></ul>
+      </div>
+
     </aside>
 
   </div><!-- /keeper-grid -->
 
+  <!-- Modal: Gerenciar Campanha -->
+  <div class="modal-overlay" id="modal-campaign" style="display:none">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Campanha</h2>
+        <button class="modal-close" id="btn-close-campaign-modal">✕</button>
+      </div>
+      <div class="modal-body" id="campaign-modal-body">
+        <!-- Preenchido pelo JS -->
+      </div>
+    </div>
+  </div>
+
   <footer style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--ink-faded); font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-faded);">
-    <a href="index.html">← Portal</a> · <a href="guia-iniciante.html">Guia do Iniciante</a> · <a href="investigator.html">Ficha do Investigador →</a>
+    <a href="index.html">← Portal</a> · <a href="guia-iniciante.html">Guia do Iniciante</a> · <a href="investigator.html">Ficha do Investigador →</a> · <a href="compendium.html">Compêndio →</a>
   </footer>
 
 </div>
@@ -137,9 +219,17 @@
 <script src="js/shared/validators.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
+     CAMPANHA
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script src="js/campaign/pin-system.js"></script>
+<script src="js/campaign/transport.js"></script>
+<script src="js/campaign/campaign-store.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
      ORQUESTRADOR DA FICHA DO MESTRE
      ═══════════════════════════════════════════════════════════════════════ -->
 <script src="js/keeper.js"></script>
+<script src="js/campaign/keeper-dashboard.js"></script>
 
 </body>
 </html>
