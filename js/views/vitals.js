@@ -79,6 +79,47 @@ window.CoC.views = window.CoC.views || {};
 
     _bindButtons();
     _sanityAtmosphere();
+    renderSidebarVitals();
+  }
+
+  function renderSidebarVitals() {
+    const bar = $("#sidebar-vitals");
+    if (!bar) return;
+    bar.innerHTML = "";
+    const c = cocStore.getState().character;
+    if (!c) return;
+
+    const trackers = [
+      { key: "PV",  label: "PV"  },
+      { key: "SAN", label: "SAN" },
+      { key: "PM",  label: "PM"  },
+    ];
+    for (const { key, label } of trackers) {
+      const d = c.derived?.[key];
+      if (!d) continue;
+      const cur  = d.current ?? d.value;
+      const max  = key === "SAN" ? d.max : d.value;
+      const fill = max > 0 ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0;
+      const row  = el("div", { class: `svital svital-${key.toLowerCase()}`, "data-svital": key });
+      row.innerHTML = `
+        <div class="svital-header">
+          <span class="svital-label">${label}</span>
+          <span class="svital-value">${cur}<span class="svital-max"> / ${max}</span></span>
+        </div>
+        <div class="svital-track"><div class="svital-fill" style="width:${fill}%"></div></div>`;
+      bar.appendChild(row);
+    }
+
+    const luck = c.attributes?.Sorte;
+    if (luck != null) {
+      const row = el("div", { class: "svital svital-luck" });
+      row.innerHTML = `
+        <div class="svital-header">
+          <span class="svital-label">Sorte</span>
+          <span class="svital-value">${Number(luck.value) || 0}</span>
+        </div>`;
+      bar.appendChild(row);
+    }
   }
 
   function _flashCard(key, sign) {
@@ -174,6 +215,6 @@ window.CoC.views = window.CoC.views || {};
     // renderVitals() on first paint is called by investigator.js via renderAll()
   }
 
-  window.CoC.views.vitals = Object.freeze({ init: initVitals, render: renderVitals });
+  window.CoC.views.vitals = Object.freeze({ init: initVitals, render: renderVitals, renderSidebarVitals });
 
 })();

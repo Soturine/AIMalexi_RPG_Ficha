@@ -69,10 +69,11 @@
       recalcDerived();
       persistCurrent();
     });
-    // M3.2 — Luck slice: re-render Sorte card + persist after spend
+    // M3.2 — Luck slice: re-render Sorte in sidebar + persist after spend
     window.CoC.bus.subscribe("store:dispatch", function (event) {
       if (event.changed && event.action.type === "SPEND_LUCK") {
         renderAttributes();
+        window.CoC.views.vitals.renderSidebarVitals();
         persistCurrent();
       }
     });
@@ -264,7 +265,14 @@
   }
 
   function clearUI() {
-    $("#attr-grid").innerHTML = "<p class='dim center'>Nenhum personagem carregado.</p>";
+    const sAttr = $("#sidebar-attributes");
+    if (sAttr) sAttr.innerHTML = "";
+    const sVitals = $("#sidebar-vitals");
+    if (sVitals) sVitals.innerHTML = "";
+    const sName = $("#sidebar-name");
+    if (sName) sName.textContent = "—";
+    const sOcc  = $("#sidebar-occupation");
+    if (sOcc)  sOcc.textContent  = "—";
     $("#derived-bar").innerHTML = "";
     $("#skills-groups").innerHTML = "";
     $("#weapons-list").innerHTML = "";
@@ -289,11 +297,19 @@
     const tagline = c.investigator?.tagline ? "“" + c.investigator.tagline + "”" : "";
     $("#identity-display").textContent = tagline;
 
+    // Sync sidebar identity display
+    const sName = $("#sidebar-name");
+    const sOcc  = $("#sidebar-occupation");
+    if (sName) sName.textContent = c.investigator?.name       || "—";
+    if (sOcc)  sOcc.textContent  = c.investigator?.occupation || "—";
+
     // Recalcular pontos ao mudar ocupação
     $("#id-occupation").onchange = () => {
       c.investigator.occupation = $("#id-occupation").value;
+      const _sOcc = $("#sidebar-occupation");
+      if (_sOcc) _sOcc.textContent = c.investigator.occupation || "—";
       renderSkills();
-      renderFinances();   // atualiza a faixa de Posses exibida
+      renderFinances();
       persistCurrent();
     };
 
@@ -303,11 +319,18 @@
       if (!node) return;
       node.oninput = () => {
         c.investigator[f] = node.value;
+        if (f === "name") {
+          const _sName = $("#sidebar-name");
+          if (_sName) _sName.textContent = node.value || "—";
+        }
+        if (f === "occupation") {
+          const _sOcc = $("#sidebar-occupation");
+          if (_sOcc) _sOcc.textContent = node.value || "—";
+        }
         if (f === "tagline") $("#identity-display").textContent = node.value ? "“" + node.value + "”" : "";
         if (f === "age") {
           recalcDerived();
           window.CoC.views.vitals.render();
-          // BUG-02 fix: advisory when age change implies attribute reduction
           const newAge = Number(node.value) || 25;
           const adj = rules.calcAgeAdjustments(newAge);
           if (adj) {
@@ -378,9 +401,10 @@
     }
   }
 
-  // ─── ATRIBUTOS ────────────────────────────────────────────────────────
+  // ─── ATRIBUTOS — renderiza para #sidebar-attributes (M3.5.1) ─────────
   function renderAttributes() {
-    const grid = $("#attr-grid");
+    const grid = $("#sidebar-attributes");
+    if (!grid) return;
     grid.innerHTML = "";
     const c = state.character;
     if (!c?.attributes) return;
@@ -390,47 +414,41 @@
       const attr = c.attributes[code];
       if (!attr) continue;
       const v = Number(attr.value) || 0;
-      const card = el("div", { class: "attr-card", "data-attr": code });
-      card.innerHTML = `
-        <div class="attr-label">${escapeHtml(code)}</div>
-        <div class="attr-name">${escapeHtml(attr.label || code)}</div>
-        <div class="attr-value" contenteditable="false" title="${escapeHtml(attr.rolled || "")}">${v}</div>
-        <div class="attr-fractions"><span class="half">½ ${dice.half(v)}</span> · <span class="fifth">⅕ ${dice.fifth(v)}</span></div>
-        <div class="attr-actions">
-          <button data-roll="${code}" data-difficulty="regular" title="Rolar Regular">R</button>
-          <button data-roll="${code}" data-difficulty="hard" title="Rolar Difícil">D</button>
-          <button data-roll="${code}" data-difficulty="extreme" title="Rolar Extremo">E</button>
-        </div>`;
-      grid.appendChild(card);
+      const row = el("div", { class: "sattr-row", "data-attr": code });
+      const valNode = el("span", {
+        class: "sattr-value",
+        contenteditable: state.editMode ? "true" : "false",
+        title: escapeHtml(attr.rolled || "")
+      }, [String(v)]);
+      row.appendChild(el("span", { class: "sattr-label" }, [escapeHtml(code)]));
+      row.appendChild(valNode);
+      row.appendChild(el("span", { class: "sattr-fracs" }, [`½${dice.half(v)} · ⅕${dice.fifth(v)}`]));
+      grid.appendChild(row);
     }
 
-    // Permite editar valor diretamente quando em Edit Mode
-    $$(".attr-value").forEach(node => {
-      node.contentEditable = state.editMode ? "true" : "false";
-      node.onkeydown = (e) => {
-        if (e.key === "Enter") { e.preventDefault(); node.blur(); }
-        if (e.key === "Escape") { e.preventDefault(); node.textContent = state.character.attributes[node.closest(".attr-card").dataset.attr].value; node.blur(); }
-      };
-      node.onblur = () => {
-        const code = node.closest(".attr-card").dataset.attr;
-        const v = Math.max(0, Math.min(99, parseInt(node.textContent, 10) || 0));
-        state.character.attributes[code].value = v;
-        renderAttributes();
-        recalcDerived();
-        window.CoC.views.vitals.render();
-        renderSkills();
-        persistCurrent();
-      };
-    });
-
-    // Botões R/D/E
-    $$(".attr-actions [data-roll]").forEach(btn => {
-      btn.onclick = () => {
-        const code = btn.dataset.roll;
-        const difficulty = btn.dataset.difficulty;
-        rollAttribute(code, difficulty);
-      };
-    });
+    if (state.editMode) {
+      $$(".sattr-value").forEach(node => {
+        node.onkeydown = (e) => {
+          if (e.key === "Enter")  { e.preventDefault(); node.blur(); }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            const code = node.closest(".sattr-row").dataset.attr;
+            node.textContent = String(state.character.attributes[code].value);
+            node.blur();
+          }
+        };
+        node.onblur = () => {
+          const code = node.closest(".sattr-row").dataset.attr;
+          const v = Math.max(0, Math.min(99, parseInt(node.textContent, 10) || 0));
+          state.character.attributes[code].value = v;
+          renderAttributes();
+          recalcDerived();
+          window.CoC.views.vitals.render();
+          renderSkills();
+          persistCurrent();
+        };
+      });
+    }
   }
 
   // ─── DERIVADOS ────────────────────────────────────────────────────────

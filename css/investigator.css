@@ -4,10 +4,149 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LAYOUT PRINCIPAL
+   LAYOUT PRINCIPAL — M3.5.1 App Shell
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.investigator-grid {
+.app-shell {
+  display: flex;
+  gap: var(--gap-lg);
+  align-items: flex-start;
+}
+
+/* Character sidebar: left permanent panel */
+.character-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--bg-card);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem;
+}
+
+/* Portrait inside sidebar */
+.character-sidebar .character-portrait {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 200px;
+}
+
+/* Identity display */
+.sidebar-identity { text-align: center; }
+.sidebar-name {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--ink);
+  line-height: 1.2;
+  word-break: break-word;
+}
+.sidebar-occupation {
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+  font-style: italic;
+  margin-top: 0.2rem;
+  word-break: break-word;
+}
+
+/* Compact vitals bars */
+.sidebar-vitals { display: flex; flex-direction: column; gap: 0.35rem; }
+.svital-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  margin-bottom: 0.1rem;
+}
+.svital-label { color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.svital-value { color: var(--ink); font-weight: bold; }
+.svital-max   { color: var(--ink-faded); font-weight: normal; }
+.svital-track {
+  height: 4px;
+  background: var(--bg-card-hi);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.svital-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.svital-pv  .svital-fill { background: var(--blood); }
+.svital-san .svital-fill { background: var(--brass); }
+.svital-pm  .svital-fill { background: #7b5ea7; }
+
+/* Sidebar attribute list header */
+.sidebar-attr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--ink-faded);
+  padding-top: 0.5rem;
+  margin-top: 0.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sidebar-attr-header::before { content: "Atributos"; }
+
+/* Compact attribute rows */
+.sidebar-attributes { display: flex; flex-direction: column; gap: 0.05rem; }
+.sattr-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.3rem;
+  border-radius: var(--radius);
+  transition: background 0.1s;
+}
+.sattr-row:hover { background: var(--bg-card-hi); }
+.sattr-label {
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.07em;
+  width: 2.7rem;
+  flex-shrink: 0;
+}
+.sattr-value {
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  font-weight: bold;
+  color: var(--ink);
+  min-width: 1.6rem;
+  cursor: default;
+}
+.sattr-value[contenteditable="true"] {
+  cursor: text;
+  border-bottom: 1px dashed var(--brass);
+  outline: none;
+  padding: 0 1px;
+}
+.sattr-fracs {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.63rem;
+  color: var(--ink-faded);
+  white-space: nowrap;
+}
+
+/* Utility */
+.btn-sm { font-size: 0.72rem !important; padding: 0.25rem 0.5rem !important; }
+
+/* Main panel: right of character sidebar */
+.main-panel {
+  flex: 1;
+  min-width: 0;
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: var(--gap-lg);
@@ -23,9 +162,44 @@
   overflow-y: auto;
 }
 
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 1200px) {
+  .character-sidebar { width: 190px; }
+}
+
 @media (max-width: 1024px) {
-  .investigator-grid { grid-template-columns: 1fr; }
+  .main-panel { grid-template-columns: 1fr; }
   .sidebar-col { position: static; max-height: none; }
+}
+
+@media (max-width: 900px) {
+  .app-shell { flex-direction: column; }
+  .character-sidebar {
+    width: 100%;
+    position: static;
+    max-height: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 0.6rem;
+  }
+  .character-sidebar .character-portrait {
+    width: 70px;
+    aspect-ratio: 3 / 4;
+    max-height: none;
+    flex-shrink: 0;
+  }
+  .sidebar-identity { flex: 1; min-width: 120px; text-align: left; }
+  .sidebar-vitals   { flex: 1 1 180px; }
+  .sidebar-attr-header { width: 100%; }
+  .sidebar-attributes {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.05rem 0;
+  }
+  .sattr-row { width: 25%; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -654,13 +828,12 @@
 @media (max-width: 768px) {
   .mobile-tabs { display: flex; gap: 0.2rem; }
 
-  .investigator-grid > .content-col > .section { display: none; }
-  .investigator-grid > .content-col > .section.tab-active { display: block; }
+  .main-panel > .content-col > .section { display: none; }
+  .main-panel > .content-col > .section.tab-active { display: block; }
 
   .sidebar-col { display: none; }
   .sidebar-col.tab-active { display: block; }
 
-  .attr-grid { grid-template-columns: repeat(2, 1fr); }
   .derived-bar { grid-template-columns: repeat(3, 1fr); }
   .skills-list { grid-template-columns: 1fr; }
   .weapons-list { grid-template-columns: 1fr; }
