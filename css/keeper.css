@@ -1133,6 +1133,59 @@
 .cp-char { color: var(--ink-dim); font-size: 0.78rem; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   SESSÃO STALE — painel de recuperação
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.campaign-stale {
+  background: var(--bg-card);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1rem;
+  margin-bottom: var(--gap);
+}
+
+.stale-inner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.stale-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stale-icon {
+  font-size: 1.35rem;
+  color: var(--brass-bright);
+  line-height: 1;
+}
+
+.stale-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--brass-bright);
+  margin: 0 0 0.2rem;
+}
+
+.stale-detail {
+  font-size: 0.85rem;
+  color: var(--ink-faded);
+  margin: 0;
+}
+
+.stale-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    MOBILE AJUSTES para o dashboard
    ═══════════════════════════════════════════════════════════════════════════ */
 

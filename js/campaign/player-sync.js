@@ -30,11 +30,12 @@ window.CoC.campaign = window.CoC.campaign || {};
     _listenTransport();
     _listenBus();
 
-    // Restaurar sessão
+    // Auto-restore session on page refresh. Players reconnect silently.
     var saved = _cs.getState();
     if (saved.connected && saved.id) {
       _tp.init(saved.id, saved.role);
       _tp.onEvent(_onTransportEvent);
+      _cs.markActive();
       _broadcastStatus();
     }
   }

@@ -25,7 +25,15 @@ window.CoC.campaign = window.CoC.campaign || {};
   function _load() {
     try {
       var raw = sessionStorage.getItem(SESSION_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        // Sessions saved without a status field (pre-Sprint 16) are stale on page load
+        // because the transport is always gone after a page refresh/reload.
+        if (!parsed.status) {
+          parsed.status = parsed.connected ? 'stale' : 'disconnected';
+        }
+        return parsed;
+      }
     } catch (e) {}
     return _defaultState();
   }
@@ -39,7 +47,8 @@ window.CoC.campaign = window.CoC.campaign || {};
       hostPeerId: null,
       investigators: {},
       timeline: [],
-      connected: false
+      connected: false,
+      status: 'disconnected'  // 'disconnected' | 'active' | 'stale'
     };
   }
 
@@ -56,12 +65,13 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   function createCampaign(name, pin, hostPeerId) {
     _state = _defaultState();
-    _state.id        = _uuid();
-    _state.name      = name || 'Nova Campanha';
-    _state.pin       = pin;
-    _state.role      = 'host';
+    _state.id         = _uuid();
+    _state.name       = name || 'Nova Campanha';
+    _state.pin        = pin;
+    _state.role       = 'host';
     _state.hostPeerId = hostPeerId;
-    _state.connected = true;
+    _state.connected  = true;
+    _state.status     = 'active';
     _notify();
   }
 
@@ -70,12 +80,30 @@ window.CoC.campaign = window.CoC.campaign || {};
     _state.pin       = pin;
     _state.role      = role || 'player';
     _state.connected = true;
+    _state.status    = 'active';
     _notify();
   }
 
   function leaveCampaign() {
     _state = _defaultState();
     sessionStorage.removeItem(SESSION_KEY);
+    _notify();
+  }
+
+  // Mark session as stale (page load with saved session — transport gone).
+  // Also resets all investigator presence to offline since we can't know who is still connected.
+  function markStale() {
+    var invs = {};
+    Object.keys(_state.investigators || {}).forEach(function (pid) {
+      invs[pid] = Object.assign({}, _state.investigators[pid], { online: false });
+    });
+    _state = Object.assign({}, _state, { status: 'stale', investigators: invs });
+    _notify();
+  }
+
+  // Mark session as active again (after user confirms reactivation).
+  function markActive() {
+    _state = Object.assign({}, _state, { status: 'active', connected: true });
     _notify();
   }
 
@@ -124,15 +152,17 @@ window.CoC.campaign = window.CoC.campaign || {};
   }
 
   window.CoC.campaign.store = Object.freeze({
-    getState:             getState,
-    createCampaign:       createCampaign,
-    joinCampaign:         joinCampaign,
-    leaveCampaign:        leaveCampaign,
-    upsertInvestigator:   upsertInvestigator,
+    getState:               getState,
+    createCampaign:         createCampaign,
+    joinCampaign:           joinCampaign,
+    leaveCampaign:          leaveCampaign,
+    markStale:              markStale,
+    markActive:             markActive,
+    upsertInvestigator:     upsertInvestigator,
     setInvestigatorOffline: setInvestigatorOffline,
-    pushTimeline:         pushTimeline,
-    clearTimeline:        clearTimeline,
-    subscribe:            subscribe
+    pushTimeline:           pushTimeline,
+    clearTimeline:          clearTimeline,
+    subscribe:              subscribe
   });
 
 })();

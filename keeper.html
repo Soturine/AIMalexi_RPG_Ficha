@@ -84,6 +84,23 @@
     </div>
   </div>
 
+  <!-- Estado: sessão anterior detectada (stale) -->
+  <div class="campaign-stale" id="campaign-stale" style="display:none">
+    <div class="stale-inner">
+      <div class="stale-info">
+        <span class="stale-icon">⚡</span>
+        <div>
+          <p class="stale-title">Sessão anterior detectada</p>
+          <p class="stale-detail" id="stale-detail">—</p>
+        </div>
+      </div>
+      <div class="stale-actions">
+        <button id="btn-reactivate-campaign" class="btn-primary cs-btn">↺ Reativar</button>
+        <button id="btn-discard-stale" class="btn-ghost">Descartar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Estado: campanha ativa (dashboard) -->
   <div class="campaign-dashboard" id="campaign-dashboard" style="display:none">
 

@@ -37,27 +37,35 @@ window.CoC.campaign = window.CoC.campaign || {};
     _bindButtons();
     _cs.subscribe(_onCampaignChange);
 
-    // Restaurar estado de sessão anterior
+    // On page load, any saved session is stale — transport channel is always gone.
+    // Mark it so the UI shows the recovery panel instead of the active dashboard.
     var saved = _cs.getState();
     if (saved.connected && saved.id) {
-      _tp.init(saved.id, saved.role);
-      _tp.onEvent(_onTransportEvent);
-      _renderDashboard(saved);
+      _cs.markStale();
     }
+    _renderDashboard(_cs.getState());
   }
 
   // ── Buttons ───────────────────────────────────────────────────────────────
   function _bindButtons() {
-    var btnCreate  = $s('#btn-create-campaign');
-    var btnJoin    = $s('#btn-join-campaign');
-    var btnManage  = $s('#btn-campaign');
-    var btnClose   = $s('#btn-close-campaign-modal');
-    var btnClearTL = $s('#btn-clear-timeline');
+    var btnCreate     = $s('#btn-create-campaign');
+    var btnJoin       = $s('#btn-join-campaign');
+    var btnManage     = $s('#btn-campaign');
+    var btnClose      = $s('#btn-close-campaign-modal');
+    var btnClearTL    = $s('#btn-clear-timeline');
+    var btnReactivate = $s('#btn-reactivate-campaign');
+    var btnDiscard    = $s('#btn-discard-stale');
 
-    if (btnCreate)  btnCreate.onclick  = _createCampaign;
-    if (btnJoin)    btnJoin.onclick    = _joinCampaign;
-    if (btnManage)  btnManage.onclick  = _openCampaignModal;
-    if (btnClose)   btnClose.onclick   = _closeModal;
+    if (btnCreate)     btnCreate.onclick     = _createCampaign;
+    if (btnJoin)       btnJoin.onclick       = _joinCampaign;
+    if (btnManage)     btnManage.onclick     = _openCampaignModal;
+    if (btnClose)      btnClose.onclick      = _closeModal;
+    if (btnReactivate) btnReactivate.onclick = _reactivateCampaign;
+    if (btnDiscard)    btnDiscard.onclick    = function () {
+      if (confirm('Descartar sessão anterior e começar do zero?')) {
+        _cs.leaveCampaign();
+      }
+    };
     if (btnClearTL) btnClearTL.onclick = function () {
       if (_cs) _cs.clearTimeline();
       _renderTimeline([]);
@@ -100,6 +108,30 @@ window.CoC.campaign = window.CoC.campaign || {};
       ? _ontology.make('PLAYER_CONNECTED', { playerName: 'Guardião', pin: pin })
       : { type: 'PLAYER_CONNECTED', playerName: 'Guardião', pin: pin };
     _tp.broadcast(joinEvent);
+    _renderDashboard(_cs.getState());
+  }
+
+  // ── Reactivate stale session ──────────────────────────────────────────────
+  function _reactivateCampaign() {
+    var state = _cs.getState();
+    if (!state.pin) return;
+
+    _tp.init(state.pin, state.role || 'host');
+    _tp.onEvent(_onTransportEvent);
+    _cs.markActive();
+
+    // Re-announce host and request fresh status from any investigators still open
+    var hostEvt = _ontology
+      ? _ontology.make('HOST_ONLINE', { campaignId: state.pin, pin: state.pin, campaignName: state.name })
+      : { type: 'HOST_ONLINE', campaignId: state.pin, pin: state.pin, campaignName: state.name };
+    _tp.broadcast(hostEvt);
+
+    var reqEvt = _ontology
+      ? _ontology.make('REQUEST_STATUS', { pin: state.pin })
+      : { type: 'REQUEST_STATUS', pin: state.pin };
+    _tp.broadcast(reqEvt);
+
+    _cs.pushTimeline({ type: 'SESSION_RECOVERED', text: 'Sessão reativada.', cls: 'ev-roll' });
     _renderDashboard(_cs.getState());
   }
 
@@ -201,20 +233,36 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   function _renderDashboard(state) {
     var setup     = $s('#campaign-setup');
+    var stale     = $s('#campaign-stale');
     var dashboard = $s('#campaign-dashboard');
     var badge     = $s('#campaign-badge');
     var cbName    = $s('#cb-name');
     var cbPin     = $s('#cb-pin');
     var cbPlayers = $s('#cb-players');
 
-    if (!state.connected) {
+    var status = state.status || (state.connected ? 'active' : 'disconnected');
+
+    if (status === 'disconnected' || !state.connected) {
       if (setup)     setup.style.display     = '';
+      if (stale)     stale.style.display     = 'none';
       if (dashboard) dashboard.style.display = 'none';
       if (badge)     badge.style.display     = 'none';
       return;
     }
 
+    if (status === 'stale') {
+      if (setup)     setup.style.display     = 'none';
+      if (dashboard) dashboard.style.display = 'none';
+      if (badge)     badge.style.display     = 'none';
+      if (stale)     stale.style.display     = '';
+      var detail = $s('#stale-detail');
+      if (detail) detail.textContent = (state.name || '?') + ' · PIN ' + (state.pin || '——');
+      return;
+    }
+
+    // status === 'active'
     if (setup)     setup.style.display     = 'none';
+    if (stale)     stale.style.display     = 'none';
     if (dashboard) dashboard.style.display = '';
     if (badge)     badge.style.display     = '';
 
