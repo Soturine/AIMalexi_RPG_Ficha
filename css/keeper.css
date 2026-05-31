@@ -667,3 +667,488 @@
   .library-col, .encounter-col, .creature-header-actions, .no-print { display: none !important; }
   .workspace { border: 1px solid #888; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HEADER COM BADGE DE CAMPANHA
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-main { flex: 1; }
+
+.campaign-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--keeper-accent);
+  border-radius: var(--radius-lg);
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+}
+
+.cb-name {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.cb-pin {
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+}
+
+.cb-pin strong {
+  color: var(--keeper-accent-bright);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+}
+
+.cb-players {
+  color: var(--ink-faded);
+  font-size: 0.72rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAINEL DE CAMPANHA — SETUP
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.campaign-setup {
+  background: var(--bg-card);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1rem;
+  margin-bottom: var(--gap);
+}
+
+.cs-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.cs-host, .cs-join {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cs-btn { min-width: 160px; }
+
+.cs-divider {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-faded);
+  padding: 0 0.25rem;
+}
+
+.cs-hint {
+  font-size: 0.72rem;
+  color: var(--ink-faded);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+.cs-pin-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pin-input {
+  width: 130px;
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  text-align: center;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  padding: 0.35rem 0.5rem;
+}
+
+.btn-campaign {
+  border-color: var(--brass);
+  color: var(--brass-bright);
+  background: rgba(184, 146, 79, 0.1);
+}
+.btn-campaign:hover {
+  background: var(--brass);
+  color: var(--bg-deep);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DASHBOARD DE CAMPANHA — INVESTIGADORES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.campaign-dashboard {
+  margin-bottom: var(--gap);
+}
+
+.investigators-strip {
+  background: var(--bg-card);
+  border: 1px solid var(--keeper-accent);
+  border-radius: var(--radius-lg);
+  padding: 0.7rem 0.85rem;
+}
+
+.is-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.is-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--keeper-accent-bright);
+  font-weight: 700;
+}
+
+.is-count {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink-faded);
+}
+
+.investigators-cards {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.inv-card-empty {
+  font-style: italic;
+  color: var(--ink-faded);
+  font-size: 0.85rem;
+  padding: 0.4rem 0;
+}
+
+/* Card de investigador individual */
+.inv-card {
+  background: var(--bg-card-hi);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg);
+  padding: 0.55rem 0.75rem;
+  min-width: 160px;
+  max-width: 220px;
+  flex: 1;
+  transition: border-color 0.2s;
+  position: relative;
+}
+
+.inv-card.online  { border-color: var(--ok, #4a8a54); }
+.inv-card.offline { opacity: 0.55; }
+
+.inv-card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.inv-card-name {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-card-player {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--ink-faded);
+  white-space: nowrap;
+}
+
+.inv-card-online-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-faded);
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.inv-card.online  .inv-card-online-dot { background: var(--ok, #4a8a54); box-shadow: 0 0 6px var(--ok, #4a8a54); }
+.inv-card.offline .inv-card-online-dot { background: var(--ink-faded); }
+
+.inv-card-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.25rem;
+}
+
+.inv-stat {
+  text-align: center;
+}
+
+.inv-stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: block;
+}
+
+.inv-stat-value {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: block;
+}
+
+.inv-stat.hp   .inv-stat-value { color: var(--blood); }
+.inv-stat.san  .inv-stat-value { color: var(--brass-bright); }
+.inv-stat.mp   .inv-stat-value { color: #9b7fd4; }
+.inv-stat.luck .inv-stat-value { color: var(--mist); }
+
+.inv-card-bars {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.inv-bar {
+  height: 3px;
+  background: var(--bg-deep);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.inv-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.inv-bar.hp   .inv-bar-fill { background: var(--blood); }
+.inv-bar.san  .inv-bar-fill { background: var(--brass); }
+.inv-bar.mp   .inv-bar-fill { background: #7b5ea7; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TIMELINE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.timeline-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg);
+  padding: 0.65rem 0.75rem;
+  margin-top: 0.75rem;
+  max-height: 35vh;
+  overflow-y: auto;
+}
+
+.tp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px dashed var(--ink-faded);
+}
+
+.tp-title {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  color: var(--brass-bright);
+}
+
+.timeline-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tl-empty {
+  font-style: italic;
+  color: var(--ink-faded);
+  font-size: 0.82rem;
+  padding: 0.3rem 0;
+  text-align: center;
+}
+
+.tl-entry {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.3rem 0.4rem;
+  border-radius: var(--radius);
+  transition: background 0.1s;
+  font-size: 0.82rem;
+}
+
+.tl-entry:hover { background: var(--bg-card-hi); }
+
+.tl-time {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink-faded);
+  white-space: nowrap;
+}
+
+.tl-text {
+  color: var(--ink-dim);
+  line-height: 1.35;
+}
+
+.tl-text b { color: var(--ink); }
+
+.tl-entry.ev-damage    .tl-text { color: var(--blood); }
+.tl-entry.ev-sanity    .tl-text { color: var(--brass); }
+.tl-entry.ev-magic     .tl-text { color: #9b7fd4; }
+.tl-entry.ev-roll      .tl-text { color: var(--mist); }
+.tl-entry.ev-combat    .tl-text { color: var(--keeper-accent-bright); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODAL DE CAMPANHA
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--ink-faded);
+}
+
+.modal-header h2 {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--brass-bright);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--ink-dim);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.2rem 0.4rem;
+}
+
+.modal-body { display: flex; flex-direction: column; gap: 0.75rem; }
+
+/* Form rows inside campaign modal */
+.modal-body label { margin-bottom: 0.15rem; display: block; }
+.modal-body input { width: 100%; box-sizing: border-box; }
+
+.campaign-pin-display {
+  background: var(--bg-deep);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  text-align: center;
+}
+
+.campaign-pin-number {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--brass-bright);
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 20px var(--brass-glow);
+}
+
+.campaign-pin-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 0.35rem;
+}
+
+.campaign-players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cp-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-card-hi);
+  border-radius: var(--radius);
+  font-size: 0.88rem;
+}
+
+.cp-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--ok, #4a8a54);
+  flex-shrink: 0;
+}
+
+.cp-name { color: var(--ink); flex: 1; }
+.cp-char { color: var(--ink-dim); font-size: 0.78rem; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE AJUSTES para o dashboard
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .investigators-cards {
+    flex-direction: column;
+  }
+  .inv-card {
+    max-width: 100%;
+  }
+  .cs-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .campaign-badge {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -13,7 +13,7 @@
    Para forçar atualização imediata: incremente CACHE_VERSION abaixo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = "v17";
+const CACHE_VERSION = "v18";
 const CACHE_NAME = "aimalexi-rpg-" + CACHE_VERSION;
 
 // Assets que devem estar disponíveis offline imediatamente após instalação.
@@ -76,6 +76,14 @@ const PRECACHE_URLS = [
   "./data/npc-archetypes.js",
   "./data/presets/empty.js",
   "./data/presets/klein-moretti.js",
+  "./compendium.html",
+  "./css/compendium.css",
+  "./js/compendium/compendium.js",
+  "./js/campaign/pin-system.js",
+  "./js/campaign/transport.js",
+  "./js/campaign/campaign-store.js",
+  "./js/campaign/keeper-dashboard.js",
+  "./js/campaign/player-sync.js",
 ];
 
 // ─── Instalação: pré-cacheia o shell ────────────────────────────────────────

@@ -321,12 +321,7 @@
 }
 
 /* ─── Imagens: retrato ───────────────────────────────────────────────── */
-.identity-wrapper {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-}
-.identity-wrapper .identity-grid { flex: 1 1 auto; min-width: 0; }
+.identity-section .identity-grid { flex: 1 1 auto; min-width: 0; }
 
 .character-portrait {
   position: relative;
@@ -1526,4 +1521,92 @@
   color: var(--ink-bright);
   cursor: pointer;
   flex: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RETRATO + BACKGROUND LADO A LADO (M3.9 layout fusion)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.portrait-bg-layout {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 1.25rem;
+  align-items: flex-start;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--ink-faded);
+}
+
+.portrait-col {
+  flex-shrink: 0;
+}
+
+.portrait-main {
+  width: 100% !important;
+  aspect-ratio: 3 / 4;
+  max-height: 340px;
+  cursor: pointer;
+}
+
+.bg-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.bg-col-title {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  color: var(--brass);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.1rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px dashed var(--ink-faded);
+  text-transform: uppercase;
+}
+
+.bg-col textarea {
+  min-height: 56px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.background-grid-mini {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.55rem;
+}
+
+.background-grid-mini textarea {
+  min-height: 54px;
+}
+
+@media (max-width: 900px) {
+  .portrait-bg-layout {
+    grid-template-columns: 150px 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .portrait-bg-layout {
+    grid-template-columns: 1fr;
+  }
+  .portrait-main {
+    max-width: 180px;
+    margin: 0 auto;
+    width: 180px !important;
+  }
+  .background-grid-mini {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .background-grid-mini {
+    grid-template-columns: 1fr;
+  }
 }

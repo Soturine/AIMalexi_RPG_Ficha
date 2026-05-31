@@ -1,0 +1,371 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   AIMalexi RPG · css/compendium.css
+   Compêndio de Regras — estilos
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Abas ──────────────────────────────────────────────────────────────── */
+
+.comp-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--brass);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  overflow-x: auto;
+  padding: 0 0.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.comp-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-dim);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.comp-tab:hover { color: var(--ink); }
+.comp-tab.active {
+  color: var(--brass-bright);
+  border-bottom-color: var(--brass);
+}
+
+/* ── Corpo ──────────────────────────────────────────────────────────────── */
+
+.comp-body {
+  padding: 0;
+}
+
+.comp-section {
+  display: none;
+  padding: 1.5rem 0;
+}
+
+.comp-section.active { display: block; }
+
+.comp-section h2 {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  color: var(--brass-bright);
+  margin-bottom: 0.5rem;
+}
+
+.comp-section h3 {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin: 1.5rem 0 0.5rem;
+  border-bottom: 1px dashed var(--ink-faded);
+  padding-bottom: 0.3rem;
+}
+
+.comp-intro {
+  color: var(--ink-dim);
+  font-size: 0.92rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* ── Tabelas ─────────────────────────────────────────────────────────── */
+
+.comp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin: 0.5rem 0 1.25rem;
+}
+
+.comp-table th {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--brass);
+  background: var(--bg-deep);
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+  border-bottom: 1px solid var(--brass);
+}
+
+.comp-table td {
+  padding: 0.4rem 0.65rem;
+  border-bottom: 1px solid var(--ink-faded);
+  color: var(--ink-dim);
+  vertical-align: top;
+}
+
+.comp-table tr:hover td { background: var(--bg-card-hi); }
+.comp-table td b { color: var(--ink); }
+
+/* ── Listas ─────────────────────────────────────────────────────────── */
+
+.comp-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.comp-list li {
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-card-hi);
+  border-left: 3px solid var(--brass);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+  line-height: 1.45;
+}
+
+.comp-list li b { color: var(--ink); }
+
+ol.comp-list { counter-reset: comp-ol; }
+ol.comp-list li { counter-increment: comp-ol; }
+ol.comp-list li::before {
+  content: counter(comp-ol) ". ";
+  color: var(--brass);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+/* ── Atributos grid ──────────────────────────────────────────────────── */
+
+.attr-ref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.attr-ref-card {
+  background: var(--bg-card-hi);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: border-color 0.2s;
+}
+
+.attr-ref-card:hover { border-color: var(--brass); }
+
+.arc-abbr {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--brass-bright);
+  letter-spacing: 0.1em;
+}
+
+.arc-name {
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  color: var(--ink);
+  margin-bottom: 0.15rem;
+}
+
+.arc-desc {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  line-height: 1.45;
+  flex: 1;
+}
+
+.arc-derived {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-faded);
+  margin-top: 0.3rem;
+  border-top: 1px dotted var(--ink-faded);
+  padding-top: 0.3rem;
+}
+
+/* ── Perícias grid ───────────────────────────────────────────────────── */
+
+.skills-ref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.45rem;
+}
+
+.skill-ref-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: var(--bg-card-hi);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius);
+  transition: border-color 0.15s;
+  font-size: 0.88rem;
+}
+
+.skill-ref-row:hover { border-color: var(--brass); }
+
+.srr-name {
+  flex: 1;
+  color: var(--ink);
+}
+
+.srr-base {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--brass-bright);
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: right;
+}
+
+.srr-cat {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+/* ── Ocupações ───────────────────────────────────────────────────────── */
+
+.occupations-ref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.65rem;
+}
+
+.occ-ref-card {
+  background: var(--bg-card-hi);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg);
+  padding: 0.7rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transition: border-color 0.2s;
+}
+
+.occ-ref-card:hover { border-color: var(--brass); }
+
+.orc-name {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--brass-bright);
+}
+
+.orc-formula {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-faded);
+}
+
+.orc-credit {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+}
+
+.orc-skills {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  line-height: 1.5;
+}
+
+.orc-desc {
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--ink-faded);
+  border-top: 1px dotted var(--ink-faded);
+  padding-top: 0.3rem;
+  margin-top: 0.1rem;
+}
+
+/* ── Bestiário ───────────────────────────────────────────────────────── */
+
+.bestiary-ref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.65rem;
+}
+
+.bref-card {
+  background: var(--bg-card-hi);
+  border: 1px solid var(--ink-faded);
+  border-left: 3px solid var(--blood);
+  border-radius: var(--radius-lg);
+  padding: 0.7rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transition: border-color 0.2s;
+}
+
+.bref-card.type-mythos { border-left-color: #6b3d8a; }
+.bref-card.type-human  { border-left-color: var(--ink-faded); }
+.bref-card:hover { border-color: var(--keeper-accent, var(--blood)); }
+
+.brc-name {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.brc-type {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink-faded);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.brc-stats {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+
+.brc-stat b { color: var(--ink); }
+
+.brc-san {
+  font-size: 0.8rem;
+  color: var(--blood);
+  font-family: var(--font-mono);
+}
+
+/* ── Busca ─────────────────────────────────────────────────────────── */
+
+.comp-search-highlight {
+  background: rgba(184, 146, 79, 0.3);
+  border-radius: 2px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .comp-tabs { gap: 0; }
+  .comp-tab  { font-size: 0.7rem; padding: 0.55rem 0.65rem; }
+  .attr-ref-grid { grid-template-columns: 1fr 1fr; }
+  .skills-ref-grid { grid-template-columns: 1fr; }
+  .occupations-ref-grid { grid-template-columns: 1fr; }
+  .bestiary-ref-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .attr-ref-grid { grid-template-columns: 1fr; }
+}
