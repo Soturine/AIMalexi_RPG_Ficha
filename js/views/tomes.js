@@ -128,6 +128,21 @@ window.CoC.views = window.CoC.views || {};
         card.appendChild(el("p", { class: "tome-notes" }, [escapeHtml(tome.notes)]));
       }
 
+      // Magias vinculadas (M4.5)
+      const spellIds = Array.isArray(tome.spellIds) ? tome.spellIds : [];
+      if (spellIds.length > 0) {
+        const allSpells = Array.isArray(c.spells) ? c.spells : [];
+        const linked = allSpells.filter(s => spellIds.includes(s.id));
+        if (linked.length > 0) {
+          const spellsDiv = el("div", { class: "tome-spells" });
+          spellsDiv.appendChild(el("span", { class: "tome-spells-label" }, ["Magias:"]));
+          const ul = el("ul", { class: "tome-spells-list" });
+          linked.forEach(s => ul.appendChild(el("li", {}, [escapeHtml(s.name || "—")])));
+          spellsDiv.appendChild(ul);
+          card.appendChild(spellsDiv);
+        }
+      }
+
       // Edit / delete (hover actions)
       const secondary = el("div", { class: "tome-secondary no-print" });
       secondary.appendChild(el("button", {
@@ -217,6 +232,26 @@ window.CoC.views = window.CoC.views || {};
       });
       notesArea.value = existing?.notes || "";
 
+      // Magias vinculadas (M4.5) — checkboxes dos spells do personagem
+      const _spells = Array.isArray(cocStore.getState().character?.spells)
+        ? cocStore.getState().character.spells : [];
+      const _currentIds = new Set(existing?.spellIds || []);
+      const checksContainer = el("div", { class: "tome-spell-checks" });
+      if (_spells.length === 0) {
+        checksContainer.appendChild(
+          el("p", { class: "tomes-empty", style: { margin: "0" } }, ["Nenhuma magia cadastrada ainda."])
+        );
+      } else {
+        for (const spell of _spells) {
+          const row = el("div", { class: "tome-spell-check-row" });
+          const cb = el("input", { type: "checkbox", value: spell.id });
+          if (_currentIds.has(spell.id)) cb.checked = true;
+          row.appendChild(cb);
+          row.appendChild(el("label", {}, [escapeHtml(spell.name || "—")]));
+          checksContainer.appendChild(row);
+        }
+      }
+
       const mk = (labelText, inp) => {
         const g = el("div", { class: "form-group" });
         g.appendChild(el("label", {}, [labelText]));
@@ -234,6 +269,7 @@ window.CoC.views = window.CoC.views || {};
       form.appendChild(mk("Tempo de estudo", studyTimeInput));
       form.appendChild(costsRow);
       form.appendChild(mk("Notas", notesArea));
+      form.appendChild(mk("Magias vinculadas", checksContainer));
 
       modal({
         title: existing ? "Editar Grimório" : "Adicionar Grimório",
@@ -263,6 +299,8 @@ window.CoC.views = window.CoC.views || {};
                 studyRequired: Math.max(0, parseInt(studyReqInput.value, 10) || 0),
                 sanLoss:       sanInput.value.trim(),
                 notes:         notesArea.value.trim(),
+                spellIds:      Array.from(checksContainer.querySelectorAll("input[type=checkbox]:checked"))
+                                 .map(cb => cb.value),
               });
             }
           }
