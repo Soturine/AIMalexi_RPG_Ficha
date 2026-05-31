@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Teste FASE 4 · Instrumentação · AIMalexi RPG</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <style>
+    .test-output {
+      font-family: var(--font-mono); font-size: 0.82rem;
+      background: var(--bg-deep); padding: 0.8rem; border-radius: var(--radius);
+      white-space: pre-wrap; color: var(--ink); border: 1px solid var(--ink-faded);
+      max-height: 80vh; overflow-y: auto;
+    }
+    .test-output .ok  { color: var(--ok); }
+    .test-output .err { color: var(--err); font-weight: 700; }
+    .status-banner {
+      padding: 0.75rem 1rem; border-radius: var(--radius);
+      margin-bottom: 1.25rem; font-family: var(--font-mono); font-size: 0.9rem;
+    }
+    .status-banner.ok  { background: rgba(90,138,90,0.15); color: var(--ok); border-left: 3px solid var(--ok); }
+    .status-banner.err { background: rgba(139,26,26,0.2); color: #ffb4b4; border-left: 3px solid var(--err); }
+    .section-hdr { margin: 1.25rem 0 0.25rem; color: var(--brass-bright); font-family: var(--font-mono); font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <h1 class="app-title">🧪 Teste FASE 4 — Instrumentação (M1.5)</h1>
+    <p class="app-subtitle">store.getMetrics · bus('store:dispatch') · event-log · no-op tracking</p>
+  </header>
+
+  <div id="status" class="status-banner">Carregando…</div>
+  <div class="test-output" id="out">—</div>
+</div>
+
+<script src="js/core/actions.js"></script>
+<script src="js/core/signals.js"></script>
+<script src="js/core/bus.js"></script>
+<script src="js/core/store.js"></script>
+<script src="js/core/event-log.js"></script>
+<script src="js/dev/trace.js"></script>
+<script src="js/dev/perf.js"></script>
+
+<script>
+"use strict";
+
+const out = document.getElementById("out");
+let passed = 0, failed = 0;
+
+function section(label) {
+  out.insertAdjacentHTML("beforeend",
+    `<div class="section-hdr">── ${label}</div>`);
+}
+
+function check(label, ok, got, expected) {
+  passed += ok ? 1 : 0;
+  failed += ok ? 0 : 1;
+  const line = document.createElement("div");
+  if (ok) {
+    line.className = "ok";
+    line.textContent = `  ✓ ${label}`;
+  } else {
+    line.className = "err";
+    line.textContent = `  ✗ ${label}  got=${JSON.stringify(got)}  expected=${JSON.stringify(expected)}`;
+  }
+  out.appendChild(line);
+}
+
+function eq(label, got, exp) { check(label, got === exp, got, exp); }
+function gt(label, got, min) { check(label, got > min, got, `>${min}`); }
+function gte(label, got, min){ check(label, got >= min, got, `>=${min}`); }
+
+function makeChar() {
+  return {
+    id: null,
+    attributes: { Sorte: { value: 60 } },
+    derived: {
+      PV:  { value: 10, current: 10 },
+      PM:  { value: 12, current: 12 },
+      SAN: { value: 60, current: 60, max: 99 },
+    },
+    status: {}
+  };
+}
+
+// Reseta store + event-log antes dos testes
+window.CoC.store.dispatch({ type: "SET_CHARACTER", payload: null });
+window.CoC.eventLog.clear();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 1. store.getMetrics() existe e expõe os campos corretos
+// ══════════════════════════════════════════════════════════════════════════════
+section("store.getMetrics() — API e campos");
+
+(function() {
+  const m = window.CoC.store.getMetrics();
+  check("getMetrics() retorna objeto", typeof m === "object", typeof m, "object");
+  check("campo dispatches existe", "dispatches" in m, false, true);
+  check("campo effective existe",  "effective"  in m, false, true);
+  check("campo noop existe",       "noop"       in m, false, true);
+  check("campo avgDurationMs existe", "avgDurationMs" in m, false, true);
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 2. Dispatches efetivos incrementam counters
+// ══════════════════════════════════════════════════════════════════════════════
+section("store.getMetrics() — dispatches efetivos vs no-ops");
+
+(function() {
+  const st  = window.CoC.store;
+  const log = window.CoC.eventLog;
+  log.clear();
+
+  // 2 dispatches efetivos
+  st.dispatch({ type: "SET_CHARACTER", payload: makeChar() });
+  st.dispatch({ type: "APPLY_DAMAGE",  payload: { amount: 3 } });
+  // 1 no-op (ação desconhecida → estado inalterado)
+  st.dispatch({ type: "ACAO_INEXISTENTE", payload: {} });
+
+  const m = st.getMetrics();
+  gte("dispatches ≥ 3 (inclui resets anteriores)", m.dispatches, 3);
+
+  const lm = log.getMetrics();
+  eq("event-log: 3 dispatches totais no segmento",  lm.dispatches, 3);
+  eq("event-log: 2 efetivos",                       lm.effective,  2);
+  eq("event-log: 1 no-op",                          lm.noop,       1);
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 3. event-log — estrutura de cada entrada
+// ══════════════════════════════════════════════════════════════════════════════
+section("event-log — estrutura de entrada");
+
+(function() {
+  const log = window.CoC.eventLog;
+  log.clear();
+
+  window.CoC.store.dispatch({ type: "SET_CHARACTER", payload: makeChar() });
+
+  const entries = log.getLog();
+  eq("log tem 1 entrada", entries.length, 1);
+
+  const e = entries[0];
+  eq("type correto",      e.type,    "SET_CHARACTER");
+  check("ts é número",    typeof e.ts === "number", typeof e.ts, "number");
+  check("id é número",    typeof e.id === "number", typeof e.id, "number");
+  eq("changed é true",    e.changed, true);
+  check("durationMs ≥ 0", e.durationMs >= 0, e.durationMs, ">=0");
+  check("payload existe", e.payload !== undefined, e.payload, "defined");
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 4. event-log — no-op registrado com changed = false
+// ══════════════════════════════════════════════════════════════════════════════
+section("event-log — no-op registrado com changed=false");
+
+(function() {
+  const log = window.CoC.eventLog;
+  log.clear();
+
+  window.CoC.store.dispatch({ type: "ACAO_FANTASMA", payload: {} });
+
+  const entries = log.getLog();
+  eq("no-op: 1 entrada no log", entries.length, 1);
+  eq("no-op: changed = false",  entries[0].changed, false);
+  eq("no-op: type correto",     entries[0].type, "ACAO_FANTASMA");
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 5. event-log — tail(n) retorna últimas n entradas
+// ══════════════════════════════════════════════════════════════════════════════
+section("event-log — tail(n)");
+
+(function() {
+  const log = window.CoC.eventLog;
+  log.clear();
+
+  const st = window.CoC.store;
+  st.dispatch({ type: "SET_CHARACTER", payload: makeChar() });
+  st.dispatch({ type: "APPLY_DAMAGE",  payload: { amount: 1 } });
+  st.dispatch({ type: "APPLY_DAMAGE",  payload: { amount: 1 } });
+  st.dispatch({ type: "APPLY_DAMAGE",  payload: { amount: 1 } });
+
+  const t2 = log.tail(2);
+  eq("tail(2) retorna 2 entradas", t2.length, 2);
+  eq("tail(2): última entrada é APPLY_DAMAGE", t2[1].type, "APPLY_DAMAGE");
+
+  const tall = log.tail(100);
+  eq("tail(100) retorna tudo (4)", tall.length, 4);
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 6. event-log — clear() reseta tudo
+// ══════════════════════════════════════════════════════════════════════════════
+section("event-log — clear()");
+
+(function() {
+  const log = window.CoC.eventLog;
+  window.CoC.store.dispatch({ type: "SET_CHARACTER", payload: makeChar() });
+  window.CoC.store.dispatch({ type: "APPLY_DAMAGE",  payload: { amount: 1 } });
+
+  log.clear();
+
+  eq("após clear: log vazio",           log.getLog().length, 0);
+  eq("após clear: métricas zeradas",    log.getMetrics().dispatches, 0);
+  eq("após clear: effective = 0",       log.getMetrics().effective, 0);
+  eq("após clear: noop = 0",            log.getMetrics().noop, 0);
+  eq("após clear: avgDurationMs = 0",   log.getMetrics().avgDurationMs, 0);
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 7. event-log — IDs incrementam a cada entrada
+// ══════════════════════════════════════════════════════════════════════════════
+section("event-log — IDs monotônicos");
+
+(function() {
+  const log = window.CoC.eventLog;
+  log.clear();
+
+  window.CoC.store.dispatch({ type: "SET_CHARACTER", payload: makeChar() });
+  window.CoC.store.dispatch({ type: "APPLY_DAMAGE",  payload: { amount: 1 } });
+  window.CoC.store.dispatch({ type: "APPLY_DAMAGE",  payload: { amount: 1 } });
+
+  const entries = log.getLog();
+  check("ids incrementais",
+    entries[0].id < entries[1].id && entries[1].id < entries[2].id,
+    [entries[0].id, entries[1].id, entries[2].id],
+    "crescente");
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 8. bus('store:dispatch') é publicado para cada dispatch
+// ══════════════════════════════════════════════════════════════════════════════
+section("bus — store:dispatch publicado em cada dispatch");
+
+(function() {
+  let busEvents = [];
+  const unsub = window.CoC.bus.subscribe("store:dispatch", e => busEvents.push(e));
+
+  window.CoC.store.dispatch({ type: "SET_CHARACTER", payload: makeChar() });
+  window.CoC.store.dispatch({ type: "APPLY_DAMAGE",  payload: { amount: 2 } });
+  window.CoC.store.dispatch({ type: "ACAO_FANTASMA", payload: {} });
+
+  unsub();
+
+  eq("bus: 3 eventos publicados", busEvents.length, 3);
+  eq("bus: 1º changed=true",      busEvents[0].changed, true);
+  eq("bus: 2º changed=true",      busEvents[1].changed, true);
+  eq("bus: 3º changed=false",     busEvents[2].changed, false);
+  check("bus: durationMs presente e >=0", busEvents[0].durationMs >= 0, busEvents[0].durationMs, ">=0");
+  eq("bus: action.type presente", busEvents[0].action.type, "SET_CHARACTER");
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 9. dev.trace e dev.perf expostos
+// ══════════════════════════════════════════════════════════════════════════════
+section("dev.trace e dev.perf — API exposta");
+
+(function() {
+  const trace = window.CoC.dev.trace;
+  const perf  = window.CoC.dev.perf;
+
+  check("CoC.dev.trace existe",       !!trace, false, true);
+  check("trace.enable é função",      typeof trace.enable   === "function", typeof trace.enable,   "function");
+  check("trace.disable é função",     typeof trace.disable  === "function", typeof trace.disable,  "function");
+  check("trace.tail é função",        typeof trace.tail     === "function", typeof trace.tail,     "function");
+  check("trace.metrics é função",     typeof trace.metrics  === "function", typeof trace.metrics,  "function");
+
+  check("CoC.dev.perf existe",        !!perf, false, true);
+  check("perf.report é função",       typeof perf.report    === "function", typeof perf.report,    "function");
+  check("perf.snapshot é função",     typeof perf.snapshot  === "function", typeof perf.snapshot,  "function");
+  check("perf.diff é função",         typeof perf.diff      === "function", typeof perf.diff,      "function");
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Resultado final
+// ══════════════════════════════════════════════════════════════════════════════
+const banner = document.getElementById("status");
+const total  = passed + failed;
+if (failed === 0) {
+  banner.className = "status-banner ok";
+  banner.textContent = `✅ ${passed}/${total} testes passaram — FASE 4 instrumentação OK`;
+} else {
+  banner.className = "status-banner err";
+  banner.textContent = `❌ ${failed} falhas em ${total} testes — verifique o output abaixo`;
+}
+</script>
+</body>
+</html>

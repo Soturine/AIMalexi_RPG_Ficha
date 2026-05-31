@@ -6,40 +6,39 @@
 (function () {
 
   // ─── Atalhos ──────────────────────────────────────────────────────────
-  const { $, $$, el, toast, toastRoll, modal, confirm, prompt, appendRoll, clearLog, exportLogAsMarkdown, escapeHtml, copyToClipboard, bottomSheet } = window.CoC.ui;
-
-  // Wrapper: sempre que registramos uma rolagem no log, também dispara um
-  // toast colorido na tela atual (resolve UX mobile sem precisar trocar de aba).
-  function logAndToast(entry) {
-    appendRoll($("#roll-log"), entry);
-    if (entry && entry.level) toastRoll(entry);
-    if (state.logFab && typeof state.logFab.setBadge === "function") {
-      state.rollCount = (state.rollCount || 0) + 1;
-      state.logFab.setBadge(state.rollCount);
-    }
-  }
+  const { $, $$, el, toast, modal, confirm, prompt, clearLog, exportLogAsMarkdown, escapeHtml, copyToClipboard, bottomSheet } = window.CoC.ui;
   const dice = window.CoC.dice;
   const rules = window.CoC.rules;
   const store = window.CoC.storage;
   const nameGen = window.CoC.names;
   const validators = window.CoC.validators;
+  const cocStore = window.CoC.store;
+  const _sr = window.CoC.createSafeRenderer();
 
   // ─── Estado ───────────────────────────────────────────────────────────
   const state = {
-    character: null,           // dados do personagem ativo
+    // character é exposto via getter/setter abaixo — cocStore é a fonte de verdade
     rollMods: {
       difficulty: "regular",   // regular | hard | extreme
       bp: ""                   // "" | "bonus" | "penalty"
     },
     editMode: false,
-    skillFilter: "all",        // all | occupation | used
-    skillSearch: "",
     mobileTab: "personagem",
     rollHistory: []
   };
 
   // Cap mínimo do PV antes de morrer
   const PV_MIN = -2;
+
+  // state.character lê e escreve no cocStore (única fonte de verdade).
+  // Todos os `state.character = X` auto-dispatcham SET_CHARACTER.
+  // Todos os `state.character` lidos retornam o estado atual do store.
+  Object.defineProperty(state, "character", {
+    get()  { return cocStore.getState().character; },
+    set(v) { cocStore.dispatch({ type: "SET_CHARACTER", payload: v }); },
+    configurable: true,
+    enumerable:   true,
+  });
 
   // Persistência: a disponibilidade REAL do storage só é conhecida após store.ready
   // resolver — o IndexedDB abre de forma assíncrona e, até lá, backend === "memory".
@@ -58,7 +57,64 @@
   // BOOT
   // ═════════════════════════════════════════════════════════════════════
 
+  // Sprint 2 — persistMiddleware (instância única, init em boot())
+  let _persistMiddleware = null;
+
   async function boot() {
+    // Sprint 2 — persistMiddleware centraliza toda persistência automática.
+    // Elimina chamadas manuais a persistCurrent() para actions em PERSIST_ACTIONS.
+    // updateBaseline() é chamado após persistCurrent() para sincronizar o diff
+    // com o novo id atribuído pelo SET_CHARACTER_ID dispatch interno.
+    _persistMiddleware = window.CoC.createPersistMiddleware({
+      bus:      window.CoC.bus,
+      getState: function () { return cocStore.getState(); },
+      saveCharacter: function () {
+        persistCurrent();
+        _persistMiddleware.updateBaseline();
+      }
+    });
+    _persistMiddleware.init();
+
+    // M3.1 — Vitals slice init + bus hooks (wired before character load)
+    window.CoC.views.vitals.init();
+    window.CoC.bus.subscribe("vitals:mitos-changed", function () {
+      recalcDerived();
+      persistCurrent();
+    });
+    // M3.2 — Luck slice: re-render Sorte in sidebar (persist via middleware)
+    window.CoC.bus.subscribe("store:dispatch", function (event) {
+      if (event.changed && event.action.type === "SPEND_LUCK") {
+        renderAttributes();
+        window.CoC.views.vitals.renderSidebarVitals();
+      }
+    });
+    // M3.3 — Skills slice init + bus hooks (persist via middleware for SET_SKILL, TOGGLE_*, ADD_CUSTOM_*)
+    window.CoC.views.skills.init();
+    window.CoC.bus.subscribe("skill:dirty", function () { markDirty(); });
+    // M4.1 — Inventory slice init
+    window.CoC.views.inventory.init();
+    // M4.2 — Journal slice init
+    window.CoC.views.journal.init();
+    // M4.3 — Spells slice init
+    window.CoC.views.spells.init();
+    // M4.4 — Tomes slice init
+    window.CoC.views.tomes.init();
+
+    // M3.4 — Rolls slice init + bus hooks
+    window.CoC.views.rolls.init();       // wires roll:logged → logAndToast
+    window.CoC.views.rolls.setRollMods(state.rollMods);  // sync inicial
+    window.CoC.bus.subscribe("skill:roll-requested", function (data) {
+      window.CoC.views.rolls.rollSkill(data.name, {
+        difficulty: state.rollMods.difficulty,
+        bp: state.rollMods.bp
+      });
+    });
+    window.CoC.bus.subscribe("roll:badge-inc", function () {
+      state.rollCount = (state.rollCount || 0) + 1;
+      if (state.logFab?.setBadge) state.logFab.setBadge(state.rollCount);
+    });
+    window.CoC.bus.subscribe("rolls:persist-requested", function () { persistCurrent(); });
+
     populateOccupationDropdown();
     bindToolbar();
     bindModifiers();
@@ -83,6 +139,14 @@
     const active = store.getActiveCharacter();
     if (active) {
       loadCharacter(active);
+      // BUG-01 fix: surface hard rule violations from previous session
+      const vBoot = validators.validateCharacter(state.character, { editMode: state.editMode });
+      if (vBoot.issues.length > 0) {
+        const summary = vBoot.issues.length === 1
+          ? vBoot.issues[0]
+          : `${vBoot.issues.length} violações de regra — primeira: ${vBoot.issues[0]}`;
+        toast("⚠ " + summary, { type: "warn", duration: 7000 });
+      }
     } else {
       // Ficha vazia inicial — mostra wizard se for primeira visita
       const list = store.listCharacters();
@@ -163,9 +227,14 @@
   // ═════════════════════════════════════════════════════════════════════
 
   function loadCharacter(character) {
-    state.character = JSON.parse(JSON.stringify(character));
+    const normalized = window.CoC.schema.normalizeCharacter(character);
+    if (normalized._meta.schemaWarnings.length > 0) {
+      console.warn('[schema]', normalized._meta.schemaWarnings);
+    }
+    state.character = normalized;  // SET_CHARACTER deep-clones internally
     if (!state.character.id) state.character.id = null;
     store.setActiveCharacter(state.character.id);
+    applyTheme(state.character._meta?.theme || "arkham");
     renderAll();
   }
 
@@ -184,8 +253,16 @@
 
   function persistCurrent() {
     if (!state.character) return;
+    // BUG-01 fix: validate before persisting — surface hard cap violations
+    const vPersist = validators.validateCharacter(state.character, { editMode: state.editMode });
+    if (vPersist.issues.length > 0) {
+      const summary = vPersist.issues.length === 1
+        ? vPersist.issues[0]
+        : `${vPersist.issues.length} violações de regra — primeira: ${vPersist.issues[0]}`;
+      toast("⚠ " + summary, { type: "warn", duration: 5000 });
+    }
     const id = store.saveCharacter(state.character);
-    state.character.id = id;
+    cocStore.dispatch({ type: "SET_CHARACTER_ID", payload: id });
     store.setActiveCharacter(id);
     refreshCharacterSelector();
   }
@@ -196,19 +273,39 @@
 
   function renderAll() {
     if (!state.character) return clearUI();
-    renderIdentity();
-    renderAttributes();
-    recalcDerived();   // recalcular antes de renderizar
-    renderDerived();
-    renderSkills();
-    renderWeapons();
-    renderFinances();
-    renderBackground();
-    applySanityAtmosphere();   // ajusta filtro CSS de SAN baixa ao carregar
+    _sr.safeRender('identity',   renderIdentity);
+    _sr.safeRender('attributes', renderAttributes);
+    recalcDerived();   // recalcular antes de renderizar vitals
+    _sr.safeRender('vitals',     function () { window.CoC.views.vitals.render(); });
+    _sr.safeRender('skills',     renderSkills);
+    _sr.safeRender('weapons',    renderWeapons);
+    _sr.safeRender('finances',   renderFinances);
+    _sr.safeRender('background', renderBackground);
+    _sr.safeRender('inventory',  function () { window.CoC.views.inventory.render(); });
+    _sr.safeRender('journal',    function () { window.CoC.views.journal.render(); });
+    _sr.safeRender('spells',     function () { window.CoC.views.spells.render(); });
+    _sr.safeRender('tomes',      function () { window.CoC.views.tomes.render(); });
+  }
+
+  // ─── TEMA ─────────────────────────────────────────────────────────────
+  const _VALID_THEMES = ["arkham", "miskatonic", "sepia", "obsidian", "eldritch"];
+
+  function applyTheme(theme) {
+    const t = _VALID_THEMES.includes(theme) ? theme : "arkham";
+    document.body.dataset.theme = t;
+    $$(".theme-swatch").forEach(s => s.classList.toggle("active", s.dataset.theme === t));
   }
 
   function clearUI() {
-    $("#attr-grid").innerHTML = "<p class='dim center'>Nenhum personagem carregado.</p>";
+    applyTheme("arkham");
+    const sAttr = $("#sidebar-attributes");
+    if (sAttr) sAttr.innerHTML = "";
+    const sVitals = $("#sidebar-vitals");
+    if (sVitals) sVitals.innerHTML = "";
+    const sName = $("#sidebar-name");
+    if (sName) sName.textContent = "—";
+    const sOcc  = $("#sidebar-occupation");
+    if (sOcc)  sOcc.textContent  = "—";
     $("#derived-bar").innerHTML = "";
     $("#skills-groups").innerHTML = "";
     $("#weapons-list").innerHTML = "";
@@ -218,6 +315,22 @@
       window.CoC.mediaPicker.render($("#character-banner"), null);
       window.CoC.mediaPicker.render($("#character-portrait"), null);
     }
+    const invList = $("#inventory-list");
+    if (invList) invList.innerHTML = "";
+    const invCap = $("#inventory-capacity");
+    if (invCap) invCap.textContent = "";
+    const jList = $("#journal-list");
+    if (jList) jList.innerHTML = "";
+    const jCount = $("#journal-count");
+    if (jCount) jCount.textContent = "";
+    const sList = $("#spells-list");
+    if (sList) sList.innerHTML = "";
+    const sCount = $("#spells-count");
+    if (sCount) sCount.textContent = "";
+    const tList = $("#tomes-list");
+    if (tList) tList.innerHTML = "";
+    const tCount = $("#tomes-count");
+    if (tCount) tCount.textContent = "";
     if (window.CoC.sanityFx) window.CoC.sanityFx.clear();
   }
 
@@ -233,11 +346,19 @@
     const tagline = c.investigator?.tagline ? "“" + c.investigator.tagline + "”" : "";
     $("#identity-display").textContent = tagline;
 
+    // Sync sidebar identity display
+    const sName = $("#sidebar-name");
+    const sOcc  = $("#sidebar-occupation");
+    if (sName) sName.textContent = c.investigator?.name       || "—";
+    if (sOcc)  sOcc.textContent  = c.investigator?.occupation || "—";
+
     // Recalcular pontos ao mudar ocupação
     $("#id-occupation").onchange = () => {
       c.investigator.occupation = $("#id-occupation").value;
+      const _sOcc = $("#sidebar-occupation");
+      if (_sOcc) _sOcc.textContent = c.investigator.occupation || "—";
       renderSkills();
-      renderFinances();   // atualiza a faixa de Posses exibida
+      renderFinances();
       persistCurrent();
     };
 
@@ -247,8 +368,27 @@
       if (!node) return;
       node.oninput = () => {
         c.investigator[f] = node.value;
+        if (f === "name") {
+          const _sName = $("#sidebar-name");
+          if (_sName) _sName.textContent = node.value || "—";
+        }
+        if (f === "occupation") {
+          const _sOcc = $("#sidebar-occupation");
+          if (_sOcc) _sOcc.textContent = node.value || "—";
+        }
         if (f === "tagline") $("#identity-display").textContent = node.value ? "“" + node.value + "”" : "";
-        if (f === "age") recalcDerived(), renderDerived();
+        if (f === "age") {
+          recalcDerived();
+          window.CoC.views.vitals.render();
+          const newAge = Number(node.value) || 25;
+          const adj = rules.calcAgeAdjustments(newAge);
+          if (adj) {
+            toast(
+              `Idade ${newAge} anos: redistribua -${adj.totalReduction} pts entre ${adj.attrs.join("/")} manualmente ou clique "Rolar Tudo".`,
+              { type: "info", duration: 8000 }
+            );
+          }
+        }
         markDirty();
       };
       node.onblur = persistCurrent;
@@ -310,9 +450,10 @@
     }
   }
 
-  // ─── ATRIBUTOS ────────────────────────────────────────────────────────
+  // ─── ATRIBUTOS — renderiza para #sidebar-attributes (M3.5.1) ─────────
   function renderAttributes() {
-    const grid = $("#attr-grid");
+    const grid = $("#sidebar-attributes");
+    if (!grid) return;
     grid.innerHTML = "";
     const c = state.character;
     if (!c?.attributes) return;
@@ -322,47 +463,41 @@
       const attr = c.attributes[code];
       if (!attr) continue;
       const v = Number(attr.value) || 0;
-      const card = el("div", { class: "attr-card", "data-attr": code });
-      card.innerHTML = `
-        <div class="attr-label">${escapeHtml(code)}</div>
-        <div class="attr-name">${escapeHtml(attr.label || code)}</div>
-        <div class="attr-value" contenteditable="false" title="${escapeHtml(attr.rolled || "")}">${v}</div>
-        <div class="attr-fractions"><span class="half">½ ${dice.half(v)}</span> · <span class="fifth">⅕ ${dice.fifth(v)}</span></div>
-        <div class="attr-actions">
-          <button data-roll="${code}" data-difficulty="regular" title="Rolar Regular">R</button>
-          <button data-roll="${code}" data-difficulty="hard" title="Rolar Difícil">D</button>
-          <button data-roll="${code}" data-difficulty="extreme" title="Rolar Extremo">E</button>
-        </div>`;
-      grid.appendChild(card);
+      const row = el("div", { class: "sattr-row", "data-attr": code });
+      const valNode = el("span", {
+        class: "sattr-value",
+        contenteditable: state.editMode ? "true" : "false",
+        title: escapeHtml(attr.rolled || "")
+      }, [String(v)]);
+      row.appendChild(el("span", { class: "sattr-label" }, [escapeHtml(code)]));
+      row.appendChild(valNode);
+      row.appendChild(el("span", { class: "sattr-fracs" }, [`½${dice.half(v)} · ⅕${dice.fifth(v)}`]));
+      grid.appendChild(row);
     }
 
-    // Permite editar valor diretamente quando em Edit Mode
-    $$(".attr-value").forEach(node => {
-      node.contentEditable = state.editMode ? "true" : "false";
-      node.onkeydown = (e) => {
-        if (e.key === "Enter") { e.preventDefault(); node.blur(); }
-        if (e.key === "Escape") { e.preventDefault(); node.textContent = state.character.attributes[node.closest(".attr-card").dataset.attr].value; node.blur(); }
-      };
-      node.onblur = () => {
-        const code = node.closest(".attr-card").dataset.attr;
-        const v = Math.max(0, Math.min(99, parseInt(node.textContent, 10) || 0));
-        state.character.attributes[code].value = v;
-        renderAttributes();
-        recalcDerived();
-        renderDerived();
-        renderSkills();
-        persistCurrent();
-      };
-    });
-
-    // Botões R/D/E
-    $$(".attr-actions [data-roll]").forEach(btn => {
-      btn.onclick = () => {
-        const code = btn.dataset.roll;
-        const difficulty = btn.dataset.difficulty;
-        rollAttribute(code, difficulty);
-      };
-    });
+    if (state.editMode) {
+      $$(".sattr-value").forEach(node => {
+        node.onkeydown = (e) => {
+          if (e.key === "Enter")  { e.preventDefault(); node.blur(); }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            const code = node.closest(".sattr-row").dataset.attr;
+            node.textContent = String(state.character.attributes[code].value);
+            node.blur();
+          }
+        };
+        node.onblur = () => {
+          const code = node.closest(".sattr-row").dataset.attr;
+          const v = Math.max(0, Math.min(99, parseInt(node.textContent, 10) || 0));
+          state.character.attributes[code].value = v;
+          renderAttributes();
+          recalcDerived();
+          window.CoC.views.vitals.render();
+          renderSkills();
+          persistCurrent();
+        };
+      });
+    }
   }
 
   // ─── DERIVADOS ────────────────────────────────────────────────────────
@@ -404,558 +539,10 @@
     c.derived.Build.value = db.build;
   }
 
-  function renderDerived() {
-    const bar = $("#derived-bar");
-    bar.innerHTML = "";
-    const c = state.character;
-    if (!c?.derived) return;
-
-    const order = ["PV", "PM", "SAN", "Mitos", "MOV", "DB", "Build"];
-    for (const key of order) {
-      const d = c.derived[key];
-      if (!d) continue;
-      const isTracker = key === "PV" || key === "PM" || key === "SAN";
-      const card = el("div", {
-        class: "derived-card" + (isTracker ? " tracker " + key.toLowerCase() : ""),
-        "data-key": key
-      });
-
-      const cur = d.current ?? d.value;
-      const max = key === "SAN" ? d.max : d.value;
-      const fill = (isTracker && max > 0) ? Math.max(0, Math.min(100, (cur / max) * 100)) : 100;
-      if (isTracker) card.style.setProperty("--fill", fill + "%");
-
-      let actions = "";
-      if (isTracker) {
-        actions = `<div class="derived-actions no-print">
-          <button data-derived="${key}" data-op="-1">-1</button>
-          <button data-derived="${key}" data-op="+1">+1</button>
-          <button data-derived="${key}" data-op="X">-X</button>
-        </div>`;
-      } else if (key === "Mitos") {
-        actions = `<div class="derived-actions no-print">
-          <button data-derived="Mitos" data-op="-1">-1</button>
-          <button data-derived="Mitos" data-op="+1">+1</button>
-        </div>`;
-      }
-
-      let valueHTML;
-      if (isTracker) {
-        valueHTML = `<div class="derived-value">${cur}<span class="derived-max"> / ${max}</span></div>`;
-      } else {
-        valueHTML = `<div class="derived-value">${d.value}</div>`;
-      }
-
-      card.innerHTML = `
-        <div class="derived-label">${escapeHtml(d.label || key)}</div>
-        ${valueHTML}
-        ${actions}
-      `;
-      bar.appendChild(card);
-    }
-
-    // Bind ações
-    $$("[data-derived]").forEach(btn => {
-      btn.onclick = async () => {
-        const key = btn.dataset.derived;
-        const op = btn.dataset.op;
-        await applyDerivedDelta(key, op);
-      };
-    });
-  }
-
-  async function applyDerivedDelta(key, op) {
-    const c = state.character;
-    if (!c?.derived?.[key]) return;
-    let delta = 0;
-    if (op === "+1") delta = 1;
-    else if (op === "-1") delta = -1;
-    else if (op === "X") {
-      const v = await prompt(`Quanto deduzir de ${key}? (aceita números, 1D6, 2D10+3)`, { title: `Ajustar ${key}` });
-      if (v == null || v.trim() === "") return;
-      const trimmed = v.trim();
-      if (/^-?\d+$/.test(trimmed)) {
-        delta = -Math.abs(parseInt(trimmed, 10));
-      } else {
-        const r = dice.rollNotation(trimmed);
-        delta = -Math.abs(r.total);
-        logAndToast({ skill: `Perda ${key}`, d100: null, level: "fail", dmg: `${trimmed} → ${r.total}` });
-      }
-    }
-
-    if (key === "Mitos") {
-      c.derived.Mitos.value = Math.max(0, (c.derived.Mitos.value || 0) + delta);
-      recalcDerived();
-    } else {
-      const cur = c.derived[key].current ?? c.derived[key].value;
-      let newVal = cur + delta;
-      if (key === "PV") newVal = Math.max(PV_MIN, Math.min(c.derived.PV.value, newVal));
-      else if (key === "PM") newVal = Math.max(0, Math.min(c.derived.PM.value, newVal));
-      else if (key === "SAN") newVal = Math.max(0, Math.min(c.derived.SAN.max, newVal));
-      c.derived[key].current = newVal;
-      if (key === "SAN" && delta < -4) {
-        c.status = c.status || {};
-        c.status.sanLossesToday = (c.status.sanLossesToday || 0) + Math.abs(delta);
-        toast(`⚠ Perda de ${Math.abs(delta)} SAN: Teste de Loucura Temporária (INT×5)!`, { type: "warn", duration: 6000 });
-      }
-    }
-
-    renderDerived();
-    flashDerivedCard(key, delta);   // feedback visual: vermelho perdeu, verde ganhou
-    applySanityAtmosphere();        // filtro sutil quando SAN < 50% do máximo
-    persistCurrent();
-  }
-
-  /**
-   * Adiciona classe transiente .flash-loss / .flash-gain ao card derivado.
-   * Cleanup automático após animação CSS terminar.
-   */
-  function flashDerivedCard(key, delta) {
-    if (!delta) return;
-    const card = $(`#derived-bar .derived-card[data-key="${key}"]`);
-    if (!card) return;
-    const cls = delta < 0 ? "flash-loss" : "flash-gain";
-    card.classList.remove("flash-loss", "flash-gain");
-    // Força reflow para reiniciar a animação se chamada em sequência rápida
-    void card.offsetWidth;
-    card.classList.add(cls);
-    setTimeout(() => card.classList.remove(cls), 900);
-  }
-
-  /**
-   * Atualiza os efeitos visuais de insanidade conforme a SAN atual/máxima.
-   * A lógica de níveis (0-4), camadas e acessibilidade vive em js/shared/sanity-fx.js.
-   */
-  function applySanityAtmosphere() {
-    const fx = window.CoC.sanityFx;
-    if (!fx) return;
-    const c = state.character;
-    if (!c?.derived?.SAN) { fx.clear(); return; }
-    const cur = Number(c.derived.SAN.current) || 0;
-    const max = Number(c.derived.SAN.max) || 99;
-    fx.apply(cur, max);
-  }
-
-  // ─── PERÍCIAS ─────────────────────────────────────────────────────────
-  function renderSkills() {
-    const c = state.character;
-    if (!c) return;
-    const groups = window.CoCData.skillsByCategory();
-    const labels = window.CoCData.categoryLabels;
-
-    // Computar pool e perícias da ocupação.
-    // occupationSkills = perícias livres designadas pelo jogador (chave do fix de
-    // ocupação personalizada). O conjunto EFETIVO = obrigatórias ∪ designadas.
-    c.occupationSkills = Array.isArray(c.occupationSkills) ? c.occupationSkills : [];
-    const occName = c.investigator?.occupation;
-    const occ = occName ? window.CoCData.findOccupation(occName) : null;
-    const occCtx = rules.buildOccupationContext(occ, c);
-    const occSkills = occCtx.effective;
-
-    // Calcular pontos disponíveis
-    const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, v]) => [k, v.value]));
-    const occBudget = occ ? rules.calcOccupationPoints(occ.pointsFormula, attrs).points : 0;
-    const piBudget  = rules.calcPersonalInterestPoints(attrs.INT || 0);
-
-    // Calcular gastos
-    const { occSpent, piSpent } = sumSkillSpend(c, occSkills);
-
-    // Atualiza badges
-    const occState = validators.pointsBadgeState(occSpent, occBudget);
-    const piState  = validators.pointsBadgeState(piSpent, piBudget);
-    const badgeOcc = $("#badge-occ");
-    const badgePi  = $("#badge-pi");
-    badgeOcc.classList.remove("ok", "warn", "err");
-    badgePi.classList.remove("ok", "warn", "err");
-    if (occState.level === "ok")   badgeOcc.classList.add("ok");
-    if (occState.level === "warn") badgeOcc.classList.add("warn");
-    if (occState.level === "err")  badgeOcc.classList.add("err");
-    if (piState.level === "ok")    badgePi.classList.add("ok");
-    if (piState.level === "warn")  badgePi.classList.add("warn");
-    if (piState.level === "err")   badgePi.classList.add("err");
-    badgeOcc.textContent = "Ocupação: " + occState.label + occFreePicksHint(occCtx);
-    badgePi.textContent  = "Interesse: " + piState.label;
-
-    // Renderiza grupos
-    const container = $("#skills-groups");
-    container.innerHTML = "";
-    ensureSkillsDelegation();   // listeners delegados (1x) — sobrevivem aos rebuilds
-
-    const search = state.skillSearch.trim().toLowerCase();
-    const filter = state.skillFilter;
-
-    // Set para rastrear quais nomes já foram renderizados (evita duplicar em "Customizadas")
-    const renderedNames = new Set();
-
-    for (const [cat, list] of Object.entries(groups)) {
-      const filtered = list.filter(s => {
-        if (search && !s.name.toLowerCase().includes(search)) return false;
-        if (filter === "occupation" && !occSkills.has(s.name)) return false;
-        if (filter === "used") {
-          const sk = c.skills?.[s.name];
-          const base = computeBaseValue(s, attrs);
-          if (!sk || (Number(sk.value) || base) === base) return false;
-        }
-        return true;
-      });
-      if (filtered.length === 0) continue;
-
-      const group = el("div", { class: "skill-group" });
-      group.innerHTML = `<h3 class="skill-group-title">${escapeHtml(labels[cat] || cat)}</h3>`;
-      const inner = el("div", { class: "skills-list" });
-      group.appendChild(inner);
-
-      for (const s of filtered) {
-        const base = computeBaseValue(s, attrs);
-        const sk = c.skills?.[s.name];
-        const value = sk?.value != null ? Number(sk.value) : base;
-        const isOcc = occSkills.has(s.name);
-        const capStatus = validators.skillCapStatus(value, state.editMode);
-
-        renderedNames.add(s.name);
-        const row = el("div", {
-          class: "skill-row" +
-            (isOcc ? " occupation" : "") +
-            (capStatus.level === "err" ? " over-cap" : "") +
-            (capStatus.level === "warn" && !capStatus.ok ? " over-cap-warn" : "")
-        });
-        const specTag = s.specializable ? `<span class="skill-tag">específica</span>` : "";
-        const baseFormula = s.baseFormula ? ` <span class="skill-tag" title="Base derivada">${escapeHtml(s.baseFormula)}=${base}</span>` : "";
-        const occMark = occToggleHTML(s.name, occCtx.mandatory.has(s.name), occCtx.chosen.has(s.name));
-        row.innerHTML = `
-          <div class="skill-name">${occMark}${escapeHtml(s.name)}${specTag}${baseFormula}</div>
-          <input class="skill-input" type="number" min="0" max="99" value="${value}" data-skill="${escapeHtml(s.name)}" title="Total da perícia (Base ${base} + alocados)" />
-          <div class="skill-frac" title="Difícil · Extremo">${dice.half(value)} · ${dice.fifth(value)}</div>
-          <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(s.name)}" title="Rolar perícia">🎲</button>
-        `;
-        inner.appendChild(row);
-      }
-      container.appendChild(group);
-    }
-
-    // ── Perícias customizadas/específicas do personagem que não estão no dicionário base ──
-    // Ex: "Lutar (Espada)", "Arte/Ofício (Atuação)", "Outra Língua (Hermes)"
-    const customSkillNames = Object.keys(c.skills || {}).filter(n => !renderedNames.has(n));
-    if (customSkillNames.length > 0) {
-      const customFiltered = customSkillNames.filter(name => {
-        if (search && !name.toLowerCase().includes(search)) return false;
-        if (filter === "occupation" && !occSkills.has(name)) return false;
-        if (filter === "used") {
-          const v = Number(c.skills[name].value) || 0;
-          if (v === 0) return false;
-        }
-        return true;
-      });
-
-      if (customFiltered.length > 0) {
-        const group = el("div", { class: "skill-group" });
-        group.innerHTML = `<h3 class="skill-group-title">Perícias Específicas</h3>`;
-        const inner = el("div", { class: "skills-list" });
-        group.appendChild(inner);
-
-        for (const name of customFiltered) {
-          const sk = c.skills[name];
-          const value = Number(sk.value) || 0;
-          const isOcc = occSkills.has(name);
-          const capStatus = validators.skillCapStatus(value, state.editMode);
-          // Tenta achar a base via parent skill (ex: "Lutar (Espada)" → "Lutar")
-          const parent = window.CoCData.findSkill(name.replace(/\s*\(.+\)$/, ""));
-          const parentBase = parent ? computeBaseValue(parent, attrs) : 0;
-
-          const row = el("div", {
-            class: "skill-row" +
-              (isOcc ? " occupation" : "") +
-              (capStatus.level === "err" ? " over-cap" : "") +
-              (capStatus.level === "warn" && !capStatus.ok ? " over-cap-warn" : "")
-          });
-          const parentTag = parent ? `<span class="skill-tag" title="Base herdada de ${escapeHtml(parent.name)}">base ${parentBase}</span>` : "";
-          const occMark = occToggleHTML(name, occCtx.mandatory.has(name), occCtx.chosen.has(name));
-          row.innerHTML = `
-            <div class="skill-name">${occMark}${escapeHtml(name)}${parentTag}</div>
-            <input class="skill-input" type="number" min="0" max="99" value="${value}" data-skill="${escapeHtml(name)}" />
-            <div class="skill-frac" title="Difícil · Extremo">${dice.half(value)} · ${dice.fifth(value)}</div>
-            <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(name)}" title="Rolar perícia">🎲</button>
-          `;
-          inner.appendChild(row);
-        }
-        container.appendChild(group);
-      }
-    }
-
-    // Botão para adicionar nova perícia específica (sub-especialização)
-    const addBtn = el("button", {
-      style: { marginTop: "0.75rem" },
-      text: "+ Adicionar Perícia Específica",
-      on: { click: () => addCustomSkill() }
-    });
-    container.appendChild(addBtn);
-
-    // Inputs, rolagens e toggles de ocupação são tratados por DELEGAÇÃO de evento
-    // em #skills-groups (ver ensureSkillsDelegation): anexada 1x, sobrevive aos
-    // rebuilds de innerHTML e elimina o rebind por linha (sem listeners órfãos).
-  }
-
-  // Delegação de eventos das perícias — anexa UMA vez ao container.
-  // innerHTML="" remove os filhos (e seus handlers), mas o listener do container
-  // persiste; logo não há acúmulo nem órfãos a cada renderSkills().
-  function ensureSkillsDelegation() {
-    const container = $("#skills-groups");
-    if (!container || container._delegated) return;
-    container._delegated = true;
-
-    container.addEventListener("click", (e) => {
-      const rollBtn = e.target.closest(".skill-roll[data-roll-skill]");
-      if (rollBtn) { rollSkill(rollBtn.dataset.rollSkill); return; }
-      const occBtn = e.target.closest("[data-occ-toggle]");
-      if (occBtn) { e.preventDefault(); toggleOccupationSkill(occBtn.dataset.occToggle); }
-    });
-
-    container.addEventListener("input", (e) => {
-      const input = e.target.closest("input[data-skill]");
-      if (!input) return;
-      const c = state.character;
-      if (!c) return;
-      const name = input.dataset.skill;
-      const v = Math.max(0, Math.min(99, parseInt(input.value, 10) || 0));
-      c.skills = c.skills || {};
-      c.skills[name] = c.skills[name] || {};
-      c.skills[name].value = v;
-      updateSkillUI(name);   // light update — mantém o foco enquanto digita
-      markDirty();
-    });
-
-    // focusout borbulha (blur não) — persiste ao sair de um campo de perícia.
-    container.addEventListener("focusout", (e) => {
-      if (e.target.closest("input[data-skill]")) persistCurrent();
-    });
-  }
-
-  /**
-   * HTML do marcador de ocupação numa linha de perícia.
-   *  - obrigatória → diamante travado (◆), não clicável.
-   *  - designada (livre) → botão ◆ (clique para virar Interesse Pessoal).
-   *  - disponível → botão ◇ (clique para contar no pool da ocupação).
-   */
-  function occToggleHTML(name, isMandatory, isChosen) {
-    if (isMandatory) {
-      return `<span class="skill-occ mandatory" title="Perícia obrigatória da ocupação — já conta no pool de pontos da ocupação">◆</span>`;
-    }
-    const on = !!isChosen;
-    const title = on
-      ? "Perícia livre da ocupação (conta no pool). Clique para devolver ao Interesse Pessoal."
-      : "Marcar como perícia livre da ocupação (os pontos passam a contar no pool da ocupação).";
-    return `<button class="skill-occ-toggle${on ? " on" : ""}" data-occ-toggle="${escapeHtml(name)}" title="${title}" aria-pressed="${on}">${on ? "◆" : "◇"}</button>`;
-  }
-
-  /** Texto auxiliar do badge: quantas perícias livres da ocupação já foram usadas. */
-  function occFreePicksHint(ctx) {
-    if (!ctx || !ctx.freeBudget) return "";
-    return ` · livres ${ctx.freeUsed}/${ctx.freeBudget}`;
-  }
-
-  /**
-   * Alterna a designação de uma perícia como "perícia livre da ocupação".
-   * É o que faz os pontos gastos nela contarem no pool da OCUPAÇÃO (e não no
-   * de Interesse Pessoal). Não-bloqueante: o jogador pode exceder anySkillsCount —
-   * o badge apenas sinaliza. Resolve o bug da ocupação Personalizada.
-   */
-  function toggleOccupationSkill(name) {
-    const c = state.character;
-    if (!c || !name) return;
-    c.occupationSkills = Array.isArray(c.occupationSkills) ? c.occupationSkills : [];
-    const idx = c.occupationSkills.indexOf(name);
-    if (idx >= 0) c.occupationSkills.splice(idx, 1);
-    else c.occupationSkills.push(name);
-    renderSkills();
-    persistCurrent();
-  }
-
-  function computeBaseValue(skill, attrs) {
-    if (skill.baseFormula === "DES/2") return Math.floor((attrs.DES || 0) / 2);
-    if (skill.baseFormula === "EDU")   return attrs.EDU || 0;
-    return Number(skill.base) || 0;
-  }
-
-  function sumSkillSpend(c, occSkillSet) {
-    let occSpent = 0, piSpent = 0;
-    const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, v]) => [k, v.value]));
-    for (const [name, sk] of Object.entries(c.skills || {})) {
-      const def = window.CoCData.findSkill(name) ||
-                  // Tenta achar pela parte base (Lutar (Espada) → Lutar)
-                  window.CoCData.findSkill(name.replace(/\s*\(.+\)$/, ""));
-      const base = def ? computeBaseValue(def, attrs) : 0;
-      const v = Number(sk.value) || 0;
-      const spent = Math.max(0, v - base);
-      if (spent <= 0) continue;
-      if (occSkillSet && occSkillSet.has(name)) occSpent += spent;
-      else piSpent += spent;
-    }
-    return { occSpent, piSpent };
-  }
-
-  /**
-   * Light update: atualiza ½/⅕ na linha da perícia e os badges de pool,
-   * SEM recriar o DOM. Mantém o foco no input atual.
-   *
-   * Reservado para mudanças "value-only" durante digitação.
-   * Mudanças estruturais (ocupação, filtro, busca, add) ainda chamam renderSkills().
-   */
-  function updateSkillUI(name) {
-    const c = state.character;
-    if (!c) return;
-
-    // 1) Atualiza a linha (1/2 e 1/5 da perícia editada)
-    const input = document.querySelector(`input[data-skill="${cssEscape(name)}"]`);
-    if (input) {
-      const v = Number(input.value) || 0;
-      const row = input.closest(".skill-row");
-      const frac = row?.querySelector(".skill-frac");
-      if (frac) frac.textContent = `${dice.half(v)} · ${dice.fifth(v)}`;
-
-      // Atualiza marcação de cap excedido
-      if (row) {
-        const cap = validators.skillCapStatus(v, state.editMode);
-        row.classList.toggle("over-cap", cap.level === "err");
-        row.classList.toggle("over-cap-warn", cap.level === "warn" && !cap.ok);
-      }
-    }
-
-    // 2) Recalcula badges de pool (Ocupação / Interesse)
-    refreshSkillBadges();
-  }
-
-  /**
-   * Recalcula os badges Ocupação/Interesse sem tocar nos inputs.
-   */
-  function refreshSkillBadges() {
-    const c = state.character;
-    if (!c) return;
-    c.occupationSkills = Array.isArray(c.occupationSkills) ? c.occupationSkills : [];
-    const occName = c.investigator?.occupation;
-    const occ = occName ? window.CoCData.findOccupation(occName) : null;
-    const occCtx = rules.buildOccupationContext(occ, c);
-    const occSkills = occCtx.effective;
-
-    const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, v]) => [k, v.value]));
-    const occBudget = occ ? rules.calcOccupationPoints(occ.pointsFormula, attrs).points : 0;
-    const piBudget  = rules.calcPersonalInterestPoints(attrs.INT || 0);
-    const { occSpent, piSpent } = sumSkillSpend(c, occSkills);
-
-    const occState = validators.pointsBadgeState(occSpent, occBudget);
-    const piState  = validators.pointsBadgeState(piSpent, piBudget);
-    const badgeOcc = $("#badge-occ");
-    const badgePi  = $("#badge-pi");
-    if (badgeOcc) {
-      badgeOcc.classList.remove("ok", "warn", "err");
-      if (occState.level === "ok")   badgeOcc.classList.add("ok");
-      if (occState.level === "warn") badgeOcc.classList.add("warn");
-      if (occState.level === "err")  badgeOcc.classList.add("err");
-      badgeOcc.textContent = "Ocupação: " + occState.label + occFreePicksHint(occCtx);
-    }
-    if (badgePi) {
-      badgePi.classList.remove("ok", "warn", "err");
-      if (piState.level === "ok")    badgePi.classList.add("ok");
-      if (piState.level === "warn")  badgePi.classList.add("warn");
-      if (piState.level === "err")   badgePi.classList.add("err");
-      badgePi.textContent = "Interesse: " + piState.label;
-    }
-  }
-
-  /**
-   * Escape de seletor CSS para nomes com parênteses, espaços, etc.
-   * (CSS.escape() pode não existir em browsers antigos — fallback manual)
-   */
-  function cssEscape(s) {
-    if (window.CSS && typeof window.CSS.escape === "function") return window.CSS.escape(s);
-    return String(s).replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, "\\$1");
-  }
-
-  /**
-   * Adiciona uma perícia específica (sub-especialização) custom.
-   * Ex: Arte/Ofício (Atuação), Lutar (Espada), Outra Língua (Latim).
-   */
-  async function addCustomSkill() {
-    if (!state.character) return;
-
-    // Mostra dropdown com perícias especializáveis + opção livre
-    const specializable = window.CoCData.skills.filter(s => s.specializable);
-    const wrapper = el("div", {});
-    wrapper.innerHTML = `
-      <p style="margin-bottom: 0.5rem; color: var(--ink-dim);">Escolha a perícia base e a especialização.</p>
-      <label>Perícia base</label>
-      <select id="cs-parent">
-        <option value="">— Outra (digite o nome completo) —</option>
-        ${specializable.map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join("")}
-      </select>
-      <div style="margin-top: 0.5rem;">
-        <label>Especialização</label>
-        <input type="text" id="cs-spec" placeholder="Ex: Espada, Latim, Atuação" />
-        <p id="cs-examples" class="dim" style="font-size: 0.8em; margin-top: 0.3rem;"></p>
-      </div>
-      <div style="margin-top: 0.5rem;">
-        <label>Nome completo (auto-gerado, edite se quiser)</label>
-        <input type="text" id="cs-name" placeholder="Lutar (Espada)" />
-      </div>
-      <div style="margin-top: 0.5rem;">
-        <label>Valor inicial</label>
-        <input type="number" id="cs-value" value="0" min="0" max="99" />
-      </div>
-      <div style="margin-top: 0.5rem;">
-        <label><input type="checkbox" id="cs-occ" /> Conta para a ocupação (perícia livre)</label>
-        <p class="dim" style="font-size: 0.8em; margin-top: 0.2rem;">Marque para os pontos desta perícia contarem no pool da OCUPAÇÃO em vez do Interesse Pessoal. Essencial para a ocupação "Personalizada".</p>
-      </div>
-    `;
-
-    const parentSel = wrapper.querySelector("#cs-parent");
-    const specInput = wrapper.querySelector("#cs-spec");
-    const nameInput = wrapper.querySelector("#cs-name");
-    const examples = wrapper.querySelector("#cs-examples");
-    const valueInput = wrapper.querySelector("#cs-value");
-    const occCheck = wrapper.querySelector("#cs-occ");
-
-    // Pré-marca quando a ocupação atual ainda tem perícias livres disponíveis.
-    const occNow = state.character.investigator?.occupation ? window.CoCData.findOccupation(state.character.investigator.occupation) : null;
-    const ctxNow = rules.buildOccupationContext(occNow, state.character);
-    if (occCheck) occCheck.checked = ctxNow.freeBudget > 0 && ctxNow.freeUsed < ctxNow.freeBudget;
-
-    function syncName() {
-      const p = parentSel.value;
-      const s = specInput.value.trim();
-      if (p && s) nameInput.value = `${p} (${s})`;
-      else if (p) nameInput.value = p + " (...)";
-    }
-    parentSel.onchange = () => {
-      const p = window.CoCData.findSkill(parentSel.value);
-      examples.textContent = p?.examples ? "Ex: " + p.examples.join(", ") : "";
-      // Pré-popula valor com base
-      const attrs = Object.fromEntries(Object.entries(state.character.attributes || {}).map(([k, v]) => [k, v.value]));
-      valueInput.value = p ? computeBaseValue(p, attrs) : 0;
-      syncName();
-    };
-    specInput.oninput = syncName;
-
-    modal({
-      title: "Adicionar Perícia Específica",
-      body: wrapper,
-      actions: [
-        { label: "Cancelar" },
-        { label: "Adicionar", primary: true, onClick: () => {
-          const name = nameInput.value.trim();
-          if (!name) { toast("Nome obrigatório", { type: "warn" }); return false; }
-          const v = Math.max(0, Math.min(99, parseInt(valueInput.value, 10) || 0));
-          state.character.skills = state.character.skills || {};
-          state.character.skills[name] = { value: v };
-          if (occCheck && occCheck.checked) {
-            state.character.occupationSkills = Array.isArray(state.character.occupationSkills) ? state.character.occupationSkills : [];
-            if (!state.character.occupationSkills.includes(name)) state.character.occupationSkills.push(name);
-          }
-          renderSkills();
-          persistCurrent();
-          toast(`"${name}" adicionada`, { type: "success" });
-        }}
-      ]
-    });
-  }
+  // ─── PERÍCIAS — extraído para js/views/skills.js (M3.3) ──────────────────
+  // Delegações locais para compatibilidade com renderAll() e outros call sites.
+  function renderSkills()      { window.CoC.views.skills.render(); }
+  function refreshSkillBadges(){ window.CoC.views.skills.refreshBadges(); }
 
   // ─── ARSENAL ──────────────────────────────────────────────────────────
   function renderWeapons() {
@@ -1077,7 +664,7 @@
       dmgStr = `${w.damage} → ${d.total}${isImpale ? " ⚡EMPALA" : ""} ${diceStr}`;
     }
 
-    registerRoll({
+    window.CoC.views.rolls.registerRoll({
       kind: "weapon-attack",
       skill: `⚔ ${w.name}`,
       skillRaw: w.skill,
@@ -1267,199 +854,24 @@
   // ROLAGENS
   // ═════════════════════════════════════════════════════════════════════
 
-  // Valor corrente de uma perícia: usa o valor salvo se numérico; senão deriva
-  // a base pela definição (resolvendo especializações "Perícia (Foco)").
+  // ─── ROLLS — extraído para js/views/rolls.js (M3.4) ─────────────────────
+  // getSkillValue() mantida aqui: usada por attackWithWeapon() (domínio Weapons)
   function getSkillValue(c, name) {
     const direct = Number(c?.skills?.[name]?.value);
     if (!isNaN(direct)) return direct;
     const def = window.CoCData.findSkill(name) || window.CoCData.findSkill(name.replace(/\s*\(.+\)$/, ""));
+    if (!def) return 0;
     const attrs = Object.fromEntries(Object.entries(c?.attributes || {}).map(([k, x]) => [k, x.value]));
-    return def ? computeBaseValue(def, attrs) : 0;
+    if (def.baseFormula === "DES/2") return Math.floor((attrs.DES || 0) / 2);
+    if (def.baseFormula === "EDU")   return attrs.EDU || 0;
+    return Number(def.base) || 0;
   }
-
+  // Stub local: passes current mods to rolls.js
   function rollAttribute(code, difficultyOverride) {
-    const c = state.character;
-    const v = Number(c?.attributes?.[code]?.value) || 0;
-    const difficulty = difficultyOverride || state.rollMods.difficulty;
-    const target = difficulty === "hard" ? dice.half(v) : (difficulty === "extreme" ? dice.fifth(v) : v);
-    const result = dice.rollD100(state.rollMods.bp || null);
-    const level = dice.classifyRoll(result.value, v);
-    const entry = {
-      kind: "attribute",
-      skill: code,
-      skillRaw: code,
-      target,
-      targetRaw: v,
-      label: difficulty === "regular" ? v : `${v} → ${difficulty === "hard" ? "Difícil" : "Extremo"} ${target}`,
-      d100: result.value,
-      level,
-      pushed: false
-    };
-    registerRoll(entry);
-  }
-
-  function rollSkill(name, opts = {}) {
-    const c = state.character;
-    const v = getSkillValue(c, name);
-    const result = dice.rollD100(state.rollMods.bp || null);
-    const level = dice.classifyRoll(result.value, v);
-    const entry = {
-      kind: "skill",
-      skill: name + (opts.pushed ? "  ⚠ PUSHED" : ""),
-      skillRaw: name,
-      target: v,
-      targetRaw: v,
-      d100: result.value,
-      level,
-      note: state.rollMods.bp ? `[${state.rollMods.bp}]` : "",
-      pushed: !!opts.pushed
-    };
-    registerRoll(entry);
-  }
-
-  /**
-   * Pipeline central: registra a rolagem no estado + log + toast,
-   * e oferece ações pós-rolagem (Gastar Sorte / Forçar) quando aplicável.
-   */
-  function registerRoll(entry) {
-    state.lastRoll = entry;
-    logAndToast(entry);
-    persistCurrent();
-    presentPostRollActions(entry);
-  }
-
-  /**
-   * Apresenta no roll-log o card de ações pós-rolagem:
-   *  - Gastar Sorte (se falha + Sorte ≥ diferença)
-   *  - Forçar (se já não foi forçada; só faz sentido em sucessos menores OU falhas)
-   *
-   * O card é EFÊMERO: some quando uma nova rolagem entra (substituído).
-   */
-  function presentPostRollActions(entry) {
-    // Remove qualquer card de ação anterior
-    const old = $("#post-roll-actions");
-    if (old) old.remove();
-    if (!entry || entry.kind === "weapon-attack") return;  // ataques têm fluxo próprio
-
-    const c = state.character;
-    const luck = Number(c?.attributes?.Sorte?.value) || 0;
-    const diff = entry.d100 - (Number(entry.target) || 0);
-    const canSpendLuck =
-      !entry.pushed
-      && (entry.level === "fail" || entry.level === "fumble" || entry.level === "regular")
-      && diff > 0
-      && luck >= diff
-      && entry.level !== "fumble";  // fumble não pode ser convertido (regra do livro)
-    const canPush =
-      !entry.pushed
-      && entry.kind === "skill"
-      && (entry.level === "fail" || entry.level === "regular" || entry.level === "hard");
-
-    if (!canSpendLuck && !canPush) return;
-
-    const panel = el("div", {
-      id: "post-roll-actions",
-      class: "post-roll-actions",
-      style: {
-        marginTop: "0.5rem", padding: "0.5rem 0.6rem",
-        background: "var(--bg-card-hi)",
-        borderLeft: "3px solid var(--brass)",
-        borderRadius: "var(--radius)",
-        fontSize: "0.8rem"
-      }
+    window.CoC.views.rolls.rollAttribute(code, {
+      difficulty: difficultyOverride || state.rollMods.difficulty,
+      bp: state.rollMods.bp
     });
-    const dimEntry = entry.skillRaw || entry.skill || "rolagem";
-    const header = el("div", {
-      style: { color: "var(--ink-dim)", marginBottom: "0.35rem", fontFamily: "var(--font-mono)", fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase" }
-    }, [`Ações pós-rolagem · ${dimEntry}`]);
-    panel.appendChild(header);
-
-    const row = el("div", { style: { display: "flex", gap: "0.35rem", flexWrap: "wrap" } });
-
-    if (canSpendLuck) {
-      const cost = diff;
-      const btn = el("button", {
-        class: "btn-primary",
-        title: `Reduz sua Sorte em ${cost} para tornar este teste um sucesso Regular.`,
-        on: { click: () => spendLuck(entry, cost) }
-      }, [`🍀 Gastar ${cost} Sorte (vira Regular)`]);
-      row.appendChild(btn);
-    }
-
-    if (canPush) {
-      const btn = el("button", {
-        class: "btn-danger",
-        title: "Forçar a rolagem — relança com risco de consequência grave em caso de falha.",
-        on: { click: () => pushRoll(entry) }
-      }, ["⚡ Forçar Rolagem"]);
-      row.appendChild(btn);
-    }
-
-    const dismiss = el("button", {
-      class: "btn-ghost",
-      on: { click: () => panel.remove() }
-    }, ["Dispensar"]);
-    row.appendChild(dismiss);
-
-    panel.appendChild(row);
-    const log = $("#roll-log");
-    if (log) log.insertBefore(panel, log.firstChild.nextSibling || null);
-  }
-
-  /**
-   * Gasta Sorte para converter uma falha em sucesso Regular.
-   */
-  function spendLuck(entry, cost) {
-    const c = state.character;
-    if (!c?.attributes?.Sorte) return;
-    c.attributes.Sorte.value = Math.max(0, Number(c.attributes.Sorte.value) - cost);
-    const old = $("#post-roll-actions");
-    if (old) old.remove();
-    logAndToast({
-      skill: `🍀 Sorte gasta: ${entry.skillRaw || entry.skill}`,
-      target: cost,
-      d100: null,
-      level: "regular",
-      note: `${cost} pontos de Sorte usados para virar Regular`
-    });
-    renderAttributes();   // atualiza o card de Sorte
-    persistCurrent();
-  }
-
-  /**
-   * Forçar Rolagem (Push) — relança com flag pushed=true.
-   * Em CoC 7E, falhar uma rolagem forçada = consequência narrativa decidida pelo Guardião.
-   */
-  async function pushRoll(entry) {
-    const old = $("#post-roll-actions");
-    if (old) old.remove();
-    const confirmed = await confirm(
-      `Forçar a rolagem de "${entry.skillRaw || entry.skill}"? Falha numa rolagem forçada gera consequência narrativa GRAVE decidida pelo Guardião.`,
-      { title: "Forçar Rolagem", danger: true, confirmLabel: "Forçar" }
-    );
-    if (!confirmed) return;
-    if (entry.kind === "skill") {
-      rollSkill(entry.skillRaw, { pushed: true });
-    } else if (entry.kind === "attribute") {
-      // Reaplica rolagem de atributo com flag de pushed
-      const code = entry.skillRaw;
-      const c = state.character;
-      const v = Number(c?.attributes?.[code]?.value) || 0;
-      const result = dice.rollD100(state.rollMods.bp || null);
-      const level = dice.classifyRoll(result.value, v);
-      const e = {
-        kind: "attribute",
-        skill: code + "  ⚠ PUSHED",
-        skillRaw: code,
-        target: v,
-        targetRaw: v,
-        label: v,
-        d100: result.value,
-        level,
-        pushed: true
-      };
-      registerRoll(e);
-    }
   }
 
   // ═════════════════════════════════════════════════════════════════════
@@ -1587,21 +999,21 @@
 
     $("#btn-add-weapon").onclick = () => editWeapon(state.character?.weapons?.length || 0);
 
-    // Filtros de perícia
-    $$(".filter-chip").forEach(chip => {
-      chip.onclick = () => {
-        $$(".filter-chip").forEach(c => c.classList.remove("active"));
-        chip.classList.add("active");
-        state.skillFilter = chip.dataset.filter;
-        renderSkills();
+    // Theme picker swatches (M3.5.3)
+    $$(".theme-swatch").forEach(swatch => {
+      swatch.onclick = () => {
+        const theme = swatch.dataset.theme;
+        applyTheme(theme);
+        if (state.character) {
+          const c = state.character;
+          c._meta = c._meta || {};
+          c._meta.theme = theme;
+          persistCurrent();
+        }
       };
     });
-    $$(".filter-chip[data-filter='all']").forEach(c => c.classList.add("active"));
 
-    $("#skill-search-input").oninput = (e) => {
-      state.skillSearch = e.target.value;
-      renderSkills();
-    };
+    // Filtros de perícia e search-input → gerenciados por window.CoC.views.skills.init()
   }
 
   function rollAllAttributes() {
@@ -1619,12 +1031,52 @@
       c.attributes[code].value = r.total;
       c.attributes[code].rolled = `${formula} → ${r.raw.join("+")}=${r.rawSum}, ×5 = ${r.total}`;
     }
+
+    // BUG-03 fix: Luck re-roll for young investigators (age 15-19)
+    // PDF p.36: roll Luck twice, use the higher value
+    const age = Number(c.investigator?.age) || 25;
+    if (age >= 15 && age <= 19) {
+      const reroll = dice.rollAttribute("3d6x5");
+      const first = c.attributes.Sorte.value;
+      if (reroll.total > first) {
+        c.attributes.Sorte.value = reroll.total;
+        c.attributes.Sorte.rolled += ` | re-roll: ${reroll.raw.join("+")}=${reroll.rawSum}, ×5 = ${reroll.total} ✓ (usado)`;
+      } else {
+        c.attributes.Sorte.rolled += ` | re-roll: ${reroll.raw.join("+")}=${reroll.rawSum}, ×5 = ${reroll.total} (descartado)`;
+      }
+    }
+
+    // BUG-02 fix: apply age adjustments to primary attributes
+    // Distribution: highest-value affected attr absorbs each point (never below 0)
+    const adj = rules.calcAgeAdjustments(age);
+    if (adj) {
+      const before = {};
+      adj.attrs.forEach(k => { before[k] = c.attributes[k]?.value || 0; });
+      let remaining = adj.totalReduction;
+      while (remaining > 0) {
+        const eligible = adj.attrs.filter(k => (c.attributes[k]?.value || 0) > 0);
+        if (!eligible.length) break;
+        const highest = eligible.reduce((a, b) =>
+          (c.attributes[a]?.value || 0) >= (c.attributes[b]?.value || 0) ? a : b
+        );
+        const cut = Math.min(remaining, c.attributes[highest].value);
+        c.attributes[highest].value -= cut;
+        remaining -= cut;
+      }
+      const detail = adj.attrs
+        .filter(k => before[k] !== (c.attributes[k]?.value || 0))
+        .map(k => `${codeToLabel(k)} ${before[k]}→${c.attributes[k].value}`)
+        .join(", ");
+      toast(`Atributos rolados — ajuste de idade (${age} anos): -${adj.totalReduction} pts em ${adj.attrs.join("/")} · ${detail}`, { type: "success", duration: 7000 });
+    } else {
+      toast("Atributos rolados! PV, MP, SAN, MOV, DB recalculados.", { type: "success" });
+    }
+
     recalcDerived();
     renderAttributes();
-    renderDerived();
+    window.CoC.views.vitals.render();
     renderSkills();
     persistCurrent();
-    toast("Atributos rolados! PV, MP, SAN, MOV, DB recalculados.", { type: "success" });
   }
 
   function codeToLabel(code) {
@@ -1696,6 +1148,7 @@
         $$("#modifier-difficulty button").forEach(x => x.classList.remove("active"));
         b.classList.add("active");
         state.rollMods.difficulty = b.dataset.difficulty;
+        window.CoC.views.rolls.setRollMods(state.rollMods);
       };
     });
     $$("#modifier-bonus button").forEach(b => {
@@ -1703,6 +1156,7 @@
         $$("#modifier-bonus button").forEach(x => x.classList.remove("active"));
         b.classList.add("active");
         state.rollMods.bp = b.dataset.bp || "";
+        window.CoC.views.rolls.setRollMods(state.rollMods);
       };
     });
   }
@@ -1755,6 +1209,7 @@
             wrap.querySelectorAll("[data-difficulty]").forEach(x => x.classList.remove("active"));
             b.classList.add("active");
             state.rollMods.difficulty = b.dataset.difficulty;
+            window.CoC.views.rolls.setRollMods(state.rollMods);
             // Espelha no painel desktop
             $$("#modifier-difficulty button").forEach(x => {
               x.classList.toggle("active", x.dataset.difficulty === state.rollMods.difficulty);
@@ -1766,6 +1221,7 @@
             wrap.querySelectorAll("[data-bp]").forEach(x => x.classList.remove("active"));
             b.classList.add("active");
             state.rollMods.bp = b.dataset.bp || "";
+            window.CoC.views.rolls.setRollMods(state.rollMods);
             $$("#modifier-bonus button").forEach(x => {
               x.classList.toggle("active", (x.dataset.bp || "") === state.rollMods.bp);
             });
@@ -1783,20 +1239,28 @@
   function bindMobileTabs() {
     $$(".mobile-tab").forEach(t => {
       t.onclick = () => {
-        $$(".mobile-tab").forEach(x => x.classList.remove("active"));
-        t.classList.add("active");
         state.mobileTab = t.dataset.tab;
-        applyMobileTab();
+        applyTab();
       };
     });
-    applyMobileTab();
+    $$(".desktop-tab").forEach(t => {
+      t.onclick = () => {
+        state.mobileTab = t.dataset.tab;
+        applyTab();
+      };
+    });
+    applyTab();
   }
 
-  function applyMobileTab() {
+  function applyTab() {
     const tab = state.mobileTab;
-    // No desktop, todas as sections estão visíveis. No mobile, só a ativa.
     $$("[data-tab]").forEach(s => s.classList.toggle("tab-active", s.dataset.tab === tab));
+    $$(".mobile-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+    $$(".desktop-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
   }
+
+  // Alias para compatibilidade com chamadas existentes
+  const applyMobileTab = applyTab;
 
   // ═════════════════════════════════════════════════════════════════════
   // DIRTY TRACKING

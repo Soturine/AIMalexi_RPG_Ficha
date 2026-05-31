@@ -21,7 +21,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 </head>
 
-<body>
+<body data-theme="arkham">
 
 <script>
   if ("serviceWorker" in navigator) {
@@ -93,6 +93,14 @@
       🧠 Efeitos
     </button>
 
+    <div class="theme-picker no-print" id="theme-picker" title="Tema da campanha">
+      <button class="theme-swatch active" data-theme="arkham"     title="Arkham — CoC Clássico"></button>
+      <button class="theme-swatch"        data-theme="miskatonic" title="Miskatonic — Acadêmico"></button>
+      <button class="theme-swatch"        data-theme="sepia"      title="Sépia — Documento Histórico"></button>
+      <button class="theme-swatch"        data-theme="obsidian"   title="Obsidian — Moderno"></button>
+      <button class="theme-swatch"        data-theme="eldritch"   title="Eldritch — Horror Cósmico"></button>
+    </div>
+
     <button
       id="btn-print"
       class="btn-ghost"
@@ -134,6 +142,10 @@
       ⚔️ Combate
     </button>
 
+    <button class="mobile-tab" data-tab="inventario">
+      🎒 Inventário
+    </button>
+
     <button class="mobile-tab" data-tab="diario">
       📔 Diário
     </button>
@@ -144,10 +156,36 @@
 
   </nav>
 
-  <!-- ═══ GRID PRINCIPAL ═══ -->
-  <div class="investigator-grid">
+  <!-- ═══ APP SHELL ═══ -->
+  <div class="app-shell">
 
-    <!-- ═══ CONTEÚDO PRINCIPAL ═══ -->
+    <!-- ═══ CHARACTER SIDEBAR ═══ -->
+    <aside id="character-sidebar" class="character-sidebar">
+      <div id="character-portrait" class="character-portrait" title="Retrato do investigador"></div>
+      <div class="sidebar-identity">
+        <div id="sidebar-name" class="sidebar-name">—</div>
+        <div id="sidebar-occupation" class="sidebar-occupation">—</div>
+      </div>
+      <div id="sidebar-vitals" class="sidebar-vitals"></div>
+      <div class="sidebar-attr-header">
+        <button id="btn-roll-all" class="btn-primary btn-sm" title="Rola todos os atributos do zero">🎲 Rolar Tudo</button>
+      </div>
+      <div id="sidebar-attributes" class="sidebar-attributes"></div>
+    </aside>
+
+    <!-- ═══ PAINEL PRINCIPAL ═══ -->
+    <div class="main-panel">
+
+      <nav class="desktop-tabs no-print" id="desktop-tabs" aria-label="Navegação da ficha">
+        <button class="desktop-tab active" data-tab="personagem">👤 Personagem</button>
+        <button class="desktop-tab" data-tab="pericias">📜 Perícias</button>
+        <button class="desktop-tab" data-tab="combate">⚔️ Combate</button>
+        <button class="desktop-tab" data-tab="inventario">🎒 Inventário</button>
+        <button class="desktop-tab" data-tab="diario">📔 Diário</button>
+        <button class="desktop-tab" data-tab="log">🎲 Log</button>
+      </nav>
+
+    <!-- ═══ CONTEÚDO ═══ -->
     <div class="content-col">
 
       <!-- BANNER -->
@@ -166,12 +204,6 @@
         </h2>
 
         <div class="identity-wrapper">
-
-          <div
-            id="character-portrait"
-            class="character-portrait"
-            title="Retrato do investigador"
-          ></div>
 
           <div class="identity-grid">
 
@@ -270,32 +302,9 @@
 
       </section>
 
-      <!-- ATRIBUTOS -->
-      <section class="section" data-tab="personagem">
-
-        <h2 class="section-title">
-          Atributos
-
-          <span class="meta">
-            Clique [R/D/E] para rolar testes
-
-            <button
-              id="btn-roll-all"
-              class="btn-primary"
-              style="margin-left: 0.5rem;"
-              title="Rola todos os atributos do zero"
-            >
-              🎲 Rolar Tudo
-            </button>
-          </span>
-        </h2>
-
-        <div class="attr-grid" id="attr-grid"></div>
-
-      </section>
 
       <!-- DERIVADOS -->
-      <section class="section" data-tab="personagem">
+      <section class="section" data-tab="combate">
 
         <h2 class="section-title">
           Estatísticas Derivadas
@@ -363,8 +372,32 @@
 
       </section>
 
-      <!-- FINANÇAS -->
+      <!-- MAGIAS — M4.3 -->
       <section class="section" data-tab="combate">
+        <h2 class="section-title">
+          Magias e Rituais
+          <span class="meta" id="spells-count"></span>
+        </h2>
+        <div class="spells-toolbar no-print">
+          <button id="btn-add-spell" class="btn-primary btn-sm">+ Adicionar Magia</button>
+        </div>
+        <div id="spells-list"></div>
+      </section>
+
+      <!-- GRIMÓRIOS — M4.4 -->
+      <section class="section" data-tab="combate">
+        <h2 class="section-title">
+          Grimórios
+          <span class="meta" id="tomes-count"></span>
+        </h2>
+        <div class="tomes-toolbar no-print">
+          <button id="btn-add-tome" class="btn-primary btn-sm">+ Adicionar Grimório</button>
+        </div>
+        <div id="tomes-list"></div>
+      </section>
+
+      <!-- FINANÇAS -->
+      <section class="section" data-tab="personagem">
 
         <h2 class="section-title">
           Finanças
@@ -376,11 +409,11 @@
       </section>
 
       <!-- DIÁRIO -->
-      <section class="section" data-tab="diario">
+      <section class="section" data-tab="personagem">
 
         <h2 class="section-title">
-          Diário do Investigador
-          <span class="meta">Background, ideologia, traços</span>
+          Background & Conceito
+          <span class="meta">Origem, traços, convicções, pessoas importantes</span>
         </h2>
 
         <div class="background-grid">
@@ -453,9 +486,33 @@
 
       </section>
 
+      <!-- INVENTÁRIO — M4.1 -->
+      <section class="section" data-tab="inventario">
+        <h2 class="section-title">
+          Inventário
+          <span class="meta" id="inventory-capacity"></span>
+        </h2>
+        <div class="inv-toolbar no-print">
+          <button id="btn-add-item" class="btn-primary btn-sm">+ Adicionar</button>
+        </div>
+        <div id="inventory-list"></div>
+      </section>
+
+      <!-- DIÁRIO — M4.2 -->
+      <section class="section" data-tab="diario">
+        <h2 class="section-title">
+          Diário de Campanha
+          <span class="meta" id="journal-count"></span>
+        </h2>
+        <div class="journal-toolbar no-print">
+          <button id="btn-add-entry" class="btn-primary btn-sm">+ Nova Entrada</button>
+        </div>
+        <div id="journal-list"></div>
+      </section>
+
     </div>
 
-    <!-- ═══ SIDEBAR ═══ -->
+    <!-- ═══ LOG ═══ -->
     <aside class="sidebar-col" data-tab="log">
 
       <div class="modifier-panel no-print">
@@ -535,6 +592,8 @@
 
     </aside>
 
+    </div>
+
   </div>
 
   <!-- FOOTER -->
@@ -590,6 +649,36 @@
 <!-- RESOLVIDO O CONFLITO DE MERGE -->
 <script src="js/shared/sanity-fx.js"></script>
 <script src="js/shared/media-picker.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     STORE REATIVO (M1) — carregado antes do orquestrador
+═══════════════════════════════════════════════════════════════════════ -->
+
+<script src="js/core/actions.js"></script>
+<script src="js/core/signals.js"></script>
+<script src="js/core/bus.js"></script>
+<script src="js/core/store.js"></script>
+<script src="js/core/schema.js"></script>
+<script src="js/core/persist-middleware.js"></script>
+<script src="js/core/safe-render.js"></script>
+<script src="js/core/event-log.js"></script>
+
+<!-- Ferramentas de dev — trace e perf (ativas via window.__cocTrace = true) -->
+<script src="js/dev/trace.js"></script>
+<script src="js/dev/perf.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     VIEWS (M3 Strangler Pattern — fatias extraídas do investigator.js)
+═══════════════════════════════════════════════════════════════════════ -->
+
+<script src="js/views/vitals.js"></script>
+<script src="js/views/luck.js"></script>
+<script src="js/views/skills.js"></script>
+<script src="js/views/rolls.js"></script>
+<script src="js/views/inventory.js"></script>
+<script src="js/views/journal.js"></script>
+<script src="js/views/spells.js"></script>
+<script src="js/views/tomes.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
      ORQUESTRADOR

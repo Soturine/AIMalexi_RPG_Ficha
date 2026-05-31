@@ -55,6 +55,10 @@
   /* === Cor de acento ativa (atualizada via JS) === */
   --accent:         var(--brass);
   --accent-glow:    var(--brass-glow);
+
+  /* === Gradiente de fundo do body (override por tema) === */
+  --body-grad-top:    rgba(74, 28, 28, 0.15);
+  --body-grad-bottom: rgba(90, 122, 138, 0.08);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -75,8 +79,8 @@ html, body {
 
 body {
   background:
-    radial-gradient(ellipse at top, rgba(74, 28, 28, 0.15) 0%, transparent 60%),
-    radial-gradient(ellipse at bottom, rgba(90, 122, 138, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at top, var(--body-grad-top) 0%, transparent 60%),
+    radial-gradient(ellipse at bottom, var(--body-grad-bottom) 0%, transparent 50%),
     var(--bg-deep);
   background-attachment: fixed;
   position: relative;
@@ -560,6 +564,89 @@ label {
   .section { padding: 0.85rem; }
   .section-title { font-size: 1.1rem; flex-wrap: wrap; gap: 0.5rem; }
   button, .btn { font-size: 0.78rem; padding: 0.45rem 0.7rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TEMAS DE CAMPANHA (M3.5.3)
+   ─────────────────────────────────────────────────────────────────────────
+   Ativado via body[data-theme="X"]. Salvo em character._meta.theme.
+   Arkham é o padrão (sem bloco necessário — mesmas cores do :root).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Miskatonic · Academia · Verde escuro ── */
+body[data-theme="miskatonic"] {
+  --bg-deep:          #060c09;
+  --bg-mid:           #0b1410;
+  --bg-card:          #101c16;
+  --bg-card-hi:       #172620;
+  --bg-overlay:       rgba(6, 12, 9, 0.92);
+  --ink:              #cce8c8;
+  --ink-dim:          #7eaa78;
+  --ink-faded:        #446644;
+  --brass:            #4a9040;
+  --brass-bright:     #6ab460;
+  --brass-glow:       rgba(74, 144, 64, 0.45);
+  --accent:           var(--brass);
+  --accent-glow:      var(--brass-glow);
+  --body-grad-top:    rgba(16, 50, 24, 0.18);
+  --body-grad-bottom: rgba(30, 70, 40, 0.08);
+}
+
+/* ── Sépia · Documento histórico · Pergaminho âmbar ── */
+body[data-theme="sepia"] {
+  --bg-deep:          #100c04;
+  --bg-mid:           #1c1508;
+  --bg-card:          #261c0c;
+  --bg-card-hi:       #322212;
+  --bg-overlay:       rgba(16, 12, 4, 0.92);
+  --ink:              #f0e0b8;
+  --ink-dim:          #c0a060;
+  --ink-faded:        #88663a;
+  --brass:            #c08030;
+  --brass-bright:     #e0a040;
+  --brass-glow:       rgba(192, 128, 48, 0.45);
+  --accent:           var(--brass);
+  --accent-glow:      var(--brass-glow);
+  --body-grad-top:    rgba(80, 44, 8, 0.20);
+  --body-grad-bottom: rgba(120, 70, 16, 0.10);
+}
+
+/* ── Obsidian · Delta Green · Aço frio moderno ── */
+body[data-theme="obsidian"] {
+  --bg-deep:          #070a0d;
+  --bg-mid:           #0d1318;
+  --bg-card:          #131c24;
+  --bg-card-hi:       #1b2530;
+  --bg-overlay:       rgba(7, 10, 13, 0.92);
+  --ink:              #c0d4e8;
+  --ink-dim:          #7090aa;
+  --ink-faded:        #3c5870;
+  --brass:            #4888c8;
+  --brass-bright:     #60aaee;
+  --brass-glow:       rgba(72, 136, 200, 0.45);
+  --accent:           var(--brass);
+  --accent-glow:      var(--brass-glow);
+  --body-grad-top:    rgba(18, 36, 70, 0.20);
+  --body-grad-bottom: rgba(10, 30, 60, 0.10);
+}
+
+/* ── Eldritch · Horror Cósmico · Vazio Púrpura ── */
+body[data-theme="eldritch"] {
+  --bg-deep:          #06040f;
+  --bg-mid:           #0c0818;
+  --bg-card:          #130d22;
+  --bg-card-hi:       #1c1432;
+  --bg-overlay:       rgba(6, 4, 15, 0.92);
+  --ink:              #d4c8f0;
+  --ink-dim:          #8870cc;
+  --ink-faded:        #4a3898;
+  --brass:            #7848c8;
+  --brass-bright:     #9e70ee;
+  --brass-glow:       rgba(120, 72, 200, 0.45);
+  --accent:           var(--brass);
+  --accent-glow:      var(--brass-glow);
+  --body-grad-top:    rgba(50, 16, 80, 0.22);
+  --body-grad-bottom: rgba(20, 8, 60, 0.12);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

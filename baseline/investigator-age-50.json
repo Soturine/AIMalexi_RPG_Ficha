@@ -1,0 +1,134 @@
+{
+  "meta": {
+    "projectVersion": "M0.8",
+    "seed": 12345,
+    "prng": "Mulberry32",
+    "age": 50,
+    "generatedAt": "2026-05-30T19:34:59.993Z",
+    "knownBugsPresent": [
+      "BUG-02: age attribute adjustment not applied for STR/CON/DEX/APP",
+      "BUG-03: luck re-roll for 15-19 not implemented"
+    ],
+    "purpose": "Reference snapshot of CURRENT behavior. Run baseline/generate.html to regenerate."
+  },
+  "generated": {
+    "STR": 55,
+    "CON": 60,
+    "SIZ": 60,
+    "DEX": 70,
+    "APP": 90,
+    "INT": 60,
+    "POW": 50,
+    "EDU": 80,
+    "Luck": 70
+  },
+  "rolls": {
+    "STR": {
+      "formula": "3d6x5",
+      "dice": [
+        6,
+        2,
+        3
+      ],
+      "rawSum": 11,
+      "total": 55
+    },
+    "CON": {
+      "formula": "3d6x5",
+      "dice": [
+        5,
+        4,
+        3
+      ],
+      "rawSum": 12,
+      "total": 60
+    },
+    "SIZ": {
+      "formula": "2d6+6x5",
+      "dice": [
+        1,
+        5
+      ],
+      "rawSum": 12,
+      "total": 60
+    },
+    "DEX": {
+      "formula": "3d6x5",
+      "dice": [
+        6,
+        5,
+        3
+      ],
+      "rawSum": 14,
+      "total": 70
+    },
+    "APP": {
+      "formula": "3d6x5",
+      "dice": [
+        6,
+        6,
+        6
+      ],
+      "rawSum": 18,
+      "total": 90
+    },
+    "INT": {
+      "formula": "2d6+6x5",
+      "dice": [
+        4,
+        2
+      ],
+      "rawSum": 12,
+      "total": 60
+    },
+    "POW": {
+      "formula": "3d6x5",
+      "dice": [
+        3,
+        2,
+        5
+      ],
+      "rawSum": 10,
+      "total": 50
+    },
+    "EDU": {
+      "formula": "2d6+6x5",
+      "dice": [
+        6,
+        4
+      ],
+      "rawSum": 16,
+      "total": 80
+    },
+    "Luck": {
+      "formula": "3d6x5",
+      "dice": [
+        5,
+        5,
+        4
+      ],
+      "rawSum": 14,
+      "total": 70
+    }
+  },
+  "adjustments": {
+    "ageModifiersApplied": false,
+    "luckRerollUsed": false,
+    "eduImprovementChecks": 3,
+    "bugState": {
+      "BUG-02": "PRESENT — STR/CON/DEX/APP should lose 10 pts total (Distribute -10 freely across STR, CON, DEX, APP (player choice))",
+      "BUG-03": "N/A — age not in 15-19 range"
+    }
+  },
+  "derived": {
+    "HP": 12,
+    "MP": 10,
+    "SAN_initial": 50,
+    "SAN_max": 99,
+    "MOV": 6,
+    "Build": 0,
+    "DamageBonus": "0",
+    "Dodge": 35,
+    "OwnLanguage": 80
+  }
+}
