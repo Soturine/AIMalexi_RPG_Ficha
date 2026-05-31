@@ -163,3 +163,61 @@ assertEq(_log.getMetrics().avgDurationMs, 0, 'após clear: avgDurationMs = 0');
 
 // getLog() após clear() retorna array (não null/undefined)
 assert(Array.isArray(_log.getLog()),  'getLog() após clear: retorna array');
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  executionTrace — decisões de domínio (executor:action)
+// ─────────────────────────────────────────────────────────────────────────────
+group('executionTrace — estrutura e API');
+
+const _trace   = window.CoC.executionTrace;
+const _exec    = window.CoC.core.executor;
+const _storeET = window.CoC.store;
+
+assert(typeof _trace === 'object' && _trace !== null, 'executionTrace existe');
+assert(typeof _trace.getTrace === 'function',         'getTrace é função');
+assert(typeof _trace.tail     === 'function',         'tail é função');
+assert(typeof _trace.clear    === 'function',         'clear é função');
+assert(Object.isFrozen(_trace),                       'executionTrace é frozen');
+
+// Limpa estado antes do teste
+_trace.clear();
+_storeET.dispatch({ type: 'SET_CHARACTER', payload: {
+  investigator: { name: 'Trace Test' },
+  attributes: { FOR: { value: 60 }, CON: { value: 60 }, TAM: { value: 60 },
+    DES: { value: 50 }, APA: { value: 50 }, INT: { value: 70 },
+    POD: { value: 60 }, EDU: { value: 75 }, Sorte: { value: 50 } },
+  derived: { PV: { value: 12, current: 12 }, SAN: { value: 60, current: 60, max: 100 },
+    PM: { value: 12, current: 12 }, Mitos: { value: 0 }, MOV: { value: 8 },
+    DB: { label: '+0' }, Build: { value: 0 } },
+  status: { majorWound: false, unconscious: false, dying: false, dead: false,
+    tempInsane: false, indefInsane: false, incurablyInsane: false, sanLossesToday: 0 },
+  skills: {}, weapons: [], inventory: [], journal: [], spells: [], tomes: [],
+}});
+
+// Executa uma ação via executor — deve criar entrada no trace
+_exec.execute({ type: 'APPLY_DAMAGE', payload: { amount: 3 } });
+const tEntry = _trace.tail(1)[0];
+
+assert(tEntry !== undefined,            'trace registra entrada após executor.execute()');
+assertEq(tEntry.type, 'APPLY_DAMAGE',  'trace.type = APPLY_DAMAGE');
+assert(Array.isArray(tEntry.effects),  'trace.effects é array');
+assert('payload' in tEntry,            'trace.payload presente');
+assert(typeof tEntry.ts === 'number',  'trace.ts é número');
+assert(typeof tEntry.id === 'number',  'trace.id é número');
+
+// Executa ação SACRED com effects — deve capturar effects no trace
+_exec.execute({ type: 'APPLY_DAMAGE', payload: { amount: 12 } }); // majorWound + unconscious
+const tFull = _trace.tail(1)[0];
+assert(tFull.effects.length >= 2,
+  'APPLY_DAMAGE(12) → trace.effects inclui ADD_STATUS effects (≥2)');
+
+// clear() reseta trace
+_trace.clear();
+assertEq(_trace.getTrace().length, 0,  'clear() reseta trace');
+assert(Array.isArray(_trace.getTrace()), 'getTrace() pós-clear retorna array');
+
+// getTrace() retorna cópia
+_exec.execute({ type: 'SPEND_LUCK', payload: { amount: 5 } });
+const copy1 = _trace.getTrace();
+const copy2 = _trace.getTrace();
+assert(copy1 !== copy2,  'getTrace() retorna nova cópia a cada chamada');

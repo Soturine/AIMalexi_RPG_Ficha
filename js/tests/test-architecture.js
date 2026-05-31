@@ -20,14 +20,24 @@ const path = require('path');
 const ROOT      = path.join(__dirname, '..', '..');
 const VIEWS_DIR = path.join(ROOT, 'js', 'views');
 
-// Padrão que captura chamadas diretas de dispatch em views
-const RE_DISPATCH = /(?:cocStore|_store|store)\s*\.\s*dispatch\s*\(/;
+// Padrões que capturam bypass do write-path em views:
+//   1. Chamada direta: cocStore.dispatch(, _store.dispatch(, store.dispatch(
+//   2. Subscript notation: store['dispatch'](
+//   3. Destructuring usado: const { dispatch } = store → detectado via "dispatch("
+//      seguido de não ser executor.execute — conservador: flag dispatch( isolado
+const RE_DISPATCH_DIRECT = /(?:cocStore|_store|store)\s*\.\s*dispatch\s*\(/;
+const RE_DISPATCH_SUBSCRIPT = /(?:cocStore|_store|store)\s*\[['"]dispatch['"]\]\s*\(/;
+// Alias de dispatch: `const d = store.dispatch; d(` — detecta variável nomeada dispatch usada como fn
+const RE_DISPATCH_ALIAS = /\bdispatch\s*\(\s*\{/;
 
 // Exceção permitida: RECALC_DERIVED é lifecycle puro (sacred:false, effects:[])
 // Qualquer nova exceção deve ser justificada e adicionada aqui com comentário.
 const ALLOWED = [
   /RECALC_DERIVED/,
 ];
+
+// executor.execute() é sempre permitido — não é violação
+const RE_EXECUTOR = /executor\s*\.\s*execute\s*\(/;
 
 function isAllowed(line) {
   return ALLOWED.some(function (re) { return re.test(line); });
@@ -47,7 +57,10 @@ viewFiles.forEach(function (filename) {
   const violations = [];
 
   lines.forEach(function (line, i) {
-    if (RE_DISPATCH.test(line) && !isAllowed(line)) {
+    var isDirect    = RE_DISPATCH_DIRECT.test(line);
+    var isSubscript = RE_DISPATCH_SUBSCRIPT.test(line);
+    var isAlias     = RE_DISPATCH_ALIAS.test(line) && !RE_EXECUTOR.test(line);
+    if ((isDirect || isSubscript || isAlias) && !isAllowed(line)) {
       violations.push('linha ' + (i + 1) + ': ' + line.trim());
     }
   });
