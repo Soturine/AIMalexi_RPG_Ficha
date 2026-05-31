@@ -206,9 +206,17 @@ window.CoC.views  = window.CoC.views  || {};
       });
     }
 
+    var damageTotal = ok && typeof d !== 'undefined' ? d.total : 0;
     _executor.execute({
       type: 'ATTACK_RESOLVED',
-      payload: { weaponId: weaponId, isFired: isFired, hit: ok, level: level }
+      payload: {
+        weaponId:    weaponId,
+        isFired:     isFired,
+        hit:         ok,
+        level:       level,
+        roll:        result.value,   // resultado bruto do d100 — necessário para replay
+        damage:      damageTotal,    // total de dano calculado antes do dispatch
+      }
     });
   }
 
