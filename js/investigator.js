@@ -85,15 +85,8 @@
 
     window.CoC.views.vitals.init();
     window.CoC.bus.subscribe("vitals:mitos-changed", function () {
-      cocStore.dispatch({ type: "RECALC_DERIVED" });   // M3.9: substitui recalcDerived()
+      cocStore.dispatch({ type: "RECALC_DERIVED" });   // pipeline re-renderiza vitals+attributes
       persistCurrent();
-    });
-    // M3.2 — Luck slice: re-render Sorte in sidebar (persist via middleware)
-    window.CoC.bus.subscribe("store:dispatch", function (event) {
-      if (event.changed && event.action.type === "SPEND_LUCK") {
-        window.CoC.views.attributes.render();
-        window.CoC.views.vitals.renderSidebarVitals();
-      }
     });
     // M3.3 — Skills slice init + bus hooks (persist via middleware for SET_SKILL, TOGGLE_*, ADD_CUSTOM_*)
     window.CoC.views.skills.init();
@@ -117,16 +110,6 @@
     // M3.5 — Combat slice init (ONE-TIME delegation; weapons list uses store actions)
     window.CoC.views.combat.init(cocStore);
     window.CoC.views.combat.setRollMods(state.rollMods);
-    window.CoC.bus.subscribe("store:dispatch", function (event) {
-      if (event.changed && (
-        event.action.type === "ADD_WEAPON"      ||
-        event.action.type === "UPDATE_WEAPON"   ||
-        event.action.type === "REMOVE_WEAPON"   ||
-        event.action.type === "ATTACK_RESOLVED"
-      )) {
-        window.CoC.views.combat.render();
-      }
-    });
 
     // M3.4 — Rolls slice init + bus hooks
     window.CoC.views.rolls.init();       // wires roll:logged → logAndToast
@@ -150,6 +133,23 @@
     bindRollLog();
     bindDirtyTracking();
     if (window.CoC.sanityFx) window.CoC.sanityFx.init();   // overlay + modo de efeitos
+
+    // Sprint 6 — Render Pipeline: registry centralizado substituindo subscriptions manuais.
+    // SPEND_LUCK e combat actions agora re-renderizam via RENDER_MAP em vez de
+    // subscribers individuais. SET_CHARACTER (carga completa) dispara renderAll().
+    const _pipeline = window.CoC.core.renderPipeline;
+    _pipeline.register('identity',   function () { window.CoC.views.identity.render(); });
+    _pipeline.register('attributes', function () { window.CoC.views.attributes.render(); });
+    _pipeline.register('vitals',     function () { window.CoC.views.vitals.render(); });
+    _pipeline.register('skills',     function () { window.CoC.views.skills.render(); });
+    _pipeline.register('combat',     function () { window.CoC.views.combat.render(); });
+    _pipeline.register('finances',   function () { window.CoC.views.finances.render(); });
+    _pipeline.register('background', function () { window.CoC.views.background.render(); });
+    _pipeline.register('inventory',  function () { window.CoC.views.inventory.render(); });
+    _pipeline.register('journal',    function () { window.CoC.views.journal.render(); });
+    _pipeline.register('spells',     function () { window.CoC.views.spells.render(); });
+    _pipeline.register('tomes',      function () { window.CoC.views.tomes.render(); });
+    _pipeline.init(window.CoC.bus, function () { return cocStore.getState(); }, cocStore.dispatch.bind(cocStore));
 
     // Aguarda o storage carregar cache (IndexedDB é assíncrono no boot)
     if (store.ready) {
@@ -259,11 +259,10 @@
     if (normalized._meta.schemaWarnings.length > 0) {
       console.warn('[schema]', normalized._meta.schemaWarnings);
     }
-    state.character = normalized;  // SET_CHARACTER deep-clones internally
+    applyTheme(normalized._meta?.theme || "arkham");
+    state.character = normalized;  // dispatches SET_CHARACTER → cascade RECALC_DERIVED → pipeline.renderAll()
     if (!state.character.id) state.character.id = null;
     store.setActiveCharacter(state.character.id);
-    applyTheme(state.character._meta?.theme || "arkham");
-    renderAll();
   }
 
   function loadPreset(presetName) {
@@ -273,9 +272,9 @@
     fresh.id = null;
     fresh._meta = fresh._meta || {};
     fresh._meta.createdAt = new Date().toISOString();
-    state.character = fresh;
+    applyTheme(fresh._meta?.theme || "arkham");
+    state.character = fresh;  // dispatches SET_CHARACTER → pipeline.renderAll()
     persistCurrent();
-    renderAll();
     toast(`Preset "${presetName}" carregado e salvo como novo personagem.`, { type: "success" });
   }
 
@@ -299,11 +298,14 @@
   // RENDER GERAL
   // ═════════════════════════════════════════════════════════════════════
 
+  // renderAll() mantido como escape hatch de debug (console, wizard fallback).
+  // Em operação normal, SET_CHARACTER → pipeline.renderAll() é o caminho reativo.
+  // RECALC_DERIVED não é mais dispatched aqui — o cascade interno do store.js
+  // já aplica RECALC_DERIVED como parte de SET_CHARACTER antes do bus event.
   function renderAll() {
     if (!state.character) return clearUI();
     _sr.safeRender('identity',   function () { window.CoC.views.identity.render(); });
     _sr.safeRender('attributes', function () { window.CoC.views.attributes.render(); });
-    cocStore.dispatch({ type: "RECALC_DERIVED" });   // M3.9: ação pura, JSON diff evita saves desnecessários
     _sr.safeRender('vitals',     function () { window.CoC.views.vitals.render(); });
     _sr.safeRender('skills',     renderSkills);
     _sr.safeRender('weapons',    function () { window.CoC.views.combat.render(); });
@@ -471,9 +473,9 @@
           }
         }
 
-        state.character = char;
+        applyTheme(char._meta?.theme || "arkham");
+        state.character = char;  // dispatches SET_CHARACTER → pipeline.renderAll()
         persistCurrent();
-        renderAll();
         toast("Personagem importado com sucesso!", { type: "success" });
       } catch (err) {
         toast("Erro ao importar: " + err.message, { type: "error" });
@@ -609,9 +611,7 @@
       toast("Atributos rolados! PV, MP, SAN, MOV, DB recalculados.", { type: "success" });
     }
 
-    cocStore.dispatch({ type: "RECALC_DERIVED" });
-    window.CoC.views.attributes.render();
-    window.CoC.views.vitals.render();
+    cocStore.dispatch({ type: "RECALC_DERIVED" });  // pipeline re-renderiza attributes+vitals
     renderSkills();
     persistCurrent();
   }

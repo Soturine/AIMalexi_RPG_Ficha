@@ -209,10 +209,10 @@ window.CoC.views = window.CoC.views || {};
       if (!event.changed) return;
       const mapping = FLASH_MAP[event.action.type];
       if (!mapping) return;
-      renderVitals();
+      // Render delegado ao render-pipeline (Sprint 6). Flash é efeito local desta view.
       _flashCard(mapping.key, mapping.sign);
     });
-    // renderVitals() on first paint is called by investigator.js via renderAll()
+    // renderVitals() on first paint is called by render-pipeline via SET_CHARACTER
   }
 
   window.CoC.views.vitals = Object.freeze({ init: initVitals, render: renderVitals, renderSidebarVitals });
