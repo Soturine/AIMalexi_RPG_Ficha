@@ -57,7 +57,17 @@ window.CoC = window.CoC || {};
         if (!c || !c.derived || !c.derived.PV) return state;
         const nc = deepClone(c);
         const cur = nc.derived.PV.current != null ? nc.derived.PV.current : nc.derived.PV.value;
-        nc.derived.PV.current = Math.max(PV_MIN, Math.min(nc.derived.PV.value, cur - action.payload.amount));
+        const newHP = Math.max(PV_MIN, Math.min(nc.derived.PV.value, cur - action.payload.amount));
+        nc.derived.PV.current = newHP;
+        // BUG-07: Major Wound — golpe único ≥ metade do PV máximo
+        const _rules = window.CoC && window.CoC.rules;
+        if (_rules && _rules.isMajorWound && _rules.isMajorWound(action.payload.amount, nc.derived.PV.value)) {
+          nc.status = nc.status || {};
+          nc.status.majorWound = true;
+        }
+        // HP thresholds
+        if (newHP <= 0)    { nc.status = nc.status || {}; nc.status.unconscious = true; }
+        if (newHP <= PV_MIN) { nc.status = nc.status || {}; nc.status.dying = true; }
         return Object.assign({}, state, { character: nc });
       }
 
@@ -267,6 +277,51 @@ window.CoC = window.CoC || {};
         if (!c || !Array.isArray(c.tomes)) return state;
         const nc = deepClone(c);
         nc.tomes = nc.tomes.filter(t => t.id !== action.payload.id);
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // ── Armas (M4-Combat) ─────────────────────────────────────────────────
+      // INVARIANTE: weapons[] = recursos mecânicos de combate (stats, dano, perícia).
+      // inventory[] = posses narrativas. Duplicação de nomes é aceitável — ver actions.js.
+      case "ADD_WEAPON": {
+        if (!c) return state;
+        const nc = deepClone(c);
+        nc.weapons = Array.isArray(nc.weapons) ? nc.weapons : [];
+        const weapon = Object.assign({}, action.payload.weapon);
+        if (!weapon.id) weapon.id = _uuid();
+        nc.weapons.push(weapon);
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "UPDATE_WEAPON": {
+        if (!c || !Array.isArray(c.weapons)) return state;
+        const nc = deepClone(c);
+        nc.weapons = nc.weapons.map(w =>
+          w.id === action.payload.weapon.id ? Object.assign({}, w, action.payload.weapon) : w
+        );
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "REMOVE_WEAPON": {
+        if (!c || !Array.isArray(c.weapons)) return state;
+        const nc = deepClone(c);
+        nc.weapons = nc.weapons.filter(w => w.id !== action.payload.id);
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // Ação atômica de resolução de combate: decrementa munição.
+      // Dano ao alvo (BUG-04) é aplicado via APPLY_DAMAGE — semântica distinta.
+      case "ATTACK_RESOLVED": {
+        if (!c) return state;
+        const { weaponId, isFired } = action.payload;
+        if (!isFired) return state;   // melee: sem efeito no store além de log
+        const nc = deepClone(c);
+        const wi = Array.isArray(nc.weapons)
+          ? nc.weapons.findIndex(function(w) { return w.id === weaponId; })
+          : -1;
+        if (wi >= 0 && nc.weapons[wi].ammo != null && nc.weapons[wi].ammo > 0) {
+          nc.weapons[wi].ammo--;
+        }
         return Object.assign({}, state, { character: nc });
       }
 
