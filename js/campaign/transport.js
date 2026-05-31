@@ -2,13 +2,43 @@
    AIMalexi RPG · js/campaign/transport.js
    Camada de transporte de eventos de campanha.
 
-   Implementação atual: BroadcastChannel (funciona entre abas do mesmo navegador).
-   Slot para Supabase Realtime: substitua _supabaseInit() e _supabaseSend().
+   INTERFACE DO TRANSPORT (contrato para BroadcastChannel e Supabase):
+   ─────────────────────────────────────────────────────────────────────
+   init(campaignId, role)
+     Abre canal para a campanha. Reseta _handlers (callers devem re-registrar).
+     _peerId persiste entre calls — muda apenas em novo page load.
 
-   Arquitetura:
-   - broadcast(event): envia para todos os peers
-   - onEvent(handler): registra receptor de eventos
-   - close(): encerra canal
+   broadcast(event)
+     Adiciona envelope { peerId, campaignId, ts } ao evento e envia.
+     Soft-valida contra campaign-ontology antes de enviar (warn, nunca bloqueia).
+
+   onEvent(handler)
+     Registra receptor. Deduplica — mesmo handler não é registrado duas vezes.
+
+   offEvent(handler) / close()
+     Remove handler / fecha canal e limpa estado.
+
+   getPeerId() → string UUID
+     Identidade deste peer (usada como sourceClientId nos eventos).
+
+   ECHO SUPPRESSION:
+   ─────────────────────────────────────────────────────────────────────
+   Linha 43: if (e.data.peerId === _peerId) return
+   BroadcastChannel não retransmite para o emissor, mas o check existe porque
+   Supabase Realtime retransmite. O guard é idêntico para ambos — nenhuma
+   mudança necessária no adapter de Sprint 17.
+
+   SEQ NUMBER POLICY:
+   ─────────────────────────────────────────────────────────────────────
+   _seqNo é mantido em player-sync.js (não aqui). Reseta a 0 em cada page
+   load. _peerId também muda a cada page load, então eventId = peerId:seqNo
+   é globalmente único — sem colisão entre sessões.
+
+   LATE JOINER PROTOCOL:
+   ─────────────────────────────────────────────────────────────────────
+   Quando PLAYER_CONNECTED chega, Keeper envia REQUEST_STATUS.
+   Investigador responde com INVESTIGATOR_STATUS (snapshot completo).
+   Não há replay de eventos — snapshot é suficiente para CoC.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 window.CoC = window.CoC || {};
