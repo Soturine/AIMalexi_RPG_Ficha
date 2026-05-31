@@ -143,6 +143,34 @@
 /* Utility */
 .btn-sm { font-size: 0.72rem !important; padding: 0.25rem 0.5rem !important; }
 
+/* ── Theme picker (M3.5.3) ── */
+.theme-picker {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  padding: 0 0.5rem;
+  border-left: 1px solid var(--ink-faded);
+  margin-left: 0.15rem;
+}
+.theme-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  padding: 0;
+  flex-shrink: 0;
+  outline: none;
+}
+.theme-swatch:hover  { transform: scale(1.3); }
+.theme-swatch.active { border-color: var(--ink); box-shadow: 0 0 0 2px var(--accent-glow); }
+.theme-swatch[data-theme="arkham"]     { background: #b8924f; }
+.theme-swatch[data-theme="miskatonic"] { background: #4a9040; }
+.theme-swatch[data-theme="sepia"]      { background: #c08030; }
+.theme-swatch[data-theme="obsidian"]   { background: #4888c8; }
+.theme-swatch[data-theme="eldritch"]   { background: #7848c8; }
+
 /* Main panel: right of character sidebar */
 .main-panel {
   flex: 1;

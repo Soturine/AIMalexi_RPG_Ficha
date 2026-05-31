@@ -21,7 +21,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 </head>
 
-<body>
+<body data-theme="arkham">
 
 <script>
   if ("serviceWorker" in navigator) {
@@ -92,6 +92,14 @@
     >
       🧠 Efeitos
     </button>
+
+    <div class="theme-picker no-print" id="theme-picker" title="Tema da campanha">
+      <button class="theme-swatch active" data-theme="arkham"     title="Arkham — CoC Clássico"></button>
+      <button class="theme-swatch"        data-theme="miskatonic" title="Miskatonic — Acadêmico"></button>
+      <button class="theme-swatch"        data-theme="sepia"      title="Sépia — Documento Histórico"></button>
+      <button class="theme-swatch"        data-theme="obsidian"   title="Obsidian — Moderno"></button>
+      <button class="theme-swatch"        data-theme="eldritch"   title="Eldritch — Horror Cósmico"></button>
+    </div>
 
     <button
       id="btn-print"

@@ -216,6 +216,7 @@
     state.character = JSON.parse(JSON.stringify(character));
     if (!state.character.id) state.character.id = null;
     store.setActiveCharacter(state.character.id);
+    applyTheme(state.character._meta?.theme || "arkham");
     renderAll();
   }
 
@@ -264,7 +265,17 @@
     renderBackground();
   }
 
+  // ─── TEMA ─────────────────────────────────────────────────────────────
+  const _VALID_THEMES = ["arkham", "miskatonic", "sepia", "obsidian", "eldritch"];
+
+  function applyTheme(theme) {
+    const t = _VALID_THEMES.includes(theme) ? theme : "arkham";
+    document.body.dataset.theme = t;
+    $$(".theme-swatch").forEach(s => s.classList.toggle("active", s.dataset.theme === t));
+  }
+
   function clearUI() {
+    applyTheme("arkham");
     const sAttr = $("#sidebar-attributes");
     if (sAttr) sAttr.innerHTML = "";
     const sVitals = $("#sidebar-vitals");
@@ -949,6 +960,21 @@
     };
 
     $("#btn-add-weapon").onclick = () => editWeapon(state.character?.weapons?.length || 0);
+
+    // Theme picker swatches (M3.5.3)
+    $$(".theme-swatch").forEach(swatch => {
+      swatch.onclick = () => {
+        const theme = swatch.dataset.theme;
+        applyTheme(theme);
+        if (state.character) {
+          const c = state.character;
+          c._meta = c._meta || {};
+          c._meta.theme = theme;
+          persistCurrent();
+        }
+      };
+    });
+
     // Filtros de perícia e search-input → gerenciados por window.CoC.views.skills.init()
   }
 
