@@ -13,6 +13,7 @@
   const nameGen = window.CoC.names;
   const validators = window.CoC.validators;
   const cocStore = window.CoC.store;
+  const _sr = window.CoC.createSafeRenderer();
 
   // ─── Estado ───────────────────────────────────────────────────────────
   const state = {
@@ -56,36 +57,41 @@
   // BOOT
   // ═════════════════════════════════════════════════════════════════════
 
-  // SACRED vitals actions that need persist + Mitos side-effects (decoupled from vitals module)
-  const _VITALS_PERSIST = new Set(["APPLY_DAMAGE", "HEAL_DAMAGE", "LOSE_SANITY", "RECOVER_SANITY", "SPEND_MAGIC", "RESTORE_MAGIC"]);
+  // Sprint 2 — persistMiddleware (instância única, init em boot())
+  let _persistMiddleware = null;
 
   async function boot() {
+    // Sprint 2 — persistMiddleware centraliza toda persistência automática.
+    // Elimina chamadas manuais a persistCurrent() para actions em PERSIST_ACTIONS.
+    // updateBaseline() é chamado após persistCurrent() para sincronizar o diff
+    // com o novo id atribuído pelo SET_CHARACTER_ID dispatch interno.
+    _persistMiddleware = window.CoC.createPersistMiddleware({
+      bus:      window.CoC.bus,
+      getState: function () { return cocStore.getState(); },
+      saveCharacter: function () {
+        persistCurrent();
+        _persistMiddleware.updateBaseline();
+      }
+    });
+    _persistMiddleware.init();
+
     // M3.1 — Vitals slice init + bus hooks (wired before character load)
     window.CoC.views.vitals.init();
-    window.CoC.bus.subscribe("store:dispatch", function (event) {
-      if (event.changed && _VITALS_PERSIST.has(event.action.type)) persistCurrent();
-    });
     window.CoC.bus.subscribe("vitals:mitos-changed", function () {
       recalcDerived();
       persistCurrent();
     });
-    // M3.2 — Luck slice: re-render Sorte in sidebar + persist after spend
+    // M3.2 — Luck slice: re-render Sorte in sidebar (persist via middleware)
     window.CoC.bus.subscribe("store:dispatch", function (event) {
       if (event.changed && event.action.type === "SPEND_LUCK") {
         renderAttributes();
         window.CoC.views.vitals.renderSidebarVitals();
-        persistCurrent();
       }
     });
-    // M3.3 — Skills slice init + bus hooks
+    // M3.3 — Skills slice init + bus hooks (persist via middleware for SET_SKILL, TOGGLE_*, ADD_CUSTOM_*)
     window.CoC.views.skills.init();
     window.CoC.bus.subscribe("skill:persist-requested", function () { persistCurrent(); });
     window.CoC.bus.subscribe("skill:dirty",            function () { markDirty(); });
-    window.CoC.bus.subscribe("store:dispatch", function (event) {
-      if (!event.changed) return;
-      const t = event.action.type;
-      if (t === "TOGGLE_OCCUPATION_SKILL" || t === "ADD_CUSTOM_SKILL") persistCurrent();
-    });
     // M4.1 — Inventory slice init + bus hooks
     window.CoC.views.inventory.init();
     window.CoC.bus.subscribe("inventory:persist-requested", function () { persistCurrent(); });
@@ -226,7 +232,11 @@
   // ═════════════════════════════════════════════════════════════════════
 
   function loadCharacter(character) {
-    state.character = JSON.parse(JSON.stringify(character));
+    const normalized = window.CoC.schema.normalizeCharacter(character);
+    if (normalized._meta.schemaWarnings.length > 0) {
+      console.warn('[schema]', normalized._meta.schemaWarnings);
+    }
+    state.character = normalized;  // SET_CHARACTER deep-clones internally
     if (!state.character.id) state.character.id = null;
     store.setActiveCharacter(state.character.id);
     applyTheme(state.character._meta?.theme || "arkham");
@@ -268,18 +278,18 @@
 
   function renderAll() {
     if (!state.character) return clearUI();
-    renderIdentity();
-    renderAttributes();
-    recalcDerived();   // recalcular antes de renderizar
-    window.CoC.views.vitals.render();
-    renderSkills();
-    renderWeapons();
-    renderFinances();
-    renderBackground();
-    window.CoC.views.inventory.render();
-    window.CoC.views.journal.render();
-    window.CoC.views.spells.render();
-    window.CoC.views.tomes.render();
+    _sr.safeRender('identity',   renderIdentity);
+    _sr.safeRender('attributes', renderAttributes);
+    recalcDerived();   // recalcular antes de renderizar vitals
+    _sr.safeRender('vitals',     function () { window.CoC.views.vitals.render(); });
+    _sr.safeRender('skills',     renderSkills);
+    _sr.safeRender('weapons',    renderWeapons);
+    _sr.safeRender('finances',   renderFinances);
+    _sr.safeRender('background', renderBackground);
+    _sr.safeRender('inventory',  function () { window.CoC.views.inventory.render(); });
+    _sr.safeRender('journal',    function () { window.CoC.views.journal.render(); });
+    _sr.safeRender('spells',     function () { window.CoC.views.spells.render(); });
+    _sr.safeRender('tomes',      function () { window.CoC.views.tomes.render(); });
   }
 
   // ─── TEMA ─────────────────────────────────────────────────────────────

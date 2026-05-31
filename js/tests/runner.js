@@ -34,10 +34,13 @@ load('data/damage-bonus-table.js');
 load('js/engine/coc7e-rules.js');
 load('js/engine/dice.js');
 
-// Core: signals → bus → store (cada um depende do anterior)
+// Core: signals → bus → store → schema → persist-middleware → safe-render
 load('js/core/signals.js');
 load('js/core/bus.js');
 load('js/core/store.js');
+load('js/core/schema.js');
+load('js/core/persist-middleware.js');
+load('js/core/safe-render.js');
 
 // ── Framework de assertions ───────────────────────────────────────────────
 let _passed = 0, _failed = 0;
@@ -80,6 +83,9 @@ const t0 = Date.now();
 load('js/tests/test-rules.js');
 load('js/tests/test-store.js');
 load('js/tests/test-dice.js');
+load('js/tests/test-schema.js');
+load('js/tests/test-persist-middleware.js');
+load('js/tests/test-error-boundary.js');
 const elapsed = Date.now() - t0;
 
 // ── Relatório final ───────────────────────────────────────────────────────
