@@ -206,14 +206,15 @@ assert(!('SET_CHARACTER' in _onto.BOUNDARY_FIELDS), 'SET_CHARACTER não é bound
 assert(!('ADD_STATUS'    in _onto.BOUNDARY_FIELDS), 'ADD_STATUS não é boundary');
 
 // validatePayload — payload válido
-const _vOk = _onto.validatePayload('ATTACK_RESOLVED', { roll: 47, hit: true, level: 'regular', weaponId: 'x' });
-assert(_vOk.valid,             'validatePayload: payload completo → valid=true');
+const _vOk = _onto.validatePayload('ATTACK_RESOLVED', { roll: 47, hit: true, damage: 7, weaponId: 'x' });
+assert(_vOk.valid,             'validatePayload: payload completo (roll+hit+damage) → valid=true');
 assertEq(_vOk.missing.length, 0, 'validatePayload: sem campos faltando');
 
 // validatePayload — payload inválido (falta roll)
 const _vFail = _onto.validatePayload('ATTACK_RESOLVED', { hit: true });
 assert(!_vFail.valid,               'validatePayload: payload incompleto → valid=false');
-assert(_vFail.missing.includes('roll'), 'validatePayload: missing contém "roll"');
+assert(_vFail.missing.includes('roll'),   'validatePayload: missing contém "roll"');
+assert(_vFail.missing.includes('damage'), 'validatePayload: missing contém "damage"');
 
 // validatePayload — ação sem boundary_randomness → sempre valid
 const _vNoBR = _onto.validatePayload('APPLY_DAMAGE', { amount: 5 });
