@@ -110,6 +110,14 @@
     </button>
 
     <button
+      id="btn-session-export"
+      class="btn-ghost"
+      title="Exportar sessão completa com trace de eventos (rolagens, dano, sanidade)"
+    >
+      📊 Sessão
+    </button>
+
+    <button
       id="btn-export"
       class="btn-export"
       title="Exportar personagem como JSON (BACKUP!)"
@@ -664,6 +672,8 @@
 <script src="js/core/render-pipeline.js"></script>
 <script src="js/core/state-machine.js"></script>
 <script src="js/core/executor.js"></script>
+<script src="js/core/replay-consumer.js"></script>
+<script src="js/core/session-export.js"></script>
 
 <!-- Ferramentas de dev — trace e perf (ativas via window.__cocTrace = true) -->
 <script src="js/dev/trace.js"></script>

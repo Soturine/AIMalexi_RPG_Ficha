@@ -257,8 +257,8 @@ window.CoC.core = window.CoC.core || {};
       renders: ['combat'], persists: true, sacred: false,
       effects: ['roll:logged'],
       status: 'live',
-      boundary_randomness: true,    // d100 de ataque + dado de dano rolados na view
-      resolved_fields: ['roll', 'hit'],  // resultado já materializado antes do dispatch
+      boundary_randomness: true,
+      resolved_fields: ['roll', 'hit', 'damage'],
       note: 'Decrementa ammo; resultado de rolagem de ataque + dano',
     },
     EQUIP_WEAPON: {
