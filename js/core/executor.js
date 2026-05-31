@@ -63,7 +63,8 @@ window.CoC.core = window.CoC.core || {};
       bus.publish('executor:action', {
         type:    action.type,
         payload: action.payload,
-        effects: effects.map(function (e) { return e.type; }),
+        // Objetos completos (não só types) — replay usa payload dos efeitos
+        effects: effects.slice(),
         ts:      (typeof performance !== 'undefined' ? performance.now() : Date.now()),
       });
     }
