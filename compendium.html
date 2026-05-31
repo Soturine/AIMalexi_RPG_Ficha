@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Compêndio de Regras · Chamado de Cthulhu 7E · AIMalexi RPG</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/compendium.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9A%3C/text%3E%3C/svg%3E" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#1a1510" />
+</head>
+<body data-theme="arkham">
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch((err) => {
+        console.warn("[PWA] SW:", err);
+      });
+    });
+  }
+</script>
+
+<div class="app">
+
+  <header class="app-header">
+    <h1 class="app-title">Compêndio de Regras</h1>
+    <p class="app-subtitle">Chamado de Cthulhu · 7ª Edição · Referência Rápida</p>
+  </header>
+
+  <div class="toolbar">
+    <a href="index.html" class="btn btn-ghost">← Portal</a>
+    <a href="investigator.html" class="btn btn-ghost">Investigador</a>
+    <a href="keeper.html" class="btn btn-ghost">Guardião</a>
+    <span class="toolbar-spacer"></span>
+    <input type="search" id="comp-search" placeholder="🔍 Buscar..." style="width:220px" />
+  </div>
+
+  <!-- ABAS -->
+  <div class="comp-tabs" id="comp-tabs">
+    <button class="comp-tab active" data-section="atributos">Atributos</button>
+    <button class="comp-tab" data-section="pericias">Perícias</button>
+    <button class="comp-tab" data-section="ocupacoes">Ocupações</button>
+    <button class="comp-tab" data-section="combate">Combate</button>
+    <button class="comp-tab" data-section="sanidade">Sanidade</button>
+    <button class="comp-tab" data-section="mythos">Mythos</button>
+    <button class="comp-tab" data-section="bestiary-ref">Bestiário</button>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div class="comp-body" id="comp-body">
+
+    <!-- ATRIBUTOS -->
+    <section class="comp-section active" data-section="atributos">
+      <h2>Atributos Primários</h2>
+      <p class="comp-intro">Os atributos definem as capacidades naturais do investigador. São rolados com 3d6×5 (ou 2d6+6×5 para EDU) durante a criação.</p>
+      <div class="attr-ref-grid">
+        <div class="attr-ref-card">
+          <div class="arc-abbr">FOR</div>
+          <div class="arc-name">Força</div>
+          <div class="arc-desc">Capacidade física bruta. Determina dano em combate corpo-a-corpo e situações de esforço físico.</div>
+          <div class="arc-derived"><b>Derivado:</b> Bônus de Dano, Construção</div>
+        </div>
+        <div class="attr-ref-card">
+          <div class="arc-abbr">CON</div>
+          <div class="arc-name">Constituição</div>
+          <div class="arc-desc">Resistência física e vitalidade. Determina os pontos de vida e resistência a doenças.</div>
+          <div class="arc-derived"><b>Derivado:</b> Pontos de Vida (PV = (FOR+CON)/10, arredondado)</div>
+        </div>
+        <div class="attr-ref-card">
+          <div class="arc-abbr">TAM</div>
+          <div class="arc-name">Tamanho</div>
+          <div class="arc-desc">Massa corporal e altura. Contribui para PV e Bônus de Dano.</div>
+          <div class="arc-derived"><b>Derivado:</b> Pontos de Vida, Construção, Bônus de Dano</div>
+        </div>
+        <div class="attr-ref-card">
+          <div class="arc-abbr">DES</div>
+          <div class="arc-name">Destreza</div>
+          <div class="arc-desc">Agilidade, coordenação e reflexos. Afeta a Esquiva e muitas perícias físicas.</div>
+          <div class="arc-derived"><b>Derivado:</b> Esquiva (DES/2), MOV</div>
+        </div>
+        <div class="attr-ref-card">
+          <div class="arc-abbr">APA</div>
+          <div class="arc-name">Aparência</div>
+          <div class="arc-desc">Atratividade física e primeira impressão. Afeta interações sociais em alguns cenários.</div>
+          <div class="arc-derived">—</div>
+        </div>
+        <div class="attr-ref-card">
+          <div class="arc-abbr">INT</div>
+          <div class="arc-name">Inteligência</div>
+          <div class="arc-desc">Raciocínio, memória e capacidade de aprendizado. Base para pontos de interesse pessoal.</div>
+          <div class="arc-derived"><b>Derivado:</b> Pontos de Interesse (INT×2), Língua Nativa</div>
+        </div>
+        <div class="attr-ref-card">
+          <div class="arc-abbr">POD</div>
+          <div class="arc-name">Poder</div>
+          <div class="arc-desc">Força de vontade, força mental e conexão com o sobrenatural.</div>
+          <div class="arc-derived"><b>Derivado:</b> Pontos de Magia (PM = POD/5), SAN inicial (POD×5)</div>
+        </div>
+        <div class="attr-ref-card">
+          <div class="arc-abbr">EDU</div>
+          <div class="arc-name">Educação</div>
+          <div class="arc-desc">Conhecimento formal e cultural acumulado. Rola-se 2d6+6 × 5 na criação.</div>
+          <div class="arc-derived"><b>Derivado:</b> Pontos de ocupação (varia por ocupação), Língua Nativa (EDU×5)</div>
+        </div>
+        <div class="attr-ref-card">
+          <div class="arc-abbr">SOR</div>
+          <div class="arc-name">Sorte</div>
+          <div class="arc-desc">Rola-se separado (3d6×5). Gasta SOR para melhorar rolagens. Não aumenta com a ocupação.</div>
+          <div class="arc-derived">Recupera no início de cada sessão (Guardião decide)</div>
+        </div>
+      </div>
+
+      <h2 style="margin-top:2rem;">Derivados Importantes</h2>
+      <table class="comp-table">
+        <thead><tr><th>Derivado</th><th>Fórmula</th><th>Notas</th></tr></thead>
+        <tbody>
+          <tr><td><b>PV</b> — Pontos de Vida</td><td>(FOR + CON) / 10</td><td>Arredondado para cima. Máximo = PV Máx.</td></tr>
+          <tr><td><b>PM</b> — Pontos de Magia</td><td>POD / 5</td><td>Arredondado para cima. Recupera 1 PM/hora de descanso.</td></tr>
+          <tr><td><b>SAN</b> — Sanidade</td><td>POD × 5</td><td>SAN Máx = 99 − Mythos de Cthulhu. SAN nunca acima desse valor.</td></tr>
+          <tr><td><b>MOV</b></td><td>8 (humano padrão)</td><td>Ajustado por idade: −1 por faixa etária acima de 40. Afetado por FOR/DES/TAM relativos.</td></tr>
+          <tr><td><b>Bônus de Dano</b></td><td>FOR + TAM</td><td>Tabela: 2–12 = −2, 13–16 = −1, 17–24 = 0, 25–32 = +1d4, 33–40 = +1d6, 41–56 = +2d6, …</td></tr>
+          <tr><td><b>Construção</b></td><td>FOR + TAM</td><td>Mesma tabela do BD: −2/−1/0/+1/+2/+3/… Afeta manobras de combate.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 style="margin-top:2rem;">Efeitos da Idade</h2>
+      <table class="comp-table">
+        <thead><tr><th>Faixa Etária</th><th>Penalidades</th><th>Bônus</th></tr></thead>
+        <tbody>
+          <tr><td>15–19</td><td>−5 pts entre EDU e escolha do jogador; re-rola Sorte, fica com o maior</td><td>—</td></tr>
+          <tr><td>20–39</td><td>—</td><td>Até 3 melhorias de EDU (rola 1d100 cada, se acima de EDU, +1d10)</td></tr>
+          <tr><td>40–49</td><td>−5 pts entre STR, CON, DES; −5 APP</td><td>Até 5 melhorias de EDU</td></tr>
+          <tr><td>50–59</td><td>−10 pts entre STR, CON, DES; −10 APP</td><td>Até 7 melhorias de EDU</td></tr>
+          <tr><td>60–69</td><td>−20 pts entre STR, CON, DES; −15 APP</td><td>Até 9 melhorias de EDU</td></tr>
+          <tr><td>70–79</td><td>−40 pts entre STR, CON, DES; −20 APP</td><td>Até 11 melhorias de EDU</td></tr>
+          <tr><td>80+</td><td>−80 pts entre STR, CON, DES; −25 APP</td><td>Até 13 melhorias de EDU</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- PERÍCIAS -->
+    <section class="comp-section" data-section="pericias">
+      <h2>Perícias</h2>
+      <p class="comp-intro">Lista completa de perícias. O valor base é o ponto de partida sem investimento. Clique em uma perícia para ver detalhes.</p>
+      <div class="skills-ref-grid" id="skills-ref-grid">
+        <!-- Preenchido pelo JS a partir de CoCData.skills -->
+        <p style="color:var(--ink-faded);font-style:italic;">Carregando...</p>
+      </div>
+    </section>
+
+    <!-- OCUPAÇÕES -->
+    <section class="comp-section" data-section="ocupacoes">
+      <h2>Ocupações</h2>
+      <p class="comp-intro">Cada ocupação determina quais perícias fazem parte da carreira e como calcular os pontos de ocupação. Use <b>Pontos de Ocupação</b> para distribuir nas perícias listadas.</p>
+      <div class="occupations-ref-grid" id="occupations-ref-grid">
+        <p style="color:var(--ink-faded);font-style:italic;">Carregando...</p>
+      </div>
+    </section>
+
+    <!-- COMBATE -->
+    <section class="comp-section" data-section="combate">
+      <h2>Regras de Combate</h2>
+
+      <h3>Sequência de um turno</h3>
+      <ol class="comp-list">
+        <li><b>Determinar Iniciativa:</b> ordem decrescente de DES (role 1d100 para desempates).</li>
+        <li><b>Declarar ações</b> (por turno: 1 ação principal + reações).</li>
+        <li><b>Atacar:</b> role 1d100 contra a perícia de ataque. Sucesso = causa dano.</li>
+        <li><b>Defesa:</b> alvo pode tentar Esquivar (DES/2) ou Aparar.</li>
+        <li><b>Dano:</b> role o dano da arma + Bônus de Dano. Subtraia armadura.</li>
+        <li><b>Status:</b> se PV cair a 0 ou menos, o personagem pode estar inconsciente ou morrer.</li>
+      </ol>
+
+      <h3>Níveis de Dificuldade</h3>
+      <table class="comp-table">
+        <thead><tr><th>Dificuldade</th><th>Limite</th><th>Quando usar</th></tr></thead>
+        <tbody>
+          <tr><td><b>Regular</b></td><td>Valor completo da perícia</td><td>Situação padrão</td></tr>
+          <tr><td><b>Difícil</b></td><td>Metade do valor</td><td>Condições adversas</td></tr>
+          <tr><td><b>Extremo</b></td><td>Um quinto do valor</td><td>Situação heroica/desesperada</td></tr>
+          <tr><td><b>Fumble</b></td><td>01–05 (ou 96–00 se perícia &lt; 50)</td><td>Falha catastrófica</td></tr>
+          <tr><td><b>Sucesso Crítico</b></td><td>01–05 (ou 01 se perícia ≥ 50)</td><td>Resultado excepcional</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Bônus e Penalidade de Dados</h3>
+      <p>Role <b>dois dados</b> para a dezena e use o mais favorável (bônus) ou desfavorável (penalidade). O dado da unidade permanece único.</p>
+
+      <h3>Rolagem Push (Forçar)</h3>
+      <p>Após uma falha, o investigador pode <b>forçar a rolagem</b> — tentar novamente, mas com risco aumentado. O Guardião deve descrever as consequências de uma falha forçada (ferimento, perda de SAN, complicações narrativas).</p>
+
+      <h3>Ferimento Grave (Major Wound)</h3>
+      <p>Se o investigador perder <b>metade ou mais do PV máximo</b> em um único ataque, sofre um Ferimento Grave. Deve passar em uma rolagem de CON (Regular) ou ficar inconsciente. O Guardião pode impor sequelas permanentes.</p>
+
+      <h3>Morte e Inconsciência</h3>
+      <table class="comp-table">
+        <thead><tr><th>PV atual</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td>≥ 1</td><td>Ativo</td></tr>
+          <tr><td>0</td><td>Inconsciente — role CON (Regular) ou morra</td></tr>
+          <tr><td>−1 a −(PV máx)</td><td>Morrendo — precisa de ajuda imediata</td></tr>
+          <tr><td>&lt; −(PV máx)</td><td>Morto instantaneamente</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Tipos de Arma — Referência Rápida</h3>
+      <table class="comp-table">
+        <thead><tr><th>Tipo</th><th>Exemplos</th><th>Perícia</th><th>Dano típico</th></tr></thead>
+        <tbody>
+          <tr><td>Soco</td><td>Soco, tapa</td><td>Lutar (Briga)</td><td>1d3 + BD</td></tr>
+          <tr><td>Faca</td><td>Canivete, faca de caça</td><td>Lutar (Facas)</td><td>1d4 + BD</td></tr>
+          <tr><td>Cassetete</td><td>Cassetete, cacete</td><td>Lutar (Briga)</td><td>1d6 + BD</td></tr>
+          <tr><td>Pistola</td><td>.22, .38, 9mm</td><td>Armas de Fogo (Pistolas)</td><td>1d6–1d10</td></tr>
+          <tr><td>Rifle</td><td>Winchester, Springfield</td><td>Armas de Fogo (Rifles)</td><td>2d6+4</td></tr>
+          <tr><td>Shotgun</td><td>Espingarda calibre 12</td><td>Armas de Fogo (Espingardas)</td><td>4d6 (curto)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SANIDADE -->
+    <section class="comp-section" data-section="sanidade">
+      <h2>Sanidade</h2>
+      <p class="comp-intro">A sanidade representa a saúde mental do investigador. Exposta ao sobrenatural, reduz progressivamente.</p>
+
+      <h3>Como funciona</h3>
+      <ul class="comp-list">
+        <li><b>SAN Máxima:</b> 99 − Mythos de Cthulhu. Nunca pode ultrapassar esse valor.</li>
+        <li><b>SAN Inicial:</b> POD × 5.</li>
+        <li><b>Perda de SAN:</b> determinada pelo encontro (ex: "0/1d6" significa: sucesso = 0, falha = 1d6).</li>
+        <li><b>Insanidade Temporária:</b> perder ≥ 5 SAN em uma única rolagem. Dura 1d10 × 10 horas.</li>
+        <li><b>Insanidade Indefinida:</b> perder ≥ 20% da SAN atual em um período de um ano.</li>
+        <li><b>Insanidade Permanente:</b> SAN chega a 0 — o personagem é retirado do jogo.</li>
+      </ul>
+
+      <h3>Tabela de Perda de Sanidade</h3>
+      <table class="comp-table">
+        <thead><tr><th>Situação</th><th>Perda de SAN</th></tr></thead>
+        <tbody>
+          <tr><td>Ver um cadáver desfigurado</td><td>0/1</td></tr>
+          <tr><td>Ver um humano morto por violência</td><td>0/1d3</td></tr>
+          <tr><td>Matar alguém</td><td>0/1d4</td></tr>
+          <tr><td>Ver um ente sobrenatural menor</td><td>0/1d6</td></tr>
+          <tr><td>Ver uma entidade maior do Mythos</td><td>1d6/1d20</td></tr>
+          <tr><td>Ler um tomo proibido</td><td>1d6 – 3d10 (varia)</td></tr>
+          <tr><td>Ver Cthulhu acordado</td><td>1d10/1d100</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Recuperação de Sanidade</h3>
+      <ul class="comp-list">
+        <li><b>Psicoterapia:</b> 1d3 SAN por mês de tratamento intensivo.</li>
+        <li><b>Conquistas heróicas:</b> 1 SAN (decisão do Guardião).</li>
+        <li><b>Mítico revelado e compreendido:</b> 1d20 SAN (se descobrir a verdade de um mistério).</li>
+        <li>A SAN não pode exceder 99 − Mythos de Cthulhu.</li>
+      </ul>
+    </section>
+
+    <!-- MYTHOS -->
+    <section class="comp-section" data-section="mythos">
+      <h2>O Mythos de Cthulhu</h2>
+      <p class="comp-intro">O Mythos representa o conhecimento proibido acumulado. Quanto mais o investigador aprende, menos sã é a sua mente.</p>
+
+      <h3>Mythos de Cthulhu — Perícia Especial</h3>
+      <ul class="comp-list">
+        <li>Começa em <b>0%</b> para todos os personagens.</li>
+        <li>Aumenta ao ler tomos, vivenciar encontros com o sobrenatural, e dominar magias.</li>
+        <li><b>Reduz a SAN Máxima:</b> SAN Máx = 99 − Mythos. Um investigador com Mythos 60 nunca pode ter SAN > 39.</li>
+        <li>A perícia Mythos <b>não pode</b> ser aumentada com pontos de ocupação ou interesse.</li>
+      </ul>
+
+      <h3>Tomos Proibidos</h3>
+      <p>Cada tomo tem:</p>
+      <ul class="comp-list">
+        <li><b>Tempo de Leitura Inicial:</b> semanas necessárias para a leitura inicial.</li>
+        <li><b>Ganho de Mythos (inicial):</b> pontos de Mythos ganhos na primeira leitura.</li>
+        <li><b>Ganho de Mythos (completo):</b> após estudo aprofundado.</li>
+        <li><b>Magias:</b> feitiços que podem ser aprendidos com o tomo.</li>
+        <li><b>Perda de SAN:</b> pela leitura inicial e completa.</li>
+      </ul>
+
+      <h3>Magias</h3>
+      <p>Magias custam <b>Pontos de Magia (PM)</b> e às vezes <b>Pontos de Vida</b> ou <b>SAN</b>. Apenas investigadores com acesso aos tomos corretos podem aprendê-las. O sucesso é rolado contra a perícia Mythos ou outro atributo determinado pelo Guardião.</p>
+    </section>
+
+    <!-- BESTIÁRIO REFERÊNCIA -->
+    <section class="comp-section" data-section="bestiary-ref">
+      <h2>Bestiário — Referência Rápida</h2>
+      <p class="comp-intro">Resumo das principais entidades. Para stats completos, use a página do Guardião.</p>
+      <div class="bestiary-ref-grid" id="bestiary-ref-grid">
+        <p style="color:var(--ink-faded);font-style:italic;">Carregando...</p>
+      </div>
+    </section>
+
+  </div>
+
+</div>
+
+<!-- DADOS -->
+<script src="data/skills.js"></script>
+<script src="data/occupations.js"></script>
+<script src="data/bestiary.js"></script>
+<script src="js/compendium/compendium.js"></script>
+
+</body>
+</html>
