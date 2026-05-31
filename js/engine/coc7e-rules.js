@@ -437,6 +437,17 @@ window.CoC = window.CoC || {};
     return { creditRating: cr, tier, tierLabel, spending, cash, assets };
   }
 
+  /**
+   * Golpe Maior (Major Wound): dano único ≥ metade do PV máximo.
+   * CoC 7e p.105 — requer rolagem de CON ou ficar inconsciente.
+   * @param {number} damage  - dano do golpe
+   * @param {number} maxHP   - PV máximo do personagem
+   * @returns {boolean}
+   */
+  function isMajorWound(damage, maxHP) {
+    return maxHP > 0 && damage >= Math.ceil(maxHP / 2);
+  }
+
   window.CoC.rules = {
     calcHP,
     calcMP,
@@ -452,7 +463,8 @@ window.CoC = window.CoC || {};
     buildOccupationContext,
     sumSkillPointsSpent,
     validateCharacter,
-    calcAgeAdjustments
+    calcAgeAdjustments,
+    isMajorWound
   };
 
 })();

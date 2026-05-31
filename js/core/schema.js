@@ -15,6 +15,14 @@ window.CoC = window.CoC || {};
   const ARRAY_SECTIONS  = ['weapons', 'equipment', 'inventory', 'journal', 'spells', 'tomes', 'occupationSkills'];
   const OBJECT_SECTIONS = ['skills', 'pointsAllocation', 'finances', 'background', 'status'];
 
+  function _uuid() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
   /**
    * Normaliza um objeto personagem carregado do storage.
    *
@@ -107,6 +115,14 @@ window.CoC = window.CoC || {};
       if (!Array.isArray(c[field])) {
         if (c[field] != null) warn(field + ' was not an array — reset to []');
         c[field] = [];
+      }
+    }
+
+    // ── weapons: garantir .id em cada entrada (migration de registros legados) ─
+    for (var k = 0; k < c.weapons.length; k++) {
+      if (c.weapons[k] && typeof c.weapons[k] === 'object' && !c.weapons[k].id) {
+        c.weapons[k].id = _uuid();
+        warn('weapons[' + k + '] sem .id — UUID atribuído');
       }
     }
 

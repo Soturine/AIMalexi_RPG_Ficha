@@ -42,6 +42,9 @@ load('js/core/schema.js');
 load('js/core/persist-middleware.js');
 load('js/core/safe-render.js');
 
+// Views (somente o necessário para testes; DOM não é chamado no carregamento)
+load('js/views/combat.js');
+
 // ── Framework de assertions ───────────────────────────────────────────────
 let _passed = 0, _failed = 0;
 const _failures = [];
@@ -86,6 +89,7 @@ load('js/tests/test-dice.js');
 load('js/tests/test-schema.js');
 load('js/tests/test-persist-middleware.js');
 load('js/tests/test-error-boundary.js');
+load('js/tests/test-combat.js');
 const elapsed = Date.now() - t0;
 
 // ── Relatório final ───────────────────────────────────────────────────────

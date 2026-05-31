@@ -100,6 +100,20 @@
     // M4.4 — Tomes slice init
     window.CoC.views.tomes.init();
 
+    // M3.5 — Combat slice init (ONE-TIME delegation; weapons list uses store actions)
+    window.CoC.views.combat.init(cocStore);
+    window.CoC.views.combat.setRollMods(state.rollMods);
+    window.CoC.bus.subscribe("store:dispatch", function (event) {
+      if (event.changed && (
+        event.action.type === "ADD_WEAPON"      ||
+        event.action.type === "UPDATE_WEAPON"   ||
+        event.action.type === "REMOVE_WEAPON"   ||
+        event.action.type === "ATTACK_RESOLVED"
+      )) {
+        window.CoC.views.combat.render();
+      }
+    });
+
     // M3.4 — Rolls slice init + bus hooks
     window.CoC.views.rolls.init();       // wires roll:logged → logAndToast
     window.CoC.views.rolls.setRollMods(state.rollMods);  // sync inicial
@@ -278,7 +292,7 @@
     recalcDerived();   // recalcular antes de renderizar vitals
     _sr.safeRender('vitals',     function () { window.CoC.views.vitals.render(); });
     _sr.safeRender('skills',     renderSkills);
-    _sr.safeRender('weapons',    renderWeapons);
+    _sr.safeRender('weapons',    function () { window.CoC.views.combat.render(); });
     _sr.safeRender('finances',   renderFinances);
     _sr.safeRender('background', renderBackground);
     _sr.safeRender('inventory',  function () { window.CoC.views.inventory.render(); });
@@ -544,144 +558,9 @@
   function renderSkills()      { window.CoC.views.skills.render(); }
   function refreshSkillBadges(){ window.CoC.views.skills.refreshBadges(); }
 
-  // ─── ARSENAL ──────────────────────────────────────────────────────────
-  function renderWeapons() {
-    const list = $("#weapons-list");
-    list.innerHTML = "";
-    const c = state.character;
-    if (!c) return;
-    c.weapons = c.weapons || [];
-
-    if (c.weapons.length === 0) {
-      list.innerHTML = `<p class="dim center" style="grid-column: 1/-1;">Sem armas. Clique em <b>+ Arma</b> para adicionar.</p>`;
-      return;
-    }
-
-    c.weapons.forEach((w, idx) => {
-      const card = el("div", { class: "weapon-card" + (w.magical ? " magical" : "") });
-      const skillVal = c.skills?.[w.skill]?.value || (window.CoCData.findSkill(w.skill)?.base ?? 0);
-      card.innerHTML = `
-        <div class="weapon-header">
-          <span class="weapon-icon">${escapeHtml(w.icon || "⚔️")}</span>
-          <span class="weapon-name">${escapeHtml(w.name)}</span>
-        </div>
-        <div class="weapon-info">
-          <b>Perícia:</b> ${escapeHtml(w.skill)} (${skillVal}%)<br>
-          <b>Dano:</b> ${escapeHtml(w.damage || "—")} ${w.range ? "· <b>Alc:</b> " + escapeHtml(w.range) : ""}<br>
-          ${w.ammo ? `<b>Munição:</b> ${escapeHtml(String(w.ammo))} ${w.shots ? "(×" + w.shots + "/rd)" : ""}<br>` : ""}
-        </div>
-        ${w.note ? `<div class="weapon-note">${escapeHtml(w.note)}</div>` : ""}
-        <div class="weapon-actions no-print">
-          <button data-weapon-attack="${idx}" class="btn-primary" title="Rolar ataque + dano">🎯 Atacar</button>
-          <button data-weapon-edit="${idx}" class="btn-ghost btn-icon" title="Editar">✎</button>
-          <button data-weapon-del="${idx}" class="btn-danger btn-icon" title="Remover">🗑️</button>
-        </div>
-      `;
-      list.appendChild(card);
-    });
-
-    $$("[data-weapon-attack]").forEach(b => b.onclick = () => attackWithWeapon(parseInt(b.dataset.weaponAttack, 10)));
-    $$("[data-weapon-edit]").forEach(b => b.onclick = () => editWeapon(parseInt(b.dataset.weaponEdit, 10)));
-    $$("[data-weapon-del]").forEach(b => b.onclick = async () => {
-      const idx = parseInt(b.dataset.weaponDel, 10);
-      const w = c.weapons[idx];
-      if (await confirm(`Remover "${w.name}"?`, { danger: true, title: "Remover arma" })) {
-        c.weapons.splice(idx, 1);
-        renderWeapons();
-        persistCurrent();
-      }
-    });
-  }
-
-  function editWeapon(idx) {
-    const c = state.character;
-    const w = c.weapons[idx] || {};
-    const formBody = el("div", { class: "background-grid" });
-    formBody.innerHTML = `
-      <div><label>Nome</label><input id="w-name" value="${escapeHtml(w.name || "")}" /></div>
-      <div><label>Ícone (emoji)</label><input id="w-icon" value="${escapeHtml(w.icon || "")}" placeholder="🔫" /></div>
-      <div><label>Perícia</label><input id="w-skill" value="${escapeHtml(w.skill || "")}" placeholder="Ex: Lutar" /></div>
-      <div><label>Dano</label><input id="w-damage" value="${escapeHtml(w.damage || "")}" placeholder="1D8+DB" /></div>
-      <div><label>Alcance</label><input id="w-range" value="${escapeHtml(w.range || "")}" placeholder="Toque, 15m, DES m" /></div>
-      <div><label>Munição</label><input id="w-ammo" type="number" value="${w.ammo ?? ""}" /></div>
-      <div><label>Tiros/rodada</label><input id="w-shots" type="number" value="${w.shots ?? ""}" /></div>
-      <div class="full-width"><label>Nota</label><textarea id="w-note">${escapeHtml(w.note || "")}</textarea></div>
-      <div class="full-width">
-        <label><input type="checkbox" id="w-impale" ${w.impale ? "checked" : ""} /> Empala em Sucesso Extremo</label>
-        <label style="margin-left: 1rem;"><input type="checkbox" id="w-magical" ${w.magical ? "checked" : ""} /> Item Mágico</label>
-      </div>
-    `;
-    modal({
-      title: w.name ? "Editar Arma" : "Nova Arma",
-      body: formBody,
-      actions: [
-        { label: "Cancelar" },
-        { label: "Salvar", primary: true, onClick: () => {
-          const updated = {
-            name: $("#w-name").value.trim() || "Sem nome",
-            icon: $("#w-icon").value.trim(),
-            skill: $("#w-skill").value.trim(),
-            damage: $("#w-damage").value.trim(),
-            range: $("#w-range").value.trim(),
-            ammo: parseInt($("#w-ammo").value, 10) || null,
-            shots: parseInt($("#w-shots").value, 10) || null,
-            note: $("#w-note").value.trim(),
-            impale: $("#w-impale").checked,
-            magical: $("#w-magical").checked
-          };
-          if (idx >= 0 && idx < c.weapons.length) c.weapons[idx] = updated;
-          else c.weapons.push(updated);
-          renderWeapons();
-          persistCurrent();
-        }}
-      ]
-    });
-  }
-
-  function attackWithWeapon(idx) {
-    const c = state.character;
-    const w = c.weapons[idx];
-    if (!w) return;
-
-    const skillVal = getSkillValue(c, w.skill);
-    const difficulty = state.rollMods.difficulty || "regular";
-
-    const target =
-      difficulty === "hard"    ? dice.half(skillVal)  :
-      difficulty === "extreme" ? dice.fifth(skillVal) :
-                                 skillVal;
-
-    const result = dice.rollD100(state.rollMods.bp || null);
-    const level  = dice.classifyRoll(result.value, skillVal);
-    const ok     = dice.meetsDifficulty(difficulty, level);
-
-    let dmgStr = "—";
-    if (ok) {
-      const dbVal    = c.derived?.DB?.value || "0";
-      const isImpale = (level === "extreme" || level === "crit") && w.impale;
-      const d        = dice.rollDamage(w.damage || "0", dbVal, isImpale);
-      const diceStr  = d.rolls.map(r => `(${r.dice.join("+")})`).join("+");
-      dmgStr = `${w.damage} → ${d.total}${isImpale ? " ⚡EMPALA" : ""} ${diceStr}`;
-    }
-
-    window.CoC.views.rolls.registerRoll({
-      kind: "weapon-attack",
-      skill: `⚔ ${w.name}`,
-      skillRaw: w.skill,
-      target,
-      targetRaw: skillVal,
-      label: difficulty === "regular"
-        ? skillVal
-        : `${skillVal} → ${difficulty === "hard" ? "Difícil" : "Extremo"} ${target}`,
-      d100: result.value,
-      level,
-      dmg: ok ? dmgStr : "(miss)",
-      note: [
-        state.rollMods.bp ? `[${state.rollMods.bp}]` : "",
-        difficulty !== "regular" ? `[${difficulty}]` : ""
-      ].filter(Boolean).join(" ")
-    });
-  }
+  // ─── ARSENAL — extraído para js/views/combat.js (M3.5) ───────────────────
+  // render, init, _editWeapon, _attack e setRollMods vivem agora em combat.js.
+  // As actions ADD/UPDATE/REMOVE_WEAPON e ATTACK_RESOLVED passam pelo store.
 
   // ─── FINANÇAS ─────────────────────────────────────────────────────────
   // Carteira do investigador: Crédito (Posses) → Caixa/Gasto/Patrimônio (regra
@@ -855,7 +734,7 @@
   // ═════════════════════════════════════════════════════════════════════
 
   // ─── ROLLS — extraído para js/views/rolls.js (M3.4) ─────────────────────
-  // getSkillValue() mantida aqui: usada por attackWithWeapon() (domínio Weapons)
+  // getSkillValue() usada por rollAttribute stub abaixo; combat.js tem cópia local.
   function getSkillValue(c, name) {
     const direct = Number(c?.skills?.[name]?.value);
     if (!isNaN(direct)) return direct;
@@ -997,7 +876,7 @@
       rollAllAttributes();
     };
 
-    $("#btn-add-weapon").onclick = () => editWeapon(state.character?.weapons?.length || 0);
+    // #btn-add-weapon handled by window.CoC.views.combat.init()
 
     // Theme picker swatches (M3.5.3)
     $$(".theme-swatch").forEach(swatch => {
@@ -1149,6 +1028,7 @@
         b.classList.add("active");
         state.rollMods.difficulty = b.dataset.difficulty;
         window.CoC.views.rolls.setRollMods(state.rollMods);
+        window.CoC.views.combat.setRollMods(state.rollMods);
       };
     });
     $$("#modifier-bonus button").forEach(b => {
@@ -1157,6 +1037,7 @@
         b.classList.add("active");
         state.rollMods.bp = b.dataset.bp || "";
         window.CoC.views.rolls.setRollMods(state.rollMods);
+        window.CoC.views.combat.setRollMods(state.rollMods);
       };
     });
   }
