@@ -13,7 +13,7 @@
    Para forçar atualização imediata: incremente CACHE_VERSION abaixo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = "v14";
+const CACHE_VERSION = "v15";
 const CACHE_NAME = "aimalexi-rpg-" + CACHE_VERSION;
 
 // Assets que devem estar disponíveis offline imediatamente após instalação.
@@ -44,6 +44,7 @@ const PRECACHE_URLS = [
   "./js/core/persist-middleware.js",
   "./js/core/safe-render.js",
   "./js/core/event-log.js",
+  "./js/core/event-ontology.js",
   "./js/core/render-pipeline.js",
   "./js/dev/trace.js",
   "./js/dev/perf.js",

@@ -36,10 +36,10 @@ assert(Array.isArray(_RMAP.REMOVE_WEAPON) && _RMAP.REMOVE_WEAPON.includes('comba
   'REMOVE_WEAPON → combat');
 assert(Array.isArray(_RMAP.ATTACK_RESOLVED) && _RMAP.ATTACK_RESOLVED.includes('combat'),
   'ATTACK_RESOLVED → combat');
-assert(Array.isArray(_RMAP.SET_IDENTITY) && _RMAP.SET_IDENTITY.includes('identity'),
-  'SET_IDENTITY inclui identity');
-assert(Array.isArray(_RMAP.SET_IDENTITY) && _RMAP.SET_IDENTITY.includes('skills'),
-  'SET_IDENTITY inclui skills');
+// SET_IDENTITY é 'planned' na ontologia (sem reducer em store.js) — ausente do live RENDER_MAP.
+// A cobertura de renders está em test-event-ontology.js (CATALOG.SET_IDENTITY.renders).
+assert(_RMAP.SET_IDENTITY === undefined,
+  'SET_IDENTITY ausente do live RENDER_MAP (status=planned, sem reducer)');
 assert(Array.isArray(_RMAP.SET_CHARACTER_ID) && _RMAP.SET_CHARACTER_ID.length === 0,
   'SET_CHARACTER_ID → [] (sem render)');
 
