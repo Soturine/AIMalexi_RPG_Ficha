@@ -32,7 +32,8 @@ window.CoC = window.CoC || {};
     'ADD_SPELL',      'UPDATE_SPELL',    'REMOVE_SPELL',
     'ADD_TOME',       'UPDATE_TOME',     'REMOVE_TOME',
     'ADD_WEAPON',     'UPDATE_WEAPON',   'REMOVE_WEAPON',
-    'ATTACK_RESOLVED'
+    'ATTACK_RESOLVED',
+    'RECALC_DERIVED'   // JSON diff guard evita saves redundantes quando nada mudou
   ]);
 
   /**

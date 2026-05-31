@@ -21,9 +21,10 @@ window.CoC.views = window.CoC.views || {};
 (function () {
 
   const { $, el, escapeHtml, toast, modal, confirm: uiConfirm } = window.CoC.ui;
-  const cocStore = window.CoC.store;
-  const bus      = window.CoC.bus;
-  const dice     = window.CoC.dice;
+  const cocStore    = window.CoC.store;
+  const cocExecutor = window.CoC.core.executor;
+  const bus         = window.CoC.bus;
+  const dice        = window.CoC.dice;
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -172,14 +173,14 @@ window.CoC.views = window.CoC.views || {};
     const newProg = Math.max(0, prog + delta);
     const isNowComplete = req > 0 && newProg >= req && !wasComplete;
 
-    cocStore.dispatch({ type: "UPDATE_TOME", payload: {
+    cocExecutor.execute({ type: "UPDATE_TOME", payload: {
       tome: Object.assign({}, tome, { studyProgress: newProg })
     }});
 
     if (isNowComplete && tome.sanLoss) {
       const san = _evalSanLoss(tome.sanLoss);
       if (san.total > 0) {
-        cocStore.dispatch({ type: "LOSE_SANITY", payload: { amount: san.total } });
+        cocExecutor.execute({ type: "LOSE_SANITY", payload: { amount: san.total } });
         toast(
           `📖 "${escapeHtml(tome.name)}" — estudo concluído! −${san.label} SAN`,
           { type: "warn", duration: 7000 }
@@ -337,14 +338,14 @@ window.CoC.views = window.CoC.views || {};
 
       if (delBtn) {
         if (!await uiConfirm(`Remover "${tome.name}"?`, { danger: true, confirmLabel: "Remover" })) return;
-        cocStore.dispatch({ type: "REMOVE_TOME", payload: { id: tomeId } });
+        cocExecutor.execute({ type: "REMOVE_TOME", payload: { id: tomeId } });
         bus.publish("tomes:persist-requested", {});
         return;
       }
 
       const updated = await _openTomeModal(tome);
       if (!updated) return;
-      cocStore.dispatch({ type: "UPDATE_TOME", payload: { tome: updated } });
+      cocExecutor.execute({ type: "UPDATE_TOME", payload: { tome: updated } });
       bus.publish("tomes:persist-requested", {});
     });
 
@@ -353,7 +354,7 @@ window.CoC.views = window.CoC.views || {};
       btnAdd.addEventListener("click", async () => {
         const tome = await _openTomeModal(null);
         if (!tome) return;
-        cocStore.dispatch({ type: "ADD_TOME", payload: { tome } });
+        cocExecutor.execute({ type: "ADD_TOME", payload: { tome } });
         bus.publish("tomes:persist-requested", {});
       });
     }

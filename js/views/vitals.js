@@ -23,9 +23,10 @@ window.CoC.views = window.CoC.views || {};
 (function () {
 
   const { $, $$, el, escapeHtml, toast, prompt: uiPrompt } = window.CoC.ui;
-  const dice     = window.CoC.dice;
-  const cocStore = window.CoC.store;
-  const bus      = window.CoC.bus;
+  const dice        = window.CoC.dice;
+  const cocStore    = window.CoC.store;
+  const cocExecutor = window.CoC.core.executor;
+  const bus         = window.CoC.bus;
 
   // ── Render ──────────────────────────────────────────────────────────────
 
@@ -168,18 +169,14 @@ window.CoC.views = window.CoC.views || {};
     if (delta === 0) return;
 
     if (key === "Mitos") {
-      // ADD_MYTHOS action pending M3+ — direct mutation; bus handles side-effects
-      const char = cocStore.getState().character;
-      char.derived.Mitos.value = Math.max(0, (char.derived.Mitos.value || 0) + delta);
-      bus.publish("vitals:mitos-changed", {});
-      renderVitals();   // Mitos bypasses store → explicit re-render
+      cocExecutor.execute({ type: 'ADD_MYTHOS', payload: { delta } });
       return;
     }
 
     const amount = Math.abs(delta);
-    if      (key === "PV")  cocStore.dispatch({ type: delta < 0 ? "APPLY_DAMAGE"  : "HEAL_DAMAGE",    payload: { amount } });
-    else if (key === "SAN") cocStore.dispatch({ type: delta < 0 ? "LOSE_SANITY"   : "RECOVER_SANITY", payload: { amount } });
-    else if (key === "PM")  cocStore.dispatch({ type: delta < 0 ? "SPEND_MAGIC"   : "RESTORE_MAGIC",  payload: { amount } });
+    if      (key === "PV")  cocExecutor.execute({ type: delta < 0 ? "APPLY_DAMAGE"  : "HEAL_DAMAGE",    payload: { amount } });
+    else if (key === "SAN") cocExecutor.execute({ type: delta < 0 ? "LOSE_SANITY"   : "RECOVER_SANITY", payload: { amount } });
+    else if (key === "PM")  cocExecutor.execute({ type: delta < 0 ? "SPEND_MAGIC"   : "RESTORE_MAGIC",  payload: { amount } });
 
     if (key === "SAN" && delta < -4) {
       toast(`⚠ Perda de ${amount} SAN: Teste de Loucura Temporária (INT×5)!`, { type: "warn", duration: 6000 });
@@ -202,6 +199,7 @@ window.CoC.views = window.CoC.views || {};
     RECOVER_SANITY: { key: "SAN", sign:  1 },
     SPEND_MAGIC:    { key: "PM",  sign: -1 },
     RESTORE_MAGIC:  { key: "PM",  sign:  1 },
+    ADD_MYTHOS:     { key: "Mitos", sign: 1 },
   };
 
   function initVitals() {
@@ -209,10 +207,10 @@ window.CoC.views = window.CoC.views || {};
       if (!event.changed) return;
       const mapping = FLASH_MAP[event.action.type];
       if (!mapping) return;
-      renderVitals();
+      // Render delegado ao render-pipeline (Sprint 6). Flash é efeito local desta view.
       _flashCard(mapping.key, mapping.sign);
     });
-    // renderVitals() on first paint is called by investigator.js via renderAll()
+    // renderVitals() on first paint is called by render-pipeline via SET_CHARACTER
   }
 
   window.CoC.views.vitals = Object.freeze({ init: initVitals, render: renderVitals, renderSidebarVitals });

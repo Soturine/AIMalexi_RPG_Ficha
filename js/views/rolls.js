@@ -29,9 +29,10 @@ window.CoC.views = window.CoC.views || {};
 (function () {
 
   const { $, el, escapeHtml, toastRoll, appendRoll, modal: _modal, confirm } = window.CoC.ui;
-  const dice     = window.CoC.dice;
-  const cocStore = window.CoC.store;
-  const bus      = window.CoC.bus;
+  const dice        = window.CoC.dice;
+  const cocStore    = window.CoC.store;
+  const bus         = window.CoC.bus;
+  const cocExecutor = window.CoC.core.executor;
 
   // Estado interno de modificadores de rolagem — sincronizado por investigator.js
   let _mods = { difficulty: "regular", bp: "" };
@@ -85,6 +86,9 @@ window.CoC.views = window.CoC.views || {};
     const result     = dice.rollD100(bp || null);
     const level      = dice.classifyRoll(result.value, v);
 
+    // luckCost snapshot em roll-time — evita temporal coupling no click-handler
+    const luckCost = Math.max(0, result.value - target);
+
     const entry = {
       kind:     "skill",
       skill:    name + (opts.pushed ? "  ⚠ PUSHED" : ""),
@@ -94,8 +98,27 @@ window.CoC.views = window.CoC.views || {};
       d100:     result.value,
       level,
       note:     bp ? `[${bp}]` : "",
-      pushed:   !!opts.pushed
+      pushed:   !!opts.pushed,
+      luckCost,
     };
+
+    // Pushed rolls → PUSH_ROLL (contexto causal separado no trace)
+    const actionType = opts.pushed ? 'PUSH_ROLL' : 'ROLL_SKILL';
+    cocExecutor.execute({
+      type: actionType,
+      payload: {
+        skillName:     name,
+        skillValue:    v,
+        roll:          result.value,
+        level,
+        difficulty,
+        bp:            bp || null,
+        pushed:        !!opts.pushed,
+        originalRoll:  opts.originalRoll  || null,
+        originalLevel: opts.originalLevel || null,
+      },
+    });
+
     registerRoll(entry);
   }
 
@@ -122,6 +145,19 @@ window.CoC.views = window.CoC.views || {};
       level,
       pushed:   false
     };
+
+    cocExecutor.execute({
+      type: 'ROLL_ATTRIBUTE',
+      payload: {
+        attribute: code,
+        result:    v,
+        roll:      result.value,
+        level,
+        difficulty,
+        bp:        bp || null,
+      },
+    });
+
     registerRoll(entry);
   }
 
@@ -132,15 +168,18 @@ window.CoC.views = window.CoC.views || {};
     if (old) old.remove();
     if (!entry || entry.kind === "weapon-attack") return;
 
-    const c    = cocStore.getState().character;
-    const luck = Number(c?.attributes?.Sorte?.value) || 0;
-    const diff = entry.d100 - (Number(entry.target) || 0);
+    const c        = cocStore.getState().character;
+    const luck     = Number(c?.attributes?.Sorte?.value) || 0;
+    // luckCost vem do snapshot de roll-time — sem recomputar com estado atual
+    const luckCost = entry.luckCost != null
+      ? entry.luckCost
+      : Math.max(0, entry.d100 - (Number(entry.target) || 0));
 
     const canSpendLuck =
       !entry.pushed
       && (entry.level === "fail" || entry.level === "fumble" || entry.level === "regular")
-      && diff > 0
-      && luck >= diff
+      && luckCost > 0
+      && luck >= luckCost
       && entry.level !== "fumble";
 
     const canPush =
@@ -175,12 +214,11 @@ window.CoC.views = window.CoC.views || {};
     const row = el("div", { style: { display: "flex", gap: "0.35rem", flexWrap: "wrap" } });
 
     if (canSpendLuck) {
-      const cost = diff;
       const btn  = el("button", {
         class: "btn-primary",
-        title: `Reduz sua Sorte em ${cost} para tornar este teste um sucesso Regular.`,
-        on: { click: () => window.CoC.views.luck.spendLuck(entry, cost) }
-      }, [`🍀 Gastar ${cost} Sorte (vira Regular)`]);
+        title: `Reduz sua Sorte em ${luckCost} para tornar este teste um sucesso Regular.`,
+        on: { click: () => window.CoC.views.luck.spendLuck(entry, luckCost) }
+      }, [`🍀 Gastar ${luckCost} Sorte (vira Regular)`]);
       row.appendChild(btn);
     }
 
@@ -218,7 +256,13 @@ window.CoC.views = window.CoC.views || {};
     );
     if (!confirmed) return;
 
-    const opts = { pushed: true, difficulty: mods.difficulty || "regular", bp: mods.bp || "" };
+    const opts = {
+      pushed:        true,
+      difficulty:    mods.difficulty    || "regular",
+      bp:            mods.bp            || "",
+      originalRoll:  entry.d100,
+      originalLevel: entry.level,
+    };
 
     if (entry.kind === "skill") {
       rollSkill(entry.skillRaw, opts);

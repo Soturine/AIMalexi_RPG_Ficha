@@ -21,9 +21,10 @@ window.CoC.views = window.CoC.views || {};
 
 (function () {
 
-  const { $ }    = window.CoC.ui;
-  const cocStore = window.CoC.store;
-  const bus      = window.CoC.bus;
+  const { $ }       = window.CoC.ui;
+  const cocStore    = window.CoC.store;
+  const cocExecutor = window.CoC.core.executor;
+  const bus         = window.CoC.bus;
 
   /**
    * spendLuck(entry, cost)
@@ -37,7 +38,7 @@ window.CoC.views = window.CoC.views || {};
     if (!cocStore.getState().character?.attributes?.Sorte) return;
 
     // 1. Atualiza o estado no store (único ponto de mutação)
-    cocStore.dispatch({ type: "SPEND_LUCK", payload: { amount: cost } });
+    cocExecutor.execute({ type: "SPEND_LUCK", payload: { amount: cost } });
 
     // 2. Remove painel pós-rolagem
     const panel = $("#post-roll-actions");

@@ -57,17 +57,7 @@ window.CoC = window.CoC || {};
         if (!c || !c.derived || !c.derived.PV) return state;
         const nc = deepClone(c);
         const cur = nc.derived.PV.current != null ? nc.derived.PV.current : nc.derived.PV.value;
-        const newHP = Math.max(PV_MIN, Math.min(nc.derived.PV.value, cur - action.payload.amount));
-        nc.derived.PV.current = newHP;
-        // BUG-07: Major Wound — golpe único ≥ metade do PV máximo
-        const _rules = window.CoC && window.CoC.rules;
-        if (_rules && _rules.isMajorWound && _rules.isMajorWound(action.payload.amount, nc.derived.PV.value)) {
-          nc.status = nc.status || {};
-          nc.status.majorWound = true;
-        }
-        // HP thresholds
-        if (newHP <= 0)    { nc.status = nc.status || {}; nc.status.unconscious = true; }
-        if (newHP <= PV_MIN) { nc.status = nc.status || {}; nc.status.dying = true; }
+        nc.derived.PV.current = Math.max(PV_MIN, Math.min(nc.derived.PV.value, cur - action.payload.amount));
         return Object.assign({}, state, { character: nc });
       }
 
@@ -80,16 +70,31 @@ window.CoC = window.CoC || {};
       }
 
       // ── SAN ───────────────────────────────────────────────────────────────
+      case "ADD_MYTHOS": {
+        if (!c || !c.derived) return state;
+        const nc = deepClone(c);
+        nc.derived.Mitos = nc.derived.Mitos || { label: "Mythos de Cthulhu", value: 0 };
+        nc.derived.Mitos.value = Math.max(0, Math.min(99, (nc.derived.Mitos.value || 0) + (action.payload.delta || 0)));
+        const _r = window.CoC && window.CoC.rules;
+        if (_r) {
+          const newSANMax = _r.calcSANMax(nc.derived.Mitos.value);
+          nc.derived.SAN = nc.derived.SAN || {};
+          nc.derived.SAN.max = newSANMax;
+          if (nc.derived.SAN.current != null && nc.derived.SAN.current > newSANMax) {
+            nc.derived.SAN.current = newSANMax;
+          }
+        }
+        return Object.assign({}, state, { character: nc });
+      }
+
       case "LOSE_SANITY": {
         if (!c || !c.derived || !c.derived.SAN) return state;
         const nc = deepClone(c);
         const cur = nc.derived.SAN.current != null ? nc.derived.SAN.current : nc.derived.SAN.value;
         nc.derived.SAN.current = Math.max(0, Math.min(nc.derived.SAN.max, cur - action.payload.amount));
-        // Rastreia perdas do dia para teste de Loucura Temporária (>4 SAN de uma vez)
-        if (action.payload.amount > 4) {
-          nc.status = nc.status || {};
-          nc.status.sanLossesToday = (nc.status.sanLossesToday || 0) + action.payload.amount;
-        }
+        // Rastreia TODAS as perdas de SAN da sessão (threshold de loucura indefinida: ≥1/5 do SAN atual)
+        nc.status = nc.status || {};
+        nc.status.sanLossesToday = (nc.status.sanLossesToday || 0) + action.payload.amount;
         return Object.assign({}, state, { character: nc });
       }
 
@@ -125,6 +130,33 @@ window.CoC = window.CoC || {};
         nc.attributes.Sorte.value = Math.max(0, Number(nc.attributes.Sorte.value) - action.payload.amount);
         return Object.assign({}, state, { character: nc });
       }
+
+      // ── Status de personagem (vitals lifecycle) ───────────────────────────
+      // Efeitos despachados pelo executor após avaliação da state-machine.
+      // Mutação bruta: status[key] = true/false. Decisão pertence à state-machine.
+      case "ADD_STATUS": {
+        if (!c) return state;
+        const nc = deepClone(c);
+        nc.status = nc.status || {};
+        nc.status[action.payload.status] = true;
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "REMOVE_STATUS": {
+        if (!c) return state;
+        const nc = deepClone(c);
+        nc.status = nc.status || {};
+        nc.status[action.payload.status] = false;
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // ── Rolagens de sessão (boundary_randomness — sem mutação de estado) ───
+      // Resultado já calculado na view antes do dispatch; executor emite
+      // executor:action → executionTrace captura o fato para observabilidade.
+      case "ROLL_SKILL":
+      case "ROLL_ATTRIBUTE":
+      case "PUSH_ROLL":
+        return state;
 
       // ── Perícias ──────────────────────────────────────────────────────────
       case "SET_SKILL": {
@@ -322,6 +354,50 @@ window.CoC = window.CoC || {};
         if (wi >= 0 && nc.weapons[wi].ammo != null && nc.weapons[wi].ammo > 0) {
           nc.weapons[wi].ammo--;
         }
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // ── Derivados (M3.9 — elimina mutação implícita de recalcDerived) ─────────
+      // Função pura: lê attributes + investigator.age + Mitos, escreve derived.
+      // Preserva .current de PV/PM/SAN (não reseta em jogo); clamp se max mudou.
+      case "RECALC_DERIVED": {
+        if (!c || !c.attributes) return state;
+        const nc   = deepClone(c);
+        const a    = nc.attributes;
+        const v    = function(k) { return Number(a[k] && a[k].value) || 0; };
+        const age  = Number(nc.investigator && nc.investigator.age) || 25;
+        const _r   = window.CoC && window.CoC.rules;
+        if (!_r) return state;   // engine não carregada ainda (segurança em teste)
+
+        nc.derived = nc.derived || {};
+        nc.derived.PV    = nc.derived.PV    || { label: "Pontos de Vida" };
+        nc.derived.PM    = nc.derived.PM    || { label: "Pontos de Magia" };
+        nc.derived.SAN   = nc.derived.SAN   || { label: "Sanidade" };
+        nc.derived.Mitos = nc.derived.Mitos || { label: "Mythos de Cthulhu", value: 0 };
+        nc.derived.MOV   = nc.derived.MOV   || { label: "Movimento" };
+        nc.derived.DB    = nc.derived.DB    || { label: "Bônus de Dano" };
+        nc.derived.Build = nc.derived.Build || { label: "Corpo" };
+
+        const newPV    = _r.calcHP(v("CON"), v("TAM"));
+        const newPM    = _r.calcMP(v("POD"));
+        const newSANMax = _r.calcSANMax(nc.derived.Mitos.value || 0);
+
+        nc.derived.PV.value = newPV;
+        if (nc.derived.PV.current == null || nc.derived.PV.current > newPV) nc.derived.PV.current = newPV;
+
+        nc.derived.PM.value = newPM;
+        if (nc.derived.PM.current == null || nc.derived.PM.current > newPM) nc.derived.PM.current = newPM;
+
+        nc.derived.SAN.max   = newSANMax;
+        nc.derived.SAN.value = v("POD");
+        if (nc.derived.SAN.current == null)            nc.derived.SAN.current = v("POD");
+        if (nc.derived.SAN.current > newSANMax)        nc.derived.SAN.current = newSANMax;
+
+        nc.derived.MOV.value   = _r.calcMOV(v("FOR"), v("DES"), v("TAM"), age);
+        const db = _r.calcDB(v("FOR"), v("TAM"));
+        nc.derived.DB.value    = db.db;
+        nc.derived.Build.value = db.build;
+
         return Object.assign({}, state, { character: nc });
       }
 

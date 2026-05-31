@@ -29,8 +29,9 @@ window.CoC.views = window.CoC.views || {};
 
   const { $, el, escapeHtml, toast, modal } = window.CoC.ui;
   const dice      = window.CoC.dice;
-  const cocStore  = window.CoC.store;
-  const bus       = window.CoC.bus;
+  const cocStore    = window.CoC.store;
+  const cocExecutor = window.CoC.core.executor;
+  const bus         = window.CoC.bus;
   const validators = window.CoC.validators;
 
   // Estado efêmero de UI — não vai ao store (não é estado do personagem)
@@ -312,7 +313,7 @@ window.CoC.views = window.CoC.views || {};
       const occBtn = e.target.closest("[data-occ-toggle]");
       if (occBtn) {
         e.preventDefault();
-        cocStore.dispatch({ type: "TOGGLE_OCCUPATION_SKILL", payload: { skillName: occBtn.dataset.occToggle } });
+        cocExecutor.execute({ type: "TOGGLE_OCCUPATION_SKILL", payload: { skillName: occBtn.dataset.occToggle } });
       }
     });
 
@@ -321,7 +322,7 @@ window.CoC.views = window.CoC.views || {};
       if (!input) return;
       const name = input.dataset.skill;
       const v    = Math.max(0, Math.min(99, parseInt(input.value, 10) || 0));
-      cocStore.dispatch({ type: "SET_SKILL", payload: { name, value: v } });
+      cocExecutor.execute({ type: "SET_SKILL", payload: { name, value: v } });
       updateSkillUI(name);
       bus.publish("skill:dirty", {});
     });
@@ -337,7 +338,7 @@ window.CoC.views = window.CoC.views || {};
 
   // chamado também por addCustomSkill via checkbox — mantém parity com legado
   function _toggleOccupationSkill(name) {
-    cocStore.dispatch({ type: "TOGGLE_OCCUPATION_SKILL", payload: { skillName: name } });
+    cocExecutor.execute({ type: "TOGGLE_OCCUPATION_SKILL", payload: { skillName: name } });
   }
 
   // ── Adicionar perícia específica ──────────────────────────────────────────
@@ -409,7 +410,7 @@ window.CoC.views = window.CoC.views || {};
           if (!name) { toast("Nome obrigatório", { type: "warn" }); return false; }
           const v    = Math.max(0, Math.min(99, parseInt(valueInput.value, 10) || 0));
           const isOcc = !!(occCheck && occCheck.checked);
-          cocStore.dispatch({ type: "ADD_CUSTOM_SKILL", payload: { skillName: name, value: v, isOccupation: isOcc } });
+          cocExecutor.execute({ type: "ADD_CUSTOM_SKILL", payload: { skillName: name, value: v, isOccupation: isOcc } });
           // persist + render via bus subscription em boot()
           bus.publish("skill:persist-requested", {});
           toast(`"${name}" adicionada`, { type: "success" });

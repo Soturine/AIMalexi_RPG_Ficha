@@ -46,6 +46,14 @@
   --font-body:      'Crimson Text', Georgia, serif;
   --font-mono:      'JetBrains Mono', 'Courier New', monospace;
 
+  /* === Escala tipográfica === */
+  --text-xs:   0.72rem;   /* ~11.5px — mínimo legível (frações, tags) */
+  --text-sm:   0.78rem;   /* ~12.5px — labels secundários */
+  --text-base: 1rem;      /* 16px    — corpo de texto */
+  --text-md:   1.1rem;    /* ~17.6px — destaque */
+  --text-lg:   1.25rem;   /* 20px    — subtítulos */
+  --text-xl:   1.5rem;    /* 24px    — títulos de seção */
+
   /* === Layout === */
   --radius:         3px;
   --radius-lg:      6px;

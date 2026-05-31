@@ -16,8 +16,9 @@ window.CoC.views = window.CoC.views || {};
 (function () {
 
   const { $, el, escapeHtml, toast, modal, confirm: uiConfirm } = window.CoC.ui;
-  const cocStore = window.CoC.store;
-  const bus      = window.CoC.bus;
+  const cocStore    = window.CoC.store;
+  const cocExecutor = window.CoC.core.executor;
+  const bus         = window.CoC.bus;
 
   const CATEGORIES = [
     { id: "pista",  label: "Pistas"  },
@@ -241,14 +242,14 @@ window.CoC.views = window.CoC.views || {};
 
       if (delBtn) {
         if (!await uiConfirm(`Remover "${entry.title}"?`, { danger: true, confirmLabel: "Remover" })) return;
-        cocStore.dispatch({ type: "REMOVE_JOURNAL_ENTRY", payload: { id: entryId } });
+        cocExecutor.execute({ type: "REMOVE_JOURNAL_ENTRY", payload: { id: entryId } });
         bus.publish("journal:persist-requested", {});
         return;
       }
 
       const updated = await _openEntryModal(entry);
       if (!updated) return;
-      cocStore.dispatch({ type: "UPDATE_JOURNAL_ENTRY", payload: { entry: updated } });
+      cocExecutor.execute({ type: "UPDATE_JOURNAL_ENTRY", payload: { entry: updated } });
       bus.publish("journal:persist-requested", {});
     });
 
@@ -257,7 +258,7 @@ window.CoC.views = window.CoC.views || {};
       btnAdd.addEventListener("click", async () => {
         const entry = await _openEntryModal(null);
         if (!entry) return;
-        cocStore.dispatch({ type: "ADD_JOURNAL_ENTRY", payload: { entry } });
+        cocExecutor.execute({ type: "ADD_JOURNAL_ENTRY", payload: { entry } });
         bus.publish("journal:persist-requested", {});
       });
     }
