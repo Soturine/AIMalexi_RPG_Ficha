@@ -24,6 +24,14 @@ window.CoC = window.CoC || {};
     return JSON.parse(JSON.stringify(x));
   }
 
+  function _uuid() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
   // ─── Reducer puro ─────────────────────────────────────────────────────────
   function reducer(state, action) {
     const c = state.character;
@@ -146,6 +154,36 @@ window.CoC = window.CoC || {};
           nc.occupationSkills = Array.isArray(nc.occupationSkills) ? nc.occupationSkills.slice() : [];
           if (!nc.occupationSkills.includes(skillName)) nc.occupationSkills.push(skillName);
         }
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // ── Inventário (M4.1) ─────────────────────────────────────────────────
+      // INVARIANTE: inventory[] e weapons[] são domínios distintos sem sync.
+      // weapons[] = recursos mecânicos. inventory[] = posses narrativas.
+      // Duplicação de nomes é aceitável e intencional — ver actions.js.
+      case "ADD_INVENTORY_ITEM": {
+        if (!c) return state;
+        const nc = deepClone(c);
+        nc.inventory = Array.isArray(nc.inventory) ? nc.inventory : [];
+        const item = Object.assign({}, action.payload.item);
+        if (!item.id) item.id = _uuid();
+        nc.inventory.push(item);
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "UPDATE_INVENTORY_ITEM": {
+        if (!c || !Array.isArray(c.inventory)) return state;
+        const nc = deepClone(c);
+        nc.inventory = nc.inventory.map(it =>
+          it.id === action.payload.item.id ? Object.assign({}, it, action.payload.item) : it
+        );
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "REMOVE_INVENTORY_ITEM": {
+        if (!c || !Array.isArray(c.inventory)) return state;
+        const nc = deepClone(c);
+        nc.inventory = nc.inventory.filter(it => it.id !== action.payload.id);
         return Object.assign({}, state, { character: nc });
       }
 

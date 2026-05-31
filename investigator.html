@@ -462,15 +462,16 @@
 
       </section>
 
-      <!-- INVENTÁRIO — M3.5 stub -->
+      <!-- INVENTÁRIO — M4.1 -->
       <section class="section" data-tab="inventario">
         <h2 class="section-title">
           Inventário
-          <span class="meta">Em desenvolvimento</span>
+          <span class="meta" id="inventory-capacity"></span>
         </h2>
-        <p class="dim" style="padding: 2rem 0; text-align: center;">
-          📦 Gestão de itens e equipamentos em breve.
-        </p>
+        <div class="inv-toolbar no-print">
+          <button id="btn-add-item" class="btn-primary btn-sm">+ Adicionar</button>
+        </div>
+        <div id="inventory-list"></div>
       </section>
 
       <!-- DIÁRIO — M3.5 stub -->
@@ -646,6 +647,7 @@
 <script src="js/views/luck.js"></script>
 <script src="js/views/skills.js"></script>
 <script src="js/views/rolls.js"></script>
+<script src="js/views/inventory.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
      ORQUESTRADOR

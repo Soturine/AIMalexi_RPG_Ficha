@@ -86,6 +86,10 @@
       const t = event.action.type;
       if (t === "TOGGLE_OCCUPATION_SKILL" || t === "ADD_CUSTOM_SKILL") persistCurrent();
     });
+    // M4.1 — Inventory slice init + bus hooks
+    window.CoC.views.inventory.init();
+    window.CoC.bus.subscribe("inventory:persist-requested", function () { persistCurrent(); });
+
     // M3.4 — Rolls slice init + bus hooks
     window.CoC.views.rolls.init();       // wires roll:logged → logAndToast
     window.CoC.views.rolls.setRollMods(state.rollMods);  // sync inicial
@@ -263,6 +267,7 @@
     renderWeapons();
     renderFinances();
     renderBackground();
+    window.CoC.views.inventory.render();
   }
 
   // ─── TEMA ─────────────────────────────────────────────────────────────
@@ -293,6 +298,10 @@
       window.CoC.mediaPicker.render($("#character-banner"), null);
       window.CoC.mediaPicker.render($("#character-portrait"), null);
     }
+    const invList = $("#inventory-list");
+    if (invList) invList.innerHTML = "";
+    const invCap = $("#inventory-capacity");
+    if (invCap) invCap.textContent = "";
     if (window.CoC.sanityFx) window.CoC.sanityFx.clear();
   }
 

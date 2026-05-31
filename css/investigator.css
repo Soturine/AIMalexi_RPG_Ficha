@@ -1029,3 +1029,108 @@
 @media (max-width: 600px) {
   .fin-buttons { flex-direction: column; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INVENTÁRIO (M4.1)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.inv-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+#inventory-capacity {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-faded);
+  letter-spacing: 0.04em;
+}
+#inventory-capacity.inv-over { color: var(--warn); }
+
+.inv-empty {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--ink-dim);
+  font-style: italic;
+}
+
+.inv-group { margin-bottom: 1rem; }
+
+.inv-group-header {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-faded);
+  border-bottom: 1px solid var(--ink-faded);
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inv-count {
+  background: var(--bg-card-hi);
+  color: var(--ink-dim);
+  font-size: 0.65rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--ink-faded);
+}
+
+.inv-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius);
+  transition: background 0.15s;
+}
+.inv-item:hover { background: var(--bg-card-hi); }
+
+.inv-item-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.inv-item-name {
+  font-size: 0.95rem;
+  color: var(--ink);
+  word-break: break-word;
+}
+
+.inv-qty {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--brass);
+  font-weight: 700;
+}
+
+.inv-notes {
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--ink-faded);
+  width: 100%;
+}
+
+.inv-item-actions {
+  display: flex;
+  gap: 0.1rem;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.inv-item:hover .inv-item-actions { opacity: 1; }
+
+/* Modal de item */
+.inv-form { display: flex; flex-direction: column; gap: 0.6rem; }
+.form-group { display: flex; flex-direction: column; gap: 0.25rem; }
+.form-group label { margin-bottom: 0; }

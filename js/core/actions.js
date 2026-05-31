@@ -55,7 +55,15 @@ window.CoC = window.CoC || {};
     SET_IMAGE:              "SET_IMAGE",
     EQUIP_WEAPON:           "EQUIP_WEAPON",
     ADD_ITEM:               "ADD_ITEM",
-    REMOVE_ITEM:            "REMOVE_ITEM"
+    REMOVE_ITEM:            "REMOVE_ITEM",
+
+    // ── Inventário (M4.1) ────────────────────────────────────────────────
+    // INVARIANTE: character.inventory[] e character.weapons[] são domínios distintos.
+    // weapons[] = recursos mecânicos de combate. inventory[] = posses narrativas.
+    // Não existe sincronização entre os arrays — a duplicação é intencional.
+    ADD_INVENTORY_ITEM:    "ADD_INVENTORY_ITEM",
+    UPDATE_INVENTORY_ITEM: "UPDATE_INVENTORY_ITEM",
+    REMOVE_INVENTORY_ITEM: "REMOVE_INVENTORY_ITEM",
   });
 
   // Campos SAGRADOS (Constituição §8): no multiplayer o jogador NÃO aplica
@@ -109,7 +117,12 @@ window.CoC = window.CoC || {};
     setImage:       (slot, ref)                    => make(TYPES.SET_IMAGE,       { slot, ref }), // slot: "banner" | "portrait"
     equipWeapon:    (weaponId, equipped = true)    => make(TYPES.EQUIP_WEAPON,    { weaponId, equipped }),
     addItem:        (item)                         => make(TYPES.ADD_ITEM,        { item }),
-    removeItem:     (itemId)                         => make(TYPES.REMOVE_ITEM,     { itemId })
+    removeItem:     (itemId)                         => make(TYPES.REMOVE_ITEM,     { itemId }),
+
+    // Inventário (M4.1)
+    addInventoryItem:    (item) => make(TYPES.ADD_INVENTORY_ITEM,    { item }),
+    updateInventoryItem: (item) => make(TYPES.UPDATE_INVENTORY_ITEM, { item }),
+    removeInventoryItem: (id)   => make(TYPES.REMOVE_INVENTORY_ITEM, { id }),
   };
 
   function isSacred(action) {
