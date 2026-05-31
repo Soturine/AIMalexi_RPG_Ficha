@@ -76,15 +76,22 @@
     _persistMiddleware.init();
 
     // M3.1 — Vitals slice init + bus hooks (wired before character load)
+    // M3.8 — Identity slice init
+    window.CoC.views.identity.init(cocStore);
+    window.CoC.bus.subscribe("identity:dirty",             function () { markDirty(); });
+    window.CoC.bus.subscribe("identity:persist-requested", function () { persistCurrent(); });
+    // M3.9 — Attributes slice init (editMode via callback — não exposto no store ainda)
+    window.CoC.views.attributes.init(cocStore, { getEditMode: function () { return state.editMode; } });
+
     window.CoC.views.vitals.init();
     window.CoC.bus.subscribe("vitals:mitos-changed", function () {
-      recalcDerived();
+      cocStore.dispatch({ type: "RECALC_DERIVED" });   // M3.9: substitui recalcDerived()
       persistCurrent();
     });
     // M3.2 — Luck slice: re-render Sorte in sidebar (persist via middleware)
     window.CoC.bus.subscribe("store:dispatch", function (event) {
       if (event.changed && event.action.type === "SPEND_LUCK") {
-        renderAttributes();
+        window.CoC.views.attributes.render();
         window.CoC.views.vitals.renderSidebarVitals();
       }
     });
@@ -294,9 +301,9 @@
 
   function renderAll() {
     if (!state.character) return clearUI();
-    _sr.safeRender('identity',   renderIdentity);
-    _sr.safeRender('attributes', renderAttributes);
-    recalcDerived();   // recalcular antes de renderizar vitals
+    _sr.safeRender('identity',   function () { window.CoC.views.identity.render(); });
+    _sr.safeRender('attributes', function () { window.CoC.views.attributes.render(); });
+    cocStore.dispatch({ type: "RECALC_DERIVED" });   // M3.9: ação pura, JSON diff evita saves desnecessários
     _sr.safeRender('vitals',     function () { window.CoC.views.vitals.render(); });
     _sr.safeRender('skills',     renderSkills);
     _sr.safeRender('weapons',    function () { window.CoC.views.combat.render(); });
@@ -355,210 +362,13 @@
     if (window.CoC.sanityFx) window.CoC.sanityFx.clear();
   }
 
-  // ─── IDENTIDADE ───────────────────────────────────────────────────────
-  function renderIdentity() {
-    const c = state.character;
-    if (!c) return;
-    const fields = ["name", "playerName", "occupation", "age", "sex", "residence", "birthplace", "tagline"];
-    fields.forEach(f => {
-      const node = $(`[data-bind="investigator.${f}"]`);
-      if (node) node.value = c.investigator?.[f] ?? "";
-    });
-    const tagline = c.investigator?.tagline ? "“" + c.investigator.tagline + "”" : "";
-    $("#identity-display").textContent = tagline;
+  // ─── IDENTIDADE — extraído para js/views/identity.js (M3.8) ─────────────
+  // render, bindCharacterImages, setupImageSlot, refreshImageRemoveBtn movidos.
+  // Publica identity:dirty e identity:persist-requested via bus.
 
-    // Sync sidebar identity display
-    const sName = $("#sidebar-name");
-    const sOcc  = $("#sidebar-occupation");
-    if (sName) sName.textContent = c.investigator?.name       || "—";
-    if (sOcc)  sOcc.textContent  = c.investigator?.occupation || "—";
-
-    // Recalcular pontos ao mudar ocupação
-    $("#id-occupation").onchange = () => {
-      c.investigator.occupation = $("#id-occupation").value;
-      const _sOcc = $("#sidebar-occupation");
-      if (_sOcc) _sOcc.textContent = c.investigator.occupation || "—";
-      renderSkills();
-      renderFinances();
-      persistCurrent();
-    };
-
-    // Bind genérico de inputs
-    fields.forEach(f => {
-      const node = $(`[data-bind="investigator.${f}"]`);
-      if (!node) return;
-      node.oninput = () => {
-        c.investigator[f] = node.value;
-        if (f === "name") {
-          const _sName = $("#sidebar-name");
-          if (_sName) _sName.textContent = node.value || "—";
-        }
-        if (f === "occupation") {
-          const _sOcc = $("#sidebar-occupation");
-          if (_sOcc) _sOcc.textContent = node.value || "—";
-        }
-        if (f === "tagline") $("#identity-display").textContent = node.value ? "“" + node.value + "”" : "";
-        if (f === "age") {
-          recalcDerived();
-          window.CoC.views.vitals.render();
-          const newAge = Number(node.value) || 25;
-          const adj = rules.calcAgeAdjustments(newAge);
-          if (adj) {
-            toast(
-              `Idade ${newAge} anos: redistribua -${adj.totalReduction} pts entre ${adj.attrs.join("/")} manualmente ou clique "Rolar Tudo".`,
-              { type: "info", duration: 8000 }
-            );
-          }
-        }
-        markDirty();
-      };
-      node.onblur = persistCurrent;
-    });
-
-    bindCharacterImages();
-  }
-
-  // ─── IMAGENS (banner + retrato) ───────────────────────────────────────
-  // Clique no slot → mediaPicker.pick (persiste blob) → render. Botão ✕ remove.
-  function bindCharacterImages() {
-    if (!window.CoC.mediaPicker) return;
-    setupImageSlot($("#character-banner"),   "bannerId",   { maxDim: 1280, label: "banner" });
-    setupImageSlot($("#character-portrait"), "portraitId", { maxDim: 640,  label: "retrato" });
-  }
-
-  function setupImageSlot(slotEl, field, opts) {
-    if (!slotEl) return;
-    const c = state.character;
-    const mp = window.CoC.mediaPicker;
-    mp.render(slotEl, c.investigator?.[field] || null);
-    refreshImageRemoveBtn(slotEl, field, opts);
-
-    slotEl.onclick = async (e) => {
-      // cliques no botão remover são tratados por ele mesmo
-      if (e.target && e.target.classList && e.target.classList.contains("img-remove")) return;
-      const blobId = await mp.pick({ maxDim: opts.maxDim });
-      if (!blobId) return;
-      c.investigator = c.investigator || {};
-      c.investigator[field] = blobId;
-      persistCurrent();
-      mp.render(slotEl, blobId);
-      refreshImageRemoveBtn(slotEl, field, opts);
-      toast(`Imagem de ${opts.label} atualizada.`, { type: "success", duration: 1800 });
-    };
-  }
-
-  function refreshImageRemoveBtn(slotEl, field, opts) {
-    const c = state.character;
-    const hasImg = !!(c.investigator && c.investigator[field]);
-    let btn = slotEl.querySelector(".img-remove");
-    if (hasImg && !btn) {
-      btn = el("button", { class: "img-remove no-print", title: `Remover ${opts.label}`, text: "✕", type: "button" });
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const oldId = c.investigator[field];
-        c.investigator[field] = null;
-        persistCurrent();
-        window.CoC.mediaPicker.render(slotEl, null);
-        // templates (data-URI) não vivem no storage; só blobIds de upload são apagáveis
-        if (oldId && typeof oldId === "string" && !oldId.startsWith("data:") && store.deleteBlob) {
-          store.deleteBlob(oldId);
-        }
-        refreshImageRemoveBtn(slotEl, field, opts);
-      };
-      slotEl.appendChild(btn);
-    } else if (!hasImg && btn) {
-      btn.remove();
-    }
-  }
-
-  // ─── ATRIBUTOS — renderiza para #sidebar-attributes (M3.5.1) ─────────
-  function renderAttributes() {
-    const grid = $("#sidebar-attributes");
-    if (!grid) return;
-    grid.innerHTML = "";
-    const c = state.character;
-    if (!c?.attributes) return;
-
-    const ATTRS = ["FOR", "CON", "TAM", "DES", "APA", "INT", "POD", "EDU", "Sorte"];
-    for (const code of ATTRS) {
-      const attr = c.attributes[code];
-      if (!attr) continue;
-      const v = Number(attr.value) || 0;
-      const row = el("div", { class: "sattr-row", "data-attr": code });
-      const valNode = el("span", {
-        class: "sattr-value",
-        contenteditable: state.editMode ? "true" : "false",
-        title: escapeHtml(attr.rolled || "")
-      }, [String(v)]);
-      row.appendChild(el("span", { class: "sattr-label" }, [escapeHtml(code)]));
-      row.appendChild(valNode);
-      row.appendChild(el("span", { class: "sattr-fracs" }, [`½${dice.half(v)} · ⅕${dice.fifth(v)}`]));
-      grid.appendChild(row);
-    }
-
-    if (state.editMode) {
-      $$(".sattr-value").forEach(node => {
-        node.onkeydown = (e) => {
-          if (e.key === "Enter")  { e.preventDefault(); node.blur(); }
-          if (e.key === "Escape") {
-            e.preventDefault();
-            const code = node.closest(".sattr-row").dataset.attr;
-            node.textContent = String(state.character.attributes[code].value);
-            node.blur();
-          }
-        };
-        node.onblur = () => {
-          const code = node.closest(".sattr-row").dataset.attr;
-          const v = Math.max(0, Math.min(99, parseInt(node.textContent, 10) || 0));
-          state.character.attributes[code].value = v;
-          renderAttributes();
-          recalcDerived();
-          window.CoC.views.vitals.render();
-          renderSkills();
-          persistCurrent();
-        };
-      });
-    }
-  }
-
-  // ─── DERIVADOS ────────────────────────────────────────────────────────
-  function recalcDerived() {
-    const c = state.character;
-    if (!c) return;
-    const a = c.attributes;
-    const v = (k) => Number(a?.[k]?.value) || 0;
-    const age = Number(c.investigator?.age) || 25;
-
-    c.derived = c.derived || {};
-    c.derived.PV = c.derived.PV || { label: "Pontos de Vida" };
-    c.derived.PM = c.derived.PM || { label: "Pontos de Magia" };
-    c.derived.SAN = c.derived.SAN || { label: "Sanidade" };
-    c.derived.Mitos = c.derived.Mitos || { label: "Mythos de Cthulhu", value: 0 };
-    c.derived.MOV = c.derived.MOV || { label: "Movimento" };
-    c.derived.DB = c.derived.DB || { label: "Bônus de Dano" };
-    c.derived.Build = c.derived.Build || { label: "Corpo" };
-
-    const newPV = rules.calcHP(v("CON"), v("TAM"));
-    const newPM = rules.calcMP(v("POD"));
-    const newSANMax = rules.calcSANMax(c.derived.Mitos.value || 0);
-
-    // Mantém current se já existe; senão usa o máximo
-    c.derived.PV.value = newPV;
-    if (c.derived.PV.current == null || c.derived.PV.current > newPV) c.derived.PV.current = newPV;
-
-    c.derived.PM.value = newPM;
-    if (c.derived.PM.current == null || c.derived.PM.current > newPM) c.derived.PM.current = newPM;
-
-    c.derived.SAN.max = newSANMax;
-    c.derived.SAN.value = v("POD");
-    if (c.derived.SAN.current == null) c.derived.SAN.current = v("POD");
-    if (c.derived.SAN.current > newSANMax) c.derived.SAN.current = newSANMax;
-
-    c.derived.MOV.value = rules.calcMOV(v("FOR"), v("DES"), v("TAM"), age);
-    const db = rules.calcDB(v("FOR"), v("TAM"));
-    c.derived.DB.value = db.db;
-    c.derived.Build.value = db.build;
-  }
+  // ─── ATRIBUTOS + DERIVADOS — extraído para js/views/attributes.js (M3.9) ──
+  // renderAttributes → attributes.render(); recalcDerived → RECALC_DERIVED action.
+  // editMode injetado via callback em init() (state.editMode ainda não está no store).
 
   // ─── PERÍCIAS — extraído para js/views/skills.js (M3.3) ──────────────────
   // Delegações locais para compatibilidade com renderAll() e outros call sites.
@@ -676,7 +486,7 @@
       $("#btn-edit-mode").classList.toggle("active", state.editMode);
       $("#btn-edit-mode").style.background = state.editMode ? "var(--brass)" : "";
       $("#btn-edit-mode").style.color = state.editMode ? "var(--bg-deep)" : "";
-      renderAttributes();
+      window.CoC.views.attributes.render();
       renderSkills();
       toast(state.editMode ? "Modo Editar ATIVO — atributos editáveis, caps até 90%" : "Modo Editar desligado", { type: "info" });
     };
@@ -799,8 +609,8 @@
       toast("Atributos rolados! PV, MP, SAN, MOV, DB recalculados.", { type: "success" });
     }
 
-    recalcDerived();
-    renderAttributes();
+    cocStore.dispatch({ type: "RECALC_DERIVED" });
+    window.CoC.views.attributes.render();
     window.CoC.views.vitals.render();
     renderSkills();
     persistCurrent();

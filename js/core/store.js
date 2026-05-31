@@ -325,6 +325,50 @@ window.CoC = window.CoC || {};
         return Object.assign({}, state, { character: nc });
       }
 
+      // ── Derivados (M3.9 — elimina mutação implícita de recalcDerived) ─────────
+      // Função pura: lê attributes + investigator.age + Mitos, escreve derived.
+      // Preserva .current de PV/PM/SAN (não reseta em jogo); clamp se max mudou.
+      case "RECALC_DERIVED": {
+        if (!c || !c.attributes) return state;
+        const nc   = deepClone(c);
+        const a    = nc.attributes;
+        const v    = function(k) { return Number(a[k] && a[k].value) || 0; };
+        const age  = Number(nc.investigator && nc.investigator.age) || 25;
+        const _r   = window.CoC && window.CoC.rules;
+        if (!_r) return state;   // engine não carregada ainda (segurança em teste)
+
+        nc.derived = nc.derived || {};
+        nc.derived.PV    = nc.derived.PV    || { label: "Pontos de Vida" };
+        nc.derived.PM    = nc.derived.PM    || { label: "Pontos de Magia" };
+        nc.derived.SAN   = nc.derived.SAN   || { label: "Sanidade" };
+        nc.derived.Mitos = nc.derived.Mitos || { label: "Mythos de Cthulhu", value: 0 };
+        nc.derived.MOV   = nc.derived.MOV   || { label: "Movimento" };
+        nc.derived.DB    = nc.derived.DB    || { label: "Bônus de Dano" };
+        nc.derived.Build = nc.derived.Build || { label: "Corpo" };
+
+        const newPV    = _r.calcHP(v("CON"), v("TAM"));
+        const newPM    = _r.calcMP(v("POD"));
+        const newSANMax = _r.calcSANMax(nc.derived.Mitos.value || 0);
+
+        nc.derived.PV.value = newPV;
+        if (nc.derived.PV.current == null || nc.derived.PV.current > newPV) nc.derived.PV.current = newPV;
+
+        nc.derived.PM.value = newPM;
+        if (nc.derived.PM.current == null || nc.derived.PM.current > newPM) nc.derived.PM.current = newPM;
+
+        nc.derived.SAN.max   = newSANMax;
+        nc.derived.SAN.value = v("POD");
+        if (nc.derived.SAN.current == null)            nc.derived.SAN.current = v("POD");
+        if (nc.derived.SAN.current > newSANMax)        nc.derived.SAN.current = newSANMax;
+
+        nc.derived.MOV.value   = _r.calcMOV(v("FOR"), v("DES"), v("TAM"), age);
+        const db = _r.calcDB(v("FOR"), v("TAM"));
+        nc.derived.DB.value    = db.db;
+        nc.derived.Build.value = db.build;
+
+        return Object.assign({}, state, { character: nc });
+      }
+
       default:
         return state;
     }

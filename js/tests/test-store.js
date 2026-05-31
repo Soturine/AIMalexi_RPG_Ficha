@@ -350,3 +350,67 @@ act('LOSE_SANITY',    { amount: 5 });
 act('SPEND_LUCK',     { amount: 5 });
 assert(store.getState() === stateNull,
   'No-op (sem personagem): múltiplos dispatches preservam mesma referência');
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  RECALC_DERIVED (M3.9) — função pura que substitui recalcDerived() mutable
+// ─────────────────────────────────────────────────────────────────────────────
+group('RECALC_DERIVED — função pura de derivados');
+
+function _loadRecalcChar(overrides) {
+  store.dispatch({ type: 'SET_CHARACTER', payload: Object.assign({
+    id: 'rd-01',
+    investigator: { age: 30 },
+    attributes: {
+      FOR: { value: 60 }, CON: { value: 60 }, TAM: { value: 60 },
+      DES: { value: 60 }, APA: { value: 60 }, INT: { value: 60 },
+      POD: { value: 60 }, EDU: { value: 60 }, Sorte: { value: 60 }
+    },
+    derived: {}
+  }, overrides || {}) });
+}
+
+_loadRecalcChar();
+store.dispatch({ type: 'RECALC_DERIVED' });
+var rdChar = store.getState().character;
+
+// calcHP(60, 60) = floor((60+60)/10) = 12
+assertEq(rdChar.derived.PV.value, 12,                 'RECALC_DERIVED: PV.value calculado');
+assertEq(rdChar.derived.PV.current, 12,               'RECALC_DERIVED: PV.current = PV.value (sem histórico)');
+// calcMP(60) = floor(60/5) = 12
+assertEq(rdChar.derived.PM.value, 12,                 'RECALC_DERIVED: PM.value calculado');
+// SAN.value = POD = 60
+assertEq(rdChar.derived.SAN.value, 60,                'RECALC_DERIVED: SAN.value = POD');
+// MOV com FOR=DES=TAM=60, age=30 → calcMOV → deve ser 7 ou 8 (regra CoC)
+assert(rdChar.derived.MOV.value > 0,                  'RECALC_DERIVED: MOV.value > 0');
+// DB: FOR+TAM=120 → "0"
+assertEq(rdChar.derived.DB.value, '0',                'RECALC_DERIVED: DB.value para FOR+TAM=120');
+// Build: FOR+TAM=120 → 0
+assertEq(rdChar.derived.Build.value, 0,               'RECALC_DERIVED: Build.value para FOR+TAM=120');
+
+// Preserva PV.current se menor que novo máximo (dano em jogo)
+_loadRecalcChar({ derived: { PV: { value: 12, current: 5, label: 'PV' } } });
+store.dispatch({ type: 'RECALC_DERIVED' });
+assertEq(store.getState().character.derived.PV.current, 5,
+  'RECALC_DERIVED: PV.current preservado se menor que máximo (personagem ferido)');
+
+// Clamp PV.current se novo máximo ficou menor
+_loadRecalcChar({ derived: { PV: { value: 20, current: 15, label: 'PV' } } });
+store.dispatch({ type: 'RECALC_DERIVED' });
+assertEq(store.getState().character.derived.PV.current, 12,
+  'RECALC_DERIVED: PV.current clampado quando novo máximo (12) < current (15)');
+
+// Imutabilidade: estado anterior não mutado
+_loadRecalcChar();
+var beforeRecalc = store.getState();
+store.dispatch({ type: 'RECALC_DERIVED' });
+assert(store.getState() !== beforeRecalc,              'RECALC_DERIVED: retorna nova referência de estado');
+assert(beforeRecalc.character.derived.PV === undefined ||
+       beforeRecalc.character.derived.PV.value === undefined ||
+       store.getState().character !== beforeRecalc.character,
+  'RECALC_DERIVED: character anterior não é o mesmo objeto');
+
+// RECALC_DERIVED sem personagem → no-op
+store.dispatch({ type: 'SET_CHARACTER', payload: null });
+var stateNullRD = store.getState();
+store.dispatch({ type: 'RECALC_DERIVED' });
+assert(store.getState() === stateNullRD,               'RECALC_DERIVED sem personagem: no-op (mesma referência)');
