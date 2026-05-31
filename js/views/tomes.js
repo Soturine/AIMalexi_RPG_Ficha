@@ -21,9 +21,10 @@ window.CoC.views = window.CoC.views || {};
 (function () {
 
   const { $, el, escapeHtml, toast, modal, confirm: uiConfirm } = window.CoC.ui;
-  const cocStore = window.CoC.store;
-  const bus      = window.CoC.bus;
-  const dice     = window.CoC.dice;
+  const cocStore    = window.CoC.store;
+  const cocExecutor = window.CoC.core.executor;
+  const bus         = window.CoC.bus;
+  const dice        = window.CoC.dice;
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -179,7 +180,7 @@ window.CoC.views = window.CoC.views || {};
     if (isNowComplete && tome.sanLoss) {
       const san = _evalSanLoss(tome.sanLoss);
       if (san.total > 0) {
-        cocStore.dispatch({ type: "LOSE_SANITY", payload: { amount: san.total } });
+        cocExecutor.execute({ type: "LOSE_SANITY", payload: { amount: san.total } });
         toast(
           `📖 "${escapeHtml(tome.name)}" — estudo concluído! −${san.label} SAN`,
           { type: "warn", duration: 7000 }

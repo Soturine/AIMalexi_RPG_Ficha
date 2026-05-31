@@ -21,6 +21,12 @@ window.CoC.core = window.CoC.core || {};
   // ── Registro de views ──────────────────────────────────────────────────────
   var _registry = Object.create(null); // name → fn()
 
+  // ── Batch de renders (transação do executor) ───────────────────────────────
+  // Quando _inBatch=true, renderForAction acumula nomes em vez de disparar imediatamente.
+  // endTransaction() descarta duplicatas e dispara cada view exatamente uma vez.
+  var _inBatch      = false;
+  var _pendingViews = Object.create(null); // name → true
+
   function register(name, fn) {
     if (typeof fn !== 'function') {
       console.error('[pipeline] register("' + name + '"): fn deve ser function');
@@ -45,9 +51,28 @@ window.CoC.core = window.CoC.core || {};
 
   function renderForAction(type) {
     var targets = RENDER_MAP[type];
+    if (_inBatch) {
+      if (targets === 'ALL') {
+        Object.keys(_registry).forEach(function (k) { _pendingViews[k] = true; });
+      } else if (targets && targets.length > 0) {
+        for (var i = 0; i < targets.length; i++) { _pendingViews[targets[i]] = true; }
+      }
+      return;
+    }
     if (targets === 'ALL') { renderAll(); return; }
     if (!targets || targets.length === 0) return;
     for (var i = 0; i < targets.length; i++) renderView(targets[i]);
+  }
+
+  function beginTransaction() {
+    _inBatch = true;
+  }
+
+  function endTransaction() {
+    _inBatch = false;
+    var views = Object.keys(_pendingViews);
+    _pendingViews = Object.create(null);
+    for (var i = 0; i < views.length; i++) { renderView(views[i]); }
   }
 
   // ── Inicialização — instala subscriber único de store:dispatch ─────────────
@@ -78,12 +103,14 @@ window.CoC.core = window.CoC.core || {};
   }
 
   window.CoC.core.renderPipeline = Object.freeze({
-    register:        register,
-    renderView:      renderView,
-    renderAll:       renderAll,
-    renderForAction: renderForAction,
-    init:            init,
-    RENDER_MAP:      RENDER_MAP,
+    register:         register,
+    renderView:       renderView,
+    renderAll:        renderAll,
+    renderForAction:  renderForAction,
+    beginTransaction: beginTransaction,
+    endTransaction:   endTransaction,
+    init:             init,
+    RENDER_MAP:       RENDER_MAP,
   });
 
 })();

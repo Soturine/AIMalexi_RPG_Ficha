@@ -18,9 +18,10 @@ window.CoC.views = window.CoC.views || {};
 (function () {
 
   const { $, el, escapeHtml, toast, modal, confirm: uiConfirm } = window.CoC.ui;
-  const cocStore = window.CoC.store;
-  const bus      = window.CoC.bus;
-  const dice     = window.CoC.dice;
+  const cocStore    = window.CoC.store;
+  const cocExecutor = window.CoC.core.executor;
+  const bus         = window.CoC.bus;
+  const dice        = window.CoC.dice;
 
   const CATEGORIES = [
     { id: "invocacao",    label: "Invocação" },
@@ -156,11 +157,11 @@ window.CoC.views = window.CoC.views || {};
 
     let parts = [];
     if (mp.total  > 0) {
-      cocStore.dispatch({ type: "SPEND_MAGIC",  payload: { amount: mp.total  } });
+      cocExecutor.execute({ type: "SPEND_MAGIC",  payload: { amount: mp.total  } });
       parts.push(`−${mp.label} PM`);
     }
     if (san.total > 0) {
-      cocStore.dispatch({ type: "LOSE_SANITY", payload: { amount: san.total } });
+      cocExecutor.execute({ type: "LOSE_SANITY", payload: { amount: san.total } });
       parts.push(`−${san.label} SAN`);
     }
 

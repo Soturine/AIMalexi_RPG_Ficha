@@ -23,9 +23,10 @@ window.CoC.views = window.CoC.views || {};
 (function () {
 
   const { $, $$, el, escapeHtml, toast, prompt: uiPrompt } = window.CoC.ui;
-  const dice     = window.CoC.dice;
-  const cocStore = window.CoC.store;
-  const bus      = window.CoC.bus;
+  const dice        = window.CoC.dice;
+  const cocStore    = window.CoC.store;
+  const cocExecutor = window.CoC.core.executor;
+  const bus         = window.CoC.bus;
 
   // ── Render ──────────────────────────────────────────────────────────────
 
@@ -177,9 +178,9 @@ window.CoC.views = window.CoC.views || {};
     }
 
     const amount = Math.abs(delta);
-    if      (key === "PV")  cocStore.dispatch({ type: delta < 0 ? "APPLY_DAMAGE"  : "HEAL_DAMAGE",    payload: { amount } });
-    else if (key === "SAN") cocStore.dispatch({ type: delta < 0 ? "LOSE_SANITY"   : "RECOVER_SANITY", payload: { amount } });
-    else if (key === "PM")  cocStore.dispatch({ type: delta < 0 ? "SPEND_MAGIC"   : "RESTORE_MAGIC",  payload: { amount } });
+    if      (key === "PV")  cocExecutor.execute({ type: delta < 0 ? "APPLY_DAMAGE"  : "HEAL_DAMAGE",    payload: { amount } });
+    else if (key === "SAN") cocExecutor.execute({ type: delta < 0 ? "LOSE_SANITY"   : "RECOVER_SANITY", payload: { amount } });
+    else if (key === "PM")  cocExecutor.execute({ type: delta < 0 ? "SPEND_MAGIC"   : "RESTORE_MAGIC",  payload: { amount } });
 
     if (key === "SAN" && delta < -4) {
       toast(`⚠ Perda de ${amount} SAN: Teste de Loucura Temporária (INT×5)!`, { type: "warn", duration: 6000 });

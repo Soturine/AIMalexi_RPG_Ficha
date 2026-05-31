@@ -101,14 +101,14 @@ window.CoC.core = window.CoC.core || {};
       aggregate: 'character', domain: 'vitals',
       renders: ['vitals'], persists: true, sacred: true,
       effects: [],
-      status: 'planned',
+      status: 'live',
       note: 'Exemplos: majorWound, unconscious, dying, temporaryInsane',
     },
     REMOVE_STATUS: {
       aggregate: 'character', domain: 'vitals',
       renders: ['vitals'], persists: true, sacred: true,
       effects: [],
-      status: 'planned',
+      status: 'live',
     },
 
     // ── Sorte ────────────────────────────────────────────────────────────────

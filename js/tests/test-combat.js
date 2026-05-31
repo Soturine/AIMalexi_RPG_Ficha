@@ -14,9 +14,10 @@
 
 'use strict';
 
-const _rules   = window.CoC.rules;
-const _store   = window.CoC.store;
-const _schema  = window.CoC.schema;
+const _rules    = window.CoC.rules;
+const _store    = window.CoC.store;
+const _schema   = window.CoC.schema;
+const _executor = window.CoC.core.executor;
 
 // ─── Helper: personagem mínimo com PV ────────────────────────────────────────
 function _charWithHP(maxHP, currentHP) {
@@ -65,37 +66,77 @@ assert(!_rules.isMajorWound(10, 0),  'maxHP=0 → false (evita divisão)');
 assert( _rules.isMajorWound(1,  1),  'dano=1 maxHP=1 → true (ceil(0.5)=1)');
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  APPLY_DAMAGE — BUG-07 + HP thresholds
+//  APPLY_DAMAGE — reducer puro (só HP) + executor (HP + status via state-machine)
+//
+//  Sprint 9: status (majorWound, unconscious, dying) foi removido do reducer.
+//  Reducer muta HP; executor.execute() acumula efeitos via state-machine.
 // ─────────────────────────────────────────────────────────────────────────────
-group('APPLY_DAMAGE — major wound + thresholds');
+group('APPLY_DAMAGE — reducer só muta HP (status removido do reducer)');
 
-// maxHP=10, dano=5 → major wound + currentHP=5 (acima de 0)
+// maxHP=10, dano=5 → dispatch direto: só HP muta, sem status
 _loadChar(_charWithHP(10, 10));
 var afterDmg1 = _dispatch({ type: 'APPLY_DAMAGE', payload: { amount: 5 } });
-assert(afterDmg1.status.majorWound === true,    'APPLY_DAMAGE: golpe=5 maxHP=10 → majorWound=true');
-assertEq(afterDmg1.derived.PV.current, 5,       'HP cai para 5');
-assert(!afterDmg1.status.unconscious,           'HP=5 → não inconsciente');
-assert(!afterDmg1.status.dying,                 'HP=5 → não morrendo');
+assertEq(afterDmg1.derived.PV.current, 5,       'dispatch direto: HP 10→5');
+assert(!afterDmg1.status.majorWound,            'dispatch direto: majorWound NÃO setado pelo reducer');
+assert(!afterDmg1.status.unconscious,           'dispatch direto: unconscious NÃO setado pelo reducer');
 
-// dano=4 → sem major wound
-_loadChar(_charWithHP(10, 10));
-var afterDmg2 = _dispatch({ type: 'APPLY_DAMAGE', payload: { amount: 4 } });
-assert(!afterDmg2.status.majorWound,            'APPLY_DAMAGE: golpe=4 maxHP=10 → majorWound=false');
-assertEq(afterDmg2.derived.PV.current, 6,       'HP cai para 6');
-
-// HP a 0 → unconscious
+// HP a 0 via dispatch direto — sem status
 _loadChar(_charWithHP(10, 2));
-var afterDmg3 = _dispatch({ type: 'APPLY_DAMAGE', payload: { amount: 2 } });
-assertEq(afterDmg3.derived.PV.current, 0,       'HP reduz a 0');
-assert(afterDmg3.status.unconscious === true,   'HP=0 → unconscious=true');
-assert(!afterDmg3.status.dying,                 'HP=0 → dying=false (ainda)');
+var afterDmg2 = _dispatch({ type: 'APPLY_DAMAGE', payload: { amount: 2 } });
+assertEq(afterDmg2.derived.PV.current, 0,       'dispatch direto: HP 2→0');
+assert(!afterDmg2.status.unconscious,           'dispatch direto: HP=0 → unconscious NÃO setado (lógica no executor)');
 
-// HP abaixo de -2 → dying (clamped a PV_MIN=-2)
+// HP clamped via dispatch direto — sem status
 _loadChar(_charWithHP(10, 1));
-var afterDmg4 = _dispatch({ type: 'APPLY_DAMAGE', payload: { amount: 10 } });
-assertEq(afterDmg4.derived.PV.current, -2,      'HP clamped a -2 (PV_MIN)');
-assert(afterDmg4.status.dying === true,          'HP=-2 → dying=true');
-assert(afterDmg4.status.unconscious === true,   'HP=-2 → unconscious=true (também)');
+var afterDmg3 = _dispatch({ type: 'APPLY_DAMAGE', payload: { amount: 10 } });
+assertEq(afterDmg3.derived.PV.current, -2,      'dispatch direto: HP clamped a PV_MIN=-2');
+assert(!afterDmg3.status.dying,                 'dispatch direto: dying NÃO setado (lógica no executor)');
+
+group('APPLY_DAMAGE — executor.execute seta HP + status via state-machine');
+
+// Mesmo cenário, agora via executor — status deve ser setado
+function _makeExecChar(maxHP, currentHP) {
+  return {
+    investigator: { name: 'Combat Test' },
+    attributes: { FOR:{value:60}, CON:{value:60}, TAM:{value:60}, DES:{value:50},
+                  APA:{value:50}, INT:{value:70}, POD:{value:60}, EDU:{value:75}, Sorte:{value:50} },
+    derived: {
+      PV:    { value: maxHP, current: currentHP != null ? currentHP : maxHP },
+      SAN:   { value: 60, current: 60, max: 100 },
+      PM:    { value: 12, current: 12 },
+      Mitos: { value: 0 }, MOV: { value: 8 }, DB: { label: '+0' }, Build: { value: 0 }
+    },
+    status: { majorWound: false, unconscious: false, dying: false, dead: false,
+              tempInsane: false, indefInsane: false, incurablyInsane: false, sanLossesToday: 0 },
+    skills: {}, weapons: [], inventory: [], journal: [], spells: [], tomes: [],
+  };
+}
+
+// maxHP=10, dano=5 → executor: majorWound ✓, HP=5 → inconsciente ✗
+_loadChar(_makeExecChar(10, 10));
+_executor.execute({ type: 'APPLY_DAMAGE', payload: { amount: 5 } });
+var execChar1 = _store.getState().character;
+assertEq(execChar1.derived.PV.current, 5,    'executor APPLY_DAMAGE(5): HP 10→5');
+assert(execChar1.status.majorWound,          'executor: dano=metade HP → majorWound via ADD_STATUS');
+assert(!execChar1.status.unconscious,        'executor: HP=5 → sem unconscious');
+
+// dano=10 (HP=10): HP→0, majorWound ✓, unconscious ✓, dying ✗ (0 > -2)
+_loadChar(_makeExecChar(10, 10));
+_executor.execute({ type: 'APPLY_DAMAGE', payload: { amount: 10 } });
+var execChar2 = _store.getState().character;
+assertEq(execChar2.derived.PV.current, 0,    'executor APPLY_DAMAGE(10): HP 10→0');
+assert(execChar2.status.majorWound,          'executor: dano≥5 → majorWound');
+assert(execChar2.status.unconscious,         'executor: HP=0 → unconscious via ADD_STATUS');
+assert(!execChar2.status.dying,              'executor: HP=0 ≠ ≤PV_MIN(-2) → sem dying');
+
+// dano=12 (HP=10): HP→-2, majorWound ✓, unconscious ✓, dying ✓
+_loadChar(_makeExecChar(10, 10));
+_executor.execute({ type: 'APPLY_DAMAGE', payload: { amount: 12 } });
+var execChar3 = _store.getState().character;
+assertEq(execChar3.derived.PV.current, -2,   'executor APPLY_DAMAGE(12): HP clamped a PV_MIN=-2');
+assert(execChar3.status.majorWound,          'executor: dano≥5 → majorWound');
+assert(execChar3.status.unconscious,         'executor: HP=-2 ≤ 0 → unconscious');
+assert(execChar3.status.dying,               'executor: HP=-2 ≤ PV_MIN → dying');
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ADD_WEAPON

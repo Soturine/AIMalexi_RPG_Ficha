@@ -57,17 +57,7 @@ window.CoC = window.CoC || {};
         if (!c || !c.derived || !c.derived.PV) return state;
         const nc = deepClone(c);
         const cur = nc.derived.PV.current != null ? nc.derived.PV.current : nc.derived.PV.value;
-        const newHP = Math.max(PV_MIN, Math.min(nc.derived.PV.value, cur - action.payload.amount));
-        nc.derived.PV.current = newHP;
-        // BUG-07: Major Wound — golpe único ≥ metade do PV máximo
-        const _rules = window.CoC && window.CoC.rules;
-        if (_rules && _rules.isMajorWound && _rules.isMajorWound(action.payload.amount, nc.derived.PV.value)) {
-          nc.status = nc.status || {};
-          nc.status.majorWound = true;
-        }
-        // HP thresholds
-        if (newHP <= 0)    { nc.status = nc.status || {}; nc.status.unconscious = true; }
-        if (newHP <= PV_MIN) { nc.status = nc.status || {}; nc.status.dying = true; }
+        nc.derived.PV.current = Math.max(PV_MIN, Math.min(nc.derived.PV.value, cur - action.payload.amount));
         return Object.assign({}, state, { character: nc });
       }
 
@@ -85,11 +75,9 @@ window.CoC = window.CoC || {};
         const nc = deepClone(c);
         const cur = nc.derived.SAN.current != null ? nc.derived.SAN.current : nc.derived.SAN.value;
         nc.derived.SAN.current = Math.max(0, Math.min(nc.derived.SAN.max, cur - action.payload.amount));
-        // Rastreia perdas do dia para teste de Loucura Temporária (>4 SAN de uma vez)
-        if (action.payload.amount > 4) {
-          nc.status = nc.status || {};
-          nc.status.sanLossesToday = (nc.status.sanLossesToday || 0) + action.payload.amount;
-        }
+        // Rastreia TODAS as perdas de SAN da sessão (threshold de loucura indefinida: ≥1/5 do SAN atual)
+        nc.status = nc.status || {};
+        nc.status.sanLossesToday = (nc.status.sanLossesToday || 0) + action.payload.amount;
         return Object.assign({}, state, { character: nc });
       }
 
@@ -123,6 +111,25 @@ window.CoC = window.CoC || {};
         if (!c || !c.attributes || !c.attributes.Sorte) return state;
         const nc = deepClone(c);
         nc.attributes.Sorte.value = Math.max(0, Number(nc.attributes.Sorte.value) - action.payload.amount);
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // ── Status de personagem (vitals lifecycle) ───────────────────────────
+      // Efeitos despachados pelo executor após avaliação da state-machine.
+      // Mutação bruta: status[key] = true/false. Decisão pertence à state-machine.
+      case "ADD_STATUS": {
+        if (!c) return state;
+        const nc = deepClone(c);
+        nc.status = nc.status || {};
+        nc.status[action.payload.status] = true;
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "REMOVE_STATUS": {
+        if (!c) return state;
+        const nc = deepClone(c);
+        nc.status = nc.status || {};
+        nc.status[action.payload.status] = false;
         return Object.assign({}, state, { character: nc });
       }
 
