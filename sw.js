@@ -13,7 +13,7 @@
    Para forçar atualização imediata: incremente CACHE_VERSION abaixo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = "v6";
+const CACHE_VERSION = "v7";
 const CACHE_NAME = "aimalexi-rpg-" + CACHE_VERSION;
 
 // Assets que devem estar disponíveis offline imediatamente após instalação.
@@ -48,6 +48,7 @@ const PRECACHE_URLS = [
   "./js/views/skills.js",
   "./js/views/rolls.js",
   "./js/views/inventory.js",
+  "./js/views/journal.js",
   "./js/investigator.js",
   "./js/keeper.js",
   "./js/guia.js",

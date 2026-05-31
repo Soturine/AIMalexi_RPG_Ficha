@@ -57,7 +57,10 @@ window.CoC = window.CoC || {};
     ADD_ITEM:               "ADD_ITEM",
     REMOVE_ITEM:            "REMOVE_ITEM",
 
-    // ── Inventário (M4.1) ────────────────────────────────────────────────
+    // ── Journal (M4.2) ──────────────────────────────────────────────────
+    ADD_JOURNAL_ENTRY:    "ADD_JOURNAL_ENTRY",
+    UPDATE_JOURNAL_ENTRY: "UPDATE_JOURNAL_ENTRY",
+    REMOVE_JOURNAL_ENTRY: "REMOVE_JOURNAL_ENTRY",
     // INVARIANTE: character.inventory[] e character.weapons[] são domínios distintos.
     // weapons[] = recursos mecânicos de combate. inventory[] = posses narrativas.
     // Não existe sincronização entre os arrays — a duplicação é intencional.
@@ -123,6 +126,11 @@ window.CoC = window.CoC || {};
     addInventoryItem:    (item) => make(TYPES.ADD_INVENTORY_ITEM,    { item }),
     updateInventoryItem: (item) => make(TYPES.UPDATE_INVENTORY_ITEM, { item }),
     removeInventoryItem: (id)   => make(TYPES.REMOVE_INVENTORY_ITEM, { id }),
+
+    // Journal (M4.2)
+    addJournalEntry:    (entry) => make(TYPES.ADD_JOURNAL_ENTRY,    { entry }),
+    updateJournalEntry: (entry) => make(TYPES.UPDATE_JOURNAL_ENTRY, { entry }),
+    removeJournalEntry: (id)    => make(TYPES.REMOVE_JOURNAL_ENTRY, { id }),
   };
 
   function isSacred(action) {

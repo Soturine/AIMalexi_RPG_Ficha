@@ -89,6 +89,9 @@
     // M4.1 — Inventory slice init + bus hooks
     window.CoC.views.inventory.init();
     window.CoC.bus.subscribe("inventory:persist-requested", function () { persistCurrent(); });
+    // M4.2 — Journal slice init + bus hooks
+    window.CoC.views.journal.init();
+    window.CoC.bus.subscribe("journal:persist-requested", function () { persistCurrent(); });
 
     // M3.4 — Rolls slice init + bus hooks
     window.CoC.views.rolls.init();       // wires roll:logged → logAndToast
@@ -268,6 +271,7 @@
     renderFinances();
     renderBackground();
     window.CoC.views.inventory.render();
+    window.CoC.views.journal.render();
   }
 
   // ─── TEMA ─────────────────────────────────────────────────────────────
@@ -302,6 +306,10 @@
     if (invList) invList.innerHTML = "";
     const invCap = $("#inventory-capacity");
     if (invCap) invCap.textContent = "";
+    const jList = $("#journal-list");
+    if (jList) jList.innerHTML = "";
+    const jCount = $("#journal-count");
+    if (jCount) jCount.textContent = "";
     if (window.CoC.sanityFx) window.CoC.sanityFx.clear();
   }
 

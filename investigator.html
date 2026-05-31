@@ -474,15 +474,16 @@
         <div id="inventory-list"></div>
       </section>
 
-      <!-- DIÁRIO — M3.5 stub -->
+      <!-- DIÁRIO — M4.2 -->
       <section class="section" data-tab="diario">
         <h2 class="section-title">
           Diário de Campanha
-          <span class="meta">Em desenvolvimento</span>
+          <span class="meta" id="journal-count"></span>
         </h2>
-        <p class="dim" style="padding: 2rem 0; text-align: center;">
-          📔 Journal de pistas, NPCs e eventos em breve.
-        </p>
+        <div class="journal-toolbar no-print">
+          <button id="btn-add-entry" class="btn-primary btn-sm">+ Nova Entrada</button>
+        </div>
+        <div id="journal-list"></div>
       </section>
 
     </div>
@@ -648,6 +649,7 @@
 <script src="js/views/skills.js"></script>
 <script src="js/views/rolls.js"></script>
 <script src="js/views/inventory.js"></script>
+<script src="js/views/journal.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
      ORQUESTRADOR

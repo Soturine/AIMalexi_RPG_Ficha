@@ -187,6 +187,34 @@ window.CoC = window.CoC || {};
         return Object.assign({}, state, { character: nc });
       }
 
+      // ── Journal (M4.2) ───────────────────────────────────────────────────
+      case "ADD_JOURNAL_ENTRY": {
+        if (!c) return state;
+        const nc = deepClone(c);
+        nc.journal = Array.isArray(nc.journal) ? nc.journal : [];
+        const entry = Object.assign({}, action.payload.entry);
+        if (!entry.id)        entry.id        = _uuid();
+        if (!entry.createdAt) entry.createdAt  = Date.now();
+        nc.journal.push(entry);
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "UPDATE_JOURNAL_ENTRY": {
+        if (!c || !Array.isArray(c.journal)) return state;
+        const nc = deepClone(c);
+        nc.journal = nc.journal.map(e =>
+          e.id === action.payload.entry.id ? Object.assign({}, e, action.payload.entry) : e
+        );
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "REMOVE_JOURNAL_ENTRY": {
+        if (!c || !Array.isArray(c.journal)) return state;
+        const nc = deepClone(c);
+        nc.journal = nc.journal.filter(e => e.id !== action.payload.id);
+        return Object.assign({}, state, { character: nc });
+      }
+
       default:
         return state;
     }
