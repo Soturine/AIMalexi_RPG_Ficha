@@ -32,6 +32,11 @@ function load(rel) {
 load('data/damage-bonus-table.js');
 load('js/engine/coc7e-rules.js');
 
+// Core: signals → bus → store (cada um depende do anterior)
+load('js/core/signals.js');
+load('js/core/bus.js');
+load('js/core/store.js');
+
 // ── Framework de assertions ───────────────────────────────────────────────
 let _passed = 0, _failed = 0;
 const _failures = [];
@@ -71,6 +76,7 @@ global.group = function group(name) {
 // ── Execução das suítes ───────────────────────────────────────────────────
 const t0 = Date.now();
 load('js/tests/test-rules.js');
+load('js/tests/test-store.js');
 const elapsed = Date.now() - t0;
 
 // ── Relatório final ───────────────────────────────────────────────────────
