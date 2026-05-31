@@ -44,6 +44,7 @@ load('js/core/safe-render.js');
 load('js/core/event-log.js');
 load('js/core/event-ontology.js');
 load('js/core/render-pipeline.js');
+load('js/core/state-machine.js');
 
 // Views (somente o necessário para testes; DOM não é chamado no carregamento)
 load('js/views/combat.js');
@@ -96,6 +97,7 @@ load('js/tests/test-combat.js');
 load('js/tests/test-event-log.js');
 load('js/tests/test-render-pipeline.js');
 load('js/tests/test-event-ontology.js');
+load('js/tests/test-state-machine.js');
 const elapsed = Date.now() - t0;
 
 // ── Relatório final ───────────────────────────────────────────────────────
