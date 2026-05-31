@@ -90,20 +90,15 @@
     });
     // M3.3 — Skills slice init + bus hooks (persist via middleware for SET_SKILL, TOGGLE_*, ADD_CUSTOM_*)
     window.CoC.views.skills.init();
-    window.CoC.bus.subscribe("skill:persist-requested", function () { persistCurrent(); });
-    window.CoC.bus.subscribe("skill:dirty",            function () { markDirty(); });
-    // M4.1 — Inventory slice init + bus hooks
+    window.CoC.bus.subscribe("skill:dirty", function () { markDirty(); });
+    // M4.1 — Inventory slice init
     window.CoC.views.inventory.init();
-    window.CoC.bus.subscribe("inventory:persist-requested", function () { persistCurrent(); });
-    // M4.2 — Journal slice init + bus hooks
+    // M4.2 — Journal slice init
     window.CoC.views.journal.init();
-    window.CoC.bus.subscribe("journal:persist-requested", function () { persistCurrent(); });
-    // M4.3 — Spells slice init + bus hooks
+    // M4.3 — Spells slice init
     window.CoC.views.spells.init();
-    window.CoC.bus.subscribe("spells:persist-requested", function () { persistCurrent(); });
-    // M4.4 — Tomes slice init + bus hooks
+    // M4.4 — Tomes slice init
     window.CoC.views.tomes.init();
-    window.CoC.bus.subscribe("tomes:persist-requested", function () { persistCurrent(); });
 
     // M3.4 — Rolls slice init + bus hooks
     window.CoC.views.rolls.init();       // wires roll:logged → logAndToast
