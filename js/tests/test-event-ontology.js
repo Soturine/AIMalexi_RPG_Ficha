@@ -172,3 +172,86 @@ assert(_gaps.includes('SESSION_STARTED'), 'lacuna: SESSION_STARTED (M5)');
 assert(_planned2.length >= 3, 'pelo menos 3 ações planejadas documentadas');
 assert(_planned2.includes('SET_IDENTITY'), 'planejada: SET_IDENTITY (migração identity.js)');
 assert(_planned2.includes('SET_ATTRIBUTE'), 'planejada: SET_ATTRIBUTE (migração atributos)');
+
+// ── Action Schema — boundary_randomness + resolved_fields ──────────────────
+group('event-ontology — Action Schema: boundary_randomness e BOUNDARY_FIELDS');
+
+// API exposta
+assert(typeof _onto.BOUNDARY_FIELDS      === 'object',   'BOUNDARY_FIELDS exportado');
+assert(typeof _onto.byBoundaryRandomness === 'function',  'byBoundaryRandomness é função');
+assert(typeof _onto.validatePayload      === 'function',  'validatePayload é função');
+assert(Object.isFrozen(_onto.BOUNDARY_FIELDS),            'BOUNDARY_FIELDS é frozen');
+
+// Ações live com boundary_randomness devem estar em BOUNDARY_FIELDS
+const _brActions = _onto.byBoundaryRandomness();
+assert(_brActions.length >= 3,                  'byBoundaryRandomness retorna ≥ 3 ações');
+assert(_brActions.includes('ATTACK_RESOLVED'),  'ATTACK_RESOLVED é boundary_randomness');
+assert(_brActions.includes('LOSE_SANITY'),      'LOSE_SANITY é boundary_randomness');
+assert(_brActions.includes('SPEND_MAGIC'),      'SPEND_MAGIC é boundary_randomness');
+assert(_brActions.includes('ROLL_SKILL'),       'ROLL_SKILL (planned) é boundary_randomness');
+
+// BOUNDARY_FIELDS tem os campos corretos
+assert(Array.isArray(_onto.BOUNDARY_FIELDS['ATTACK_RESOLVED']),        'ATTACK_RESOLVED tem resolved_fields');
+assert(_onto.BOUNDARY_FIELDS['ATTACK_RESOLVED'].includes('roll'),       'ATTACK_RESOLVED.roll obrigatório');
+assert(_onto.BOUNDARY_FIELDS['ATTACK_RESOLVED'].includes('hit'),        'ATTACK_RESOLVED.hit obrigatório');
+assert(Array.isArray(_onto.BOUNDARY_FIELDS['LOSE_SANITY']),             'LOSE_SANITY tem resolved_fields');
+assert(_onto.BOUNDARY_FIELDS['LOSE_SANITY'].includes('amount'),         'LOSE_SANITY.amount obrigatório');
+assert(Array.isArray(_onto.BOUNDARY_FIELDS['ROLL_SKILL']),              'ROLL_SKILL tem resolved_fields');
+assert(_onto.BOUNDARY_FIELDS['ROLL_SKILL'].includes('roll'),            'ROLL_SKILL.roll obrigatório');
+assert(_onto.BOUNDARY_FIELDS['ROLL_SKILL'].includes('level'),           'ROLL_SKILL.level obrigatório');
+
+// Ações sem boundary_randomness NÃO têm entrada em BOUNDARY_FIELDS
+assert(!('APPLY_DAMAGE'  in _onto.BOUNDARY_FIELDS), 'APPLY_DAMAGE não é boundary (determinístico)');
+assert(!('SET_CHARACTER' in _onto.BOUNDARY_FIELDS), 'SET_CHARACTER não é boundary');
+assert(!('ADD_STATUS'    in _onto.BOUNDARY_FIELDS), 'ADD_STATUS não é boundary');
+
+// validatePayload — payload válido
+const _vOk = _onto.validatePayload('ATTACK_RESOLVED', { roll: 47, hit: true, level: 'regular', weaponId: 'x' });
+assert(_vOk.valid,             'validatePayload: payload completo → valid=true');
+assertEq(_vOk.missing.length, 0, 'validatePayload: sem campos faltando');
+
+// validatePayload — payload inválido (falta roll)
+const _vFail = _onto.validatePayload('ATTACK_RESOLVED', { hit: true });
+assert(!_vFail.valid,               'validatePayload: payload incompleto → valid=false');
+assert(_vFail.missing.includes('roll'), 'validatePayload: missing contém "roll"');
+
+// validatePayload — ação sem boundary_randomness → sempre valid
+const _vNoBR = _onto.validatePayload('APPLY_DAMAGE', { amount: 5 });
+assert(_vNoBR.valid,             'validatePayload: ação sem boundary → always valid');
+
+// validatePayload — payload null → missing = todos required fields
+const _vNull = _onto.validatePayload('LOSE_SANITY', null);
+assert(!_vNull.valid,                   'validatePayload: null payload → invalid');
+assert(_vNull.missing.includes('amount'), 'validatePayload: null → missing amount');
+
+// executor:payload-warning disparado quando boundary fields ausentes
+group('event-ontology — executor emite payload-warning para boundary violations');
+
+const _exec2  = window.CoC.core.executor;
+const _bus2   = window.CoC.bus;
+const _store2 = window.CoC.store;
+let _warnings = [];
+_bus2.subscribe('executor:payload-warning', function(ev) { _warnings.push(ev); });
+
+// Carrega personagem mínimo para executor poder operar
+_store2.dispatch({ type: 'SET_CHARACTER', payload: {
+  investigator: { name: 'Schema Test' },
+  attributes: { FOR:{value:60}, CON:{value:60}, TAM:{value:60}, DES:{value:50},
+    APA:{value:50}, INT:{value:70}, POD:{value:60}, EDU:{value:75}, Sorte:{value:50} },
+  derived: { PV:{value:12,current:12}, SAN:{value:60,current:60,max:100},
+    PM:{value:12,current:12}, Mitos:{value:0}, MOV:{value:8}, DB:{label:'+0'}, Build:{value:0} },
+  status: { majorWound:false, unconscious:false, dying:false, dead:false,
+    tempInsane:false, indefInsane:false, incurablyInsane:false, sanLossesToday:0 },
+  skills:{}, weapons:[], inventory:[], journal:[], spells:[], tomes:[],
+}});
+
+// ATTACK_RESOLVED sem 'roll' → deve disparar warning
+_exec2.execute({ type: 'ATTACK_RESOLVED', payload: { weaponId:'w1', hit:true, isFired:false } });
+assert(_warnings.length >= 1,              'payload-warning disparado para ATTACK_RESOLVED sem roll');
+assertEq(_warnings[0].type, 'ATTACK_RESOLVED', 'warning.type = ATTACK_RESOLVED');
+assert(_warnings[0].missing.includes('roll'), 'warning.missing contém "roll"');
+
+// ATTACK_RESOLVED com roll → NÃO deve disparar warning
+_warnings = [];
+_exec2.execute({ type: 'ATTACK_RESOLVED', payload: { weaponId:'w1', hit:true, isFired:false, roll:47, damage:0 } });
+assertEq(_warnings.length, 0, 'payload completo → zero warnings');

@@ -64,36 +64,44 @@ window.CoC.core = window.CoC.core || {};
       renders: ['vitals'], persists: true, sacred: true,
       effects: ['vitals:flash-pv', 'check:majorWound', 'check:unconscious', 'check:dying'],
       status: 'live',
+      boundary_randomness: false,  // amount é determinístico (escolhido por regra/GM)
     },
     HEAL_DAMAGE: {
       aggregate: 'character', domain: 'vitals',
       renders: ['vitals'], persists: true, sacred: true,
       effects: ['vitals:flash-pv'],
       status: 'live',
+      boundary_randomness: false,
     },
     LOSE_SANITY: {
       aggregate: 'character', domain: 'sanity',
       renders: ['vitals'], persists: true, sacred: true,
       effects: ['vitals:flash-san', 'check:temporaryInsanity', 'check:indefiniteInsanity'],
       status: 'live',
+      boundary_randomness: true,   // perda de SAN é resultado de dado (1d6, 1d10, etc.)
+      resolved_fields: ['amount'], // dados já rolados na view, embutidos no payload
     },
     RECOVER_SANITY: {
       aggregate: 'character', domain: 'sanity',
       renders: ['vitals'], persists: true, sacred: true,
       effects: ['vitals:flash-san'],
       status: 'live',
+      boundary_randomness: false,
     },
     SPEND_MAGIC: {
       aggregate: 'character', domain: 'magic',
       renders: ['vitals'], persists: true, sacred: true,
       effects: ['vitals:flash-pm'],
       status: 'live',
+      boundary_randomness: true,   // custo de MP pode ser variável (feitiços)
+      resolved_fields: ['amount'],
     },
     RESTORE_MAGIC: {
       aggregate: 'character', domain: 'magic',
       renders: ['vitals'], persists: true, sacred: true,
       effects: ['vitals:flash-pm'],
       status: 'live',
+      boundary_randomness: false,
     },
 
     // ── Status / efeitos de combate ────────────────────────────────────────────
@@ -159,6 +167,8 @@ window.CoC.core = window.CoC.core || {};
       renders: ['skills'], persists: false, sacred: false,
       effects: ['roll:logged', 'roll:badge-inc'],
       status: 'planned',
+      boundary_randomness: true,
+      resolved_fields: ['roll', 'skillValue', 'level'],  // d100 + valor alvo + classificação
       note: 'Atualmente em views/rolls.js fora do fluxo de store; RENDER_MAP ignorado',
     },
     SKILL_IMPROVED: {
@@ -175,18 +185,24 @@ window.CoC.core = window.CoC.core || {};
       renders: null, persists: false, sacred: false,
       effects: ['roll:logged'],
       status: 'planned',
+      boundary_randomness: true,
+      resolved_fields: ['roll', 'attribute', 'result'],
     },
     ROLL_DAMAGE: {
       aggregate: 'session', domain: 'rolls',
       renders: null, persists: false, sacred: false,
       effects: ['roll:logged'],
       status: 'planned',
+      boundary_randomness: true,
+      resolved_fields: ['roll', 'damage'],
     },
     PUSH_ROLL: {
       aggregate: 'session', domain: 'rolls',
       renders: null, persists: false, sacred: false,
       effects: ['roll:logged', 'roll:pushed'],
       status: 'planned',
+      boundary_randomness: true,
+      resolved_fields: ['roll', 'skillValue', 'level'],
     },
     REGISTER_FUMBLE: {
       aggregate: 'session', domain: 'rolls',
@@ -235,6 +251,8 @@ window.CoC.core = window.CoC.core || {};
       renders: ['combat'], persists: true, sacred: false,
       effects: ['roll:logged'],
       status: 'live',
+      boundary_randomness: true,    // d100 de ataque + dado de dano rolados na view
+      resolved_fields: ['roll', 'hit'],  // resultado já materializado antes do dispatch
       note: 'Decrementa ammo; resultado de rolagem de ataque + dano',
     },
     EQUIP_WEAPON: {
@@ -385,6 +403,20 @@ window.CoC.core = window.CoC.core || {};
   });
   var RENDER_MAP = Object.freeze(_renderMap);
 
+  // ── Derivação do BOUNDARY_FIELDS — Action Schema de determinismo ───────────
+  // Mapa: { ACTION_TYPE: ['field1', 'field2'] } para ações com boundary_randomness.
+  // Usado pelo executor para validar que resultados de dado estão no payload.
+  // Regra: dados são materializados na VIEW (borda do sistema) e entram como
+  // fato imutável. O executor nunca gera ou recomputa aleatoriedade.
+  var _boundaryFields = Object.create(null);
+  Object.keys(CATALOG).forEach(function (type) {
+    var e = CATALOG[type];
+    if (e.boundary_randomness && Array.isArray(e.resolved_fields)) {
+      _boundaryFields[type] = e.resolved_fields.slice();
+    }
+  });
+  var BOUNDARY_FIELDS = Object.freeze(_boundaryFields);
+
   // ── Consultas utilitárias ──────────────────────────────────────────────────
 
   function byStatus(status) {
@@ -399,12 +431,34 @@ window.CoC.core = window.CoC.core || {};
     return Object.keys(CATALOG).filter(function (t) { return CATALOG[t].sacred; });
   }
 
+  function byBoundaryRandomness() {
+    return Object.keys(CATALOG).filter(function (t) { return CATALOG[t].boundary_randomness; });
+  }
+
+  /**
+   * Valida que um payload contém todos os campos resolved_fields definidos
+   * para ações com boundary_randomness. Retorna { valid, missing }.
+   * Usado pelo executor antes de processar a ação.
+   */
+  function validatePayload(type, payload) {
+    var required = BOUNDARY_FIELDS[type];
+    if (!required || required.length === 0) return { valid: true, missing: [] };
+    var p = payload || {};
+    var missing = required.filter(function (f) {
+      return !(f in p) || p[f] === undefined || p[f] === null;
+    });
+    return { valid: missing.length === 0, missing: missing };
+  }
+
   window.CoC.core.eventOntology = Object.freeze({
-    CATALOG:    CATALOG,
-    RENDER_MAP: RENDER_MAP,
-    byStatus:   byStatus,
-    byDomain:   byDomain,
-    bySacred:   bySacred,
+    CATALOG:              CATALOG,
+    RENDER_MAP:           RENDER_MAP,
+    BOUNDARY_FIELDS:      BOUNDARY_FIELDS,
+    byStatus:             byStatus,
+    byDomain:             byDomain,
+    bySacred:             bySacred,
+    byBoundaryRandomness: byBoundaryRandomness,
+    validatePayload:      validatePayload,
   });
 
 })();

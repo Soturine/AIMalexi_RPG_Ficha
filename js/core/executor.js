@@ -23,10 +23,11 @@ window.CoC.core = window.CoC.core || {};
 (function () {
 
   function execute(action) {
-    var sm       = window.CoC.core && window.CoC.core.stateMachine;
-    var store    = window.CoC.store;
-    var pipeline = window.CoC.core && window.CoC.core.renderPipeline;
-    var bus      = window.CoC.bus;
+    var sm        = window.CoC.core && window.CoC.core.stateMachine;
+    var store     = window.CoC.store;
+    var pipeline  = window.CoC.core && window.CoC.core.renderPipeline;
+    var bus       = window.CoC.bus;
+    var ontology  = window.CoC.core && window.CoC.core.eventOntology;
 
     // Fallback: sem state-machine ou pipeline, dispatch direto sem transação
     if (!sm || !pipeline || typeof pipeline.beginTransaction !== 'function') {
@@ -34,7 +35,22 @@ window.CoC.core = window.CoC.core || {};
       return;
     }
 
-    // 1. Contexto PRE-mutação — guards recebem o estado ANTES do reducer rodar
+    // 1. Action Schema — valida boundary_randomness antes de qualquer mutação
+    //    Ações com dados na borda (ex: ATTACK_RESOLVED, LOSE_SANITY) devem
+    //    trazer os campos resolved_fields no payload. Emite aviso via bus
+    //    sem interromper o fluxo (graceful degradation durante transição).
+    if (ontology && typeof ontology.validatePayload === 'function') {
+      var validation = ontology.validatePayload(action.type, action.payload);
+      if (!validation.valid && bus && typeof bus.publish === 'function') {
+        bus.publish('executor:payload-warning', {
+          type:    action.type,
+          missing: validation.missing,
+          payload: action.payload,
+        });
+      }
+    }
+
+    // 2. Contexto PRE-mutação — guards recebem o estado ANTES do reducer rodar
     var ctx    = sm.buildContext(store.getState().character);
     var result = ctx
       ? sm.evaluate(action.type, action, ctx)
@@ -42,7 +58,7 @@ window.CoC.core = window.CoC.core || {};
 
     var effects = result.effects || [];
 
-    // 2. Trace do execute (ação + decisão SM) — separado do store:dispatch log
+    // 3. Trace do execute (ação + decisão SM) — separado do store:dispatch log
     if (bus && typeof bus.publish === 'function') {
       bus.publish('executor:action', {
         type:    action.type,
@@ -52,7 +68,7 @@ window.CoC.core = window.CoC.core || {};
       });
     }
 
-    // 3. Transação: ação primária + efeitos em lote, renders suprimidos até o fim
+    // 4. Transação: ação primária + efeitos em lote, renders suprimidos até o fim
     pipeline.beginTransaction();
     try {
       store.dispatch(action);
