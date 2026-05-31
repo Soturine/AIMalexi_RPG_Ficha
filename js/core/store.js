@@ -108,6 +108,47 @@ window.CoC = window.CoC || {};
         return Object.assign({}, state, { character: nc });
       }
 
+      // ── Perícias ──────────────────────────────────────────────────────────
+      case "SET_SKILL": {
+        if (!c) return state;
+        const { name, value } = action.payload;
+        if (!name) return state;
+        const nc = deepClone(c);
+        nc.skills = nc.skills || {};
+        nc.skills[name] = Object.assign({}, nc.skills[name] || {}, {
+          value: Math.max(0, Math.min(99, Number(value) || 0))
+        });
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "TOGGLE_OCCUPATION_SKILL": {
+        if (!c) return state;
+        const { skillName } = action.payload;
+        if (!skillName) return state;
+        const nc = deepClone(c);
+        nc.occupationSkills = Array.isArray(nc.occupationSkills) ? nc.occupationSkills.slice() : [];
+        const idx = nc.occupationSkills.indexOf(skillName);
+        if (idx >= 0) nc.occupationSkills.splice(idx, 1);
+        else nc.occupationSkills.push(skillName);
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "ADD_CUSTOM_SKILL": {
+        if (!c) return state;
+        const { skillName, value: skillValue, isOccupation } = action.payload;
+        if (!skillName) return state;
+        const nc = deepClone(c);
+        nc.skills = nc.skills || {};
+        nc.skills[skillName] = Object.assign({}, nc.skills[skillName] || {}, {
+          value: Math.max(0, Math.min(99, Number(skillValue) || 0))
+        });
+        if (isOccupation) {
+          nc.occupationSkills = Array.isArray(nc.occupationSkills) ? nc.occupationSkills.slice() : [];
+          if (!nc.occupationSkills.includes(skillName)) nc.occupationSkills.push(skillName);
+        }
+        return Object.assign({}, state, { character: nc });
+      }
+
       default:
         return state;
     }

@@ -33,8 +33,6 @@
       bp: ""                   // "" | "bonus" | "penalty"
     },
     editMode: false,
-    skillFilter: "all",        // all | occupation | used
-    skillSearch: "",
     mobileTab: "personagem",
     rollHistory: []
   };
@@ -89,6 +87,16 @@
         renderAttributes();
         persistCurrent();
       }
+    });
+    // M3.3 — Skills slice init + bus hooks
+    window.CoC.views.skills.init();
+    window.CoC.bus.subscribe("skill:roll-requested",  function (data) { rollSkill(data.name); });
+    window.CoC.bus.subscribe("skill:persist-requested", function () { persistCurrent(); });
+    window.CoC.bus.subscribe("skill:dirty",            function () { markDirty(); });
+    window.CoC.bus.subscribe("store:dispatch", function (event) {
+      if (!event.changed) return;
+      const t = event.action.type;
+      if (t === "TOGGLE_OCCUPATION_SKILL" || t === "ADD_CUSTOM_SKILL") persistCurrent();
     });
 
     populateOccupationDropdown();
@@ -463,426 +471,10 @@
     c.derived.Build.value = db.build;
   }
 
-  // ─── PERÍCIAS ─────────────────────────────────────────────────────────
-  function renderSkills() {
-    const c = state.character;
-    if (!c) return;
-    const groups = window.CoCData.skillsByCategory();
-    const labels = window.CoCData.categoryLabels;
-
-    // Computar pool e perícias da ocupação.
-    // occupationSkills = perícias livres designadas pelo jogador (chave do fix de
-    // ocupação personalizada). O conjunto EFETIVO = obrigatórias ∪ designadas.
-    c.occupationSkills = Array.isArray(c.occupationSkills) ? c.occupationSkills : [];
-    const occName = c.investigator?.occupation;
-    const occ = occName ? window.CoCData.findOccupation(occName) : null;
-    const occCtx = rules.buildOccupationContext(occ, c);
-    const occSkills = occCtx.effective;
-
-    // Calcular pontos disponíveis
-    const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, v]) => [k, v.value]));
-    const occBudget = occ ? rules.calcOccupationPoints(occ.pointsFormula, attrs).points : 0;
-    const piBudget  = rules.calcPersonalInterestPoints(attrs.INT || 0);
-
-    // Calcular gastos
-    const { occSpent, piSpent } = sumSkillSpend(c, occSkills);
-
-    // Atualiza badges
-    const occState = validators.pointsBadgeState(occSpent, occBudget);
-    const piState  = validators.pointsBadgeState(piSpent, piBudget);
-    const badgeOcc = $("#badge-occ");
-    const badgePi  = $("#badge-pi");
-    badgeOcc.classList.remove("ok", "warn", "err");
-    badgePi.classList.remove("ok", "warn", "err");
-    if (occState.level === "ok")   badgeOcc.classList.add("ok");
-    if (occState.level === "warn") badgeOcc.classList.add("warn");
-    if (occState.level === "err")  badgeOcc.classList.add("err");
-    if (piState.level === "ok")    badgePi.classList.add("ok");
-    if (piState.level === "warn")  badgePi.classList.add("warn");
-    if (piState.level === "err")   badgePi.classList.add("err");
-    badgeOcc.textContent = "Ocupação: " + occState.label + occFreePicksHint(occCtx);
-    badgePi.textContent  = "Interesse: " + piState.label;
-
-    // Renderiza grupos
-    const container = $("#skills-groups");
-    container.innerHTML = "";
-    ensureSkillsDelegation();   // listeners delegados (1x) — sobrevivem aos rebuilds
-
-    const search = state.skillSearch.trim().toLowerCase();
-    const filter = state.skillFilter;
-
-    // Set para rastrear quais nomes já foram renderizados (evita duplicar em "Customizadas")
-    const renderedNames = new Set();
-
-    for (const [cat, list] of Object.entries(groups)) {
-      const filtered = list.filter(s => {
-        if (search && !s.name.toLowerCase().includes(search)) return false;
-        if (filter === "occupation" && !occSkills.has(s.name)) return false;
-        if (filter === "used") {
-          const sk = c.skills?.[s.name];
-          const base = computeBaseValue(s, attrs);
-          if (!sk || (Number(sk.value) || base) === base) return false;
-        }
-        return true;
-      });
-      if (filtered.length === 0) continue;
-
-      const group = el("div", { class: "skill-group" });
-      group.innerHTML = `<h3 class="skill-group-title">${escapeHtml(labels[cat] || cat)}</h3>`;
-      const inner = el("div", { class: "skills-list" });
-      group.appendChild(inner);
-
-      for (const s of filtered) {
-        const base = computeBaseValue(s, attrs);
-        const sk = c.skills?.[s.name];
-        const value = sk?.value != null ? Number(sk.value) : base;
-        const isOcc = occSkills.has(s.name);
-        const capStatus = validators.skillCapStatus(value, state.editMode);
-
-        renderedNames.add(s.name);
-        const row = el("div", {
-          class: "skill-row" +
-            (isOcc ? " occupation" : "") +
-            (capStatus.level === "err" ? " over-cap" : "") +
-            (capStatus.level === "warn" && !capStatus.ok ? " over-cap-warn" : "")
-        });
-        const specTag = s.specializable ? `<span class="skill-tag">específica</span>` : "";
-        const baseFormula = s.baseFormula ? ` <span class="skill-tag" title="Base derivada">${escapeHtml(s.baseFormula)}=${base}</span>` : "";
-        const occMark = occToggleHTML(s.name, occCtx.mandatory.has(s.name), occCtx.chosen.has(s.name));
-        row.innerHTML = `
-          <div class="skill-name">${occMark}${escapeHtml(s.name)}${specTag}${baseFormula}</div>
-          <input class="skill-input" type="number" min="0" max="99" value="${value}" data-skill="${escapeHtml(s.name)}" title="Total da perícia (Base ${base} + alocados)" />
-          <div class="skill-frac" title="Difícil · Extremo">${dice.half(value)} · ${dice.fifth(value)}</div>
-          <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(s.name)}" title="Rolar perícia">🎲</button>
-        `;
-        inner.appendChild(row);
-      }
-      container.appendChild(group);
-    }
-
-    // ── Perícias customizadas/específicas do personagem que não estão no dicionário base ──
-    // Ex: "Lutar (Espada)", "Arte/Ofício (Atuação)", "Outra Língua (Hermes)"
-    const customSkillNames = Object.keys(c.skills || {}).filter(n => !renderedNames.has(n));
-    if (customSkillNames.length > 0) {
-      const customFiltered = customSkillNames.filter(name => {
-        if (search && !name.toLowerCase().includes(search)) return false;
-        if (filter === "occupation" && !occSkills.has(name)) return false;
-        if (filter === "used") {
-          const v = Number(c.skills[name].value) || 0;
-          if (v === 0) return false;
-        }
-        return true;
-      });
-
-      if (customFiltered.length > 0) {
-        const group = el("div", { class: "skill-group" });
-        group.innerHTML = `<h3 class="skill-group-title">Perícias Específicas</h3>`;
-        const inner = el("div", { class: "skills-list" });
-        group.appendChild(inner);
-
-        for (const name of customFiltered) {
-          const sk = c.skills[name];
-          const value = Number(sk.value) || 0;
-          const isOcc = occSkills.has(name);
-          const capStatus = validators.skillCapStatus(value, state.editMode);
-          // Tenta achar a base via parent skill (ex: "Lutar (Espada)" → "Lutar")
-          const parent = window.CoCData.findSkill(name.replace(/\s*\(.+\)$/, ""));
-          const parentBase = parent ? computeBaseValue(parent, attrs) : 0;
-
-          const row = el("div", {
-            class: "skill-row" +
-              (isOcc ? " occupation" : "") +
-              (capStatus.level === "err" ? " over-cap" : "") +
-              (capStatus.level === "warn" && !capStatus.ok ? " over-cap-warn" : "")
-          });
-          const parentTag = parent ? `<span class="skill-tag" title="Base herdada de ${escapeHtml(parent.name)}">base ${parentBase}</span>` : "";
-          const occMark = occToggleHTML(name, occCtx.mandatory.has(name), occCtx.chosen.has(name));
-          row.innerHTML = `
-            <div class="skill-name">${occMark}${escapeHtml(name)}${parentTag}</div>
-            <input class="skill-input" type="number" min="0" max="99" value="${value}" data-skill="${escapeHtml(name)}" />
-            <div class="skill-frac" title="Difícil · Extremo">${dice.half(value)} · ${dice.fifth(value)}</div>
-            <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(name)}" title="Rolar perícia">🎲</button>
-          `;
-          inner.appendChild(row);
-        }
-        container.appendChild(group);
-      }
-    }
-
-    // Botão para adicionar nova perícia específica (sub-especialização)
-    const addBtn = el("button", {
-      style: { marginTop: "0.75rem" },
-      text: "+ Adicionar Perícia Específica",
-      on: { click: () => addCustomSkill() }
-    });
-    container.appendChild(addBtn);
-
-    // Inputs, rolagens e toggles de ocupação são tratados por DELEGAÇÃO de evento
-    // em #skills-groups (ver ensureSkillsDelegation): anexada 1x, sobrevive aos
-    // rebuilds de innerHTML e elimina o rebind por linha (sem listeners órfãos).
-  }
-
-  // Delegação de eventos das perícias — anexa UMA vez ao container.
-  // innerHTML="" remove os filhos (e seus handlers), mas o listener do container
-  // persiste; logo não há acúmulo nem órfãos a cada renderSkills().
-  function ensureSkillsDelegation() {
-    const container = $("#skills-groups");
-    if (!container || container._delegated) return;
-    container._delegated = true;
-
-    container.addEventListener("click", (e) => {
-      const rollBtn = e.target.closest(".skill-roll[data-roll-skill]");
-      if (rollBtn) { rollSkill(rollBtn.dataset.rollSkill); return; }
-      const occBtn = e.target.closest("[data-occ-toggle]");
-      if (occBtn) { e.preventDefault(); toggleOccupationSkill(occBtn.dataset.occToggle); }
-    });
-
-    container.addEventListener("input", (e) => {
-      const input = e.target.closest("input[data-skill]");
-      if (!input) return;
-      const c = state.character;
-      if (!c) return;
-      const name = input.dataset.skill;
-      const v = Math.max(0, Math.min(99, parseInt(input.value, 10) || 0));
-      c.skills = c.skills || {};
-      c.skills[name] = c.skills[name] || {};
-      c.skills[name].value = v;
-      updateSkillUI(name);   // light update — mantém o foco enquanto digita
-      markDirty();
-    });
-
-    // focusout borbulha (blur não) — persiste ao sair de um campo de perícia.
-    container.addEventListener("focusout", (e) => {
-      if (e.target.closest("input[data-skill]")) persistCurrent();
-    });
-  }
-
-  /**
-   * HTML do marcador de ocupação numa linha de perícia.
-   *  - obrigatória → diamante travado (◆), não clicável.
-   *  - designada (livre) → botão ◆ (clique para virar Interesse Pessoal).
-   *  - disponível → botão ◇ (clique para contar no pool da ocupação).
-   */
-  function occToggleHTML(name, isMandatory, isChosen) {
-    if (isMandatory) {
-      return `<span class="skill-occ mandatory" title="Perícia obrigatória da ocupação — já conta no pool de pontos da ocupação">◆</span>`;
-    }
-    const on = !!isChosen;
-    const title = on
-      ? "Perícia livre da ocupação (conta no pool). Clique para devolver ao Interesse Pessoal."
-      : "Marcar como perícia livre da ocupação (os pontos passam a contar no pool da ocupação).";
-    return `<button class="skill-occ-toggle${on ? " on" : ""}" data-occ-toggle="${escapeHtml(name)}" title="${title}" aria-pressed="${on}">${on ? "◆" : "◇"}</button>`;
-  }
-
-  /** Texto auxiliar do badge: quantas perícias livres da ocupação já foram usadas. */
-  function occFreePicksHint(ctx) {
-    if (!ctx || !ctx.freeBudget) return "";
-    return ` · livres ${ctx.freeUsed}/${ctx.freeBudget}`;
-  }
-
-  /**
-   * Alterna a designação de uma perícia como "perícia livre da ocupação".
-   * É o que faz os pontos gastos nela contarem no pool da OCUPAÇÃO (e não no
-   * de Interesse Pessoal). Não-bloqueante: o jogador pode exceder anySkillsCount —
-   * o badge apenas sinaliza. Resolve o bug da ocupação Personalizada.
-   */
-  function toggleOccupationSkill(name) {
-    const c = state.character;
-    if (!c || !name) return;
-    c.occupationSkills = Array.isArray(c.occupationSkills) ? c.occupationSkills : [];
-    const idx = c.occupationSkills.indexOf(name);
-    if (idx >= 0) c.occupationSkills.splice(idx, 1);
-    else c.occupationSkills.push(name);
-    renderSkills();
-    persistCurrent();
-  }
-
-  function computeBaseValue(skill, attrs) {
-    if (skill.baseFormula === "DES/2") return Math.floor((attrs.DES || 0) / 2);
-    if (skill.baseFormula === "EDU")   return attrs.EDU || 0;
-    return Number(skill.base) || 0;
-  }
-
-  function sumSkillSpend(c, occSkillSet) {
-    let occSpent = 0, piSpent = 0;
-    const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, v]) => [k, v.value]));
-    for (const [name, sk] of Object.entries(c.skills || {})) {
-      const def = window.CoCData.findSkill(name) ||
-                  // Tenta achar pela parte base (Lutar (Espada) → Lutar)
-                  window.CoCData.findSkill(name.replace(/\s*\(.+\)$/, ""));
-      const base = def ? computeBaseValue(def, attrs) : 0;
-      const v = Number(sk.value) || 0;
-      const spent = Math.max(0, v - base);
-      if (spent <= 0) continue;
-      if (occSkillSet && occSkillSet.has(name)) occSpent += spent;
-      else piSpent += spent;
-    }
-    return { occSpent, piSpent };
-  }
-
-  /**
-   * Light update: atualiza ½/⅕ na linha da perícia e os badges de pool,
-   * SEM recriar o DOM. Mantém o foco no input atual.
-   *
-   * Reservado para mudanças "value-only" durante digitação.
-   * Mudanças estruturais (ocupação, filtro, busca, add) ainda chamam renderSkills().
-   */
-  function updateSkillUI(name) {
-    const c = state.character;
-    if (!c) return;
-
-    // 1) Atualiza a linha (1/2 e 1/5 da perícia editada)
-    const input = document.querySelector(`input[data-skill="${cssEscape(name)}"]`);
-    if (input) {
-      const v = Number(input.value) || 0;
-      const row = input.closest(".skill-row");
-      const frac = row?.querySelector(".skill-frac");
-      if (frac) frac.textContent = `${dice.half(v)} · ${dice.fifth(v)}`;
-
-      // Atualiza marcação de cap excedido
-      if (row) {
-        const cap = validators.skillCapStatus(v, state.editMode);
-        row.classList.toggle("over-cap", cap.level === "err");
-        row.classList.toggle("over-cap-warn", cap.level === "warn" && !cap.ok);
-      }
-    }
-
-    // 2) Recalcula badges de pool (Ocupação / Interesse)
-    refreshSkillBadges();
-  }
-
-  /**
-   * Recalcula os badges Ocupação/Interesse sem tocar nos inputs.
-   */
-  function refreshSkillBadges() {
-    const c = state.character;
-    if (!c) return;
-    c.occupationSkills = Array.isArray(c.occupationSkills) ? c.occupationSkills : [];
-    const occName = c.investigator?.occupation;
-    const occ = occName ? window.CoCData.findOccupation(occName) : null;
-    const occCtx = rules.buildOccupationContext(occ, c);
-    const occSkills = occCtx.effective;
-
-    const attrs = Object.fromEntries(Object.entries(c.attributes || {}).map(([k, v]) => [k, v.value]));
-    const occBudget = occ ? rules.calcOccupationPoints(occ.pointsFormula, attrs).points : 0;
-    const piBudget  = rules.calcPersonalInterestPoints(attrs.INT || 0);
-    const { occSpent, piSpent } = sumSkillSpend(c, occSkills);
-
-    const occState = validators.pointsBadgeState(occSpent, occBudget);
-    const piState  = validators.pointsBadgeState(piSpent, piBudget);
-    const badgeOcc = $("#badge-occ");
-    const badgePi  = $("#badge-pi");
-    if (badgeOcc) {
-      badgeOcc.classList.remove("ok", "warn", "err");
-      if (occState.level === "ok")   badgeOcc.classList.add("ok");
-      if (occState.level === "warn") badgeOcc.classList.add("warn");
-      if (occState.level === "err")  badgeOcc.classList.add("err");
-      badgeOcc.textContent = "Ocupação: " + occState.label + occFreePicksHint(occCtx);
-    }
-    if (badgePi) {
-      badgePi.classList.remove("ok", "warn", "err");
-      if (piState.level === "ok")    badgePi.classList.add("ok");
-      if (piState.level === "warn")  badgePi.classList.add("warn");
-      if (piState.level === "err")   badgePi.classList.add("err");
-      badgePi.textContent = "Interesse: " + piState.label;
-    }
-  }
-
-  /**
-   * Escape de seletor CSS para nomes com parênteses, espaços, etc.
-   * (CSS.escape() pode não existir em browsers antigos — fallback manual)
-   */
-  function cssEscape(s) {
-    if (window.CSS && typeof window.CSS.escape === "function") return window.CSS.escape(s);
-    return String(s).replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, "\\$1");
-  }
-
-  /**
-   * Adiciona uma perícia específica (sub-especialização) custom.
-   * Ex: Arte/Ofício (Atuação), Lutar (Espada), Outra Língua (Latim).
-   */
-  async function addCustomSkill() {
-    if (!state.character) return;
-
-    // Mostra dropdown com perícias especializáveis + opção livre
-    const specializable = window.CoCData.skills.filter(s => s.specializable);
-    const wrapper = el("div", {});
-    wrapper.innerHTML = `
-      <p style="margin-bottom: 0.5rem; color: var(--ink-dim);">Escolha a perícia base e a especialização.</p>
-      <label>Perícia base</label>
-      <select id="cs-parent">
-        <option value="">— Outra (digite o nome completo) —</option>
-        ${specializable.map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join("")}
-      </select>
-      <div style="margin-top: 0.5rem;">
-        <label>Especialização</label>
-        <input type="text" id="cs-spec" placeholder="Ex: Espada, Latim, Atuação" />
-        <p id="cs-examples" class="dim" style="font-size: 0.8em; margin-top: 0.3rem;"></p>
-      </div>
-      <div style="margin-top: 0.5rem;">
-        <label>Nome completo (auto-gerado, edite se quiser)</label>
-        <input type="text" id="cs-name" placeholder="Lutar (Espada)" />
-      </div>
-      <div style="margin-top: 0.5rem;">
-        <label>Valor inicial</label>
-        <input type="number" id="cs-value" value="0" min="0" max="99" />
-      </div>
-      <div style="margin-top: 0.5rem;">
-        <label><input type="checkbox" id="cs-occ" /> Conta para a ocupação (perícia livre)</label>
-        <p class="dim" style="font-size: 0.8em; margin-top: 0.2rem;">Marque para os pontos desta perícia contarem no pool da OCUPAÇÃO em vez do Interesse Pessoal. Essencial para a ocupação "Personalizada".</p>
-      </div>
-    `;
-
-    const parentSel = wrapper.querySelector("#cs-parent");
-    const specInput = wrapper.querySelector("#cs-spec");
-    const nameInput = wrapper.querySelector("#cs-name");
-    const examples = wrapper.querySelector("#cs-examples");
-    const valueInput = wrapper.querySelector("#cs-value");
-    const occCheck = wrapper.querySelector("#cs-occ");
-
-    // Pré-marca quando a ocupação atual ainda tem perícias livres disponíveis.
-    const occNow = state.character.investigator?.occupation ? window.CoCData.findOccupation(state.character.investigator.occupation) : null;
-    const ctxNow = rules.buildOccupationContext(occNow, state.character);
-    if (occCheck) occCheck.checked = ctxNow.freeBudget > 0 && ctxNow.freeUsed < ctxNow.freeBudget;
-
-    function syncName() {
-      const p = parentSel.value;
-      const s = specInput.value.trim();
-      if (p && s) nameInput.value = `${p} (${s})`;
-      else if (p) nameInput.value = p + " (...)";
-    }
-    parentSel.onchange = () => {
-      const p = window.CoCData.findSkill(parentSel.value);
-      examples.textContent = p?.examples ? "Ex: " + p.examples.join(", ") : "";
-      // Pré-popula valor com base
-      const attrs = Object.fromEntries(Object.entries(state.character.attributes || {}).map(([k, v]) => [k, v.value]));
-      valueInput.value = p ? computeBaseValue(p, attrs) : 0;
-      syncName();
-    };
-    specInput.oninput = syncName;
-
-    modal({
-      title: "Adicionar Perícia Específica",
-      body: wrapper,
-      actions: [
-        { label: "Cancelar" },
-        { label: "Adicionar", primary: true, onClick: () => {
-          const name = nameInput.value.trim();
-          if (!name) { toast("Nome obrigatório", { type: "warn" }); return false; }
-          const v = Math.max(0, Math.min(99, parseInt(valueInput.value, 10) || 0));
-          state.character.skills = state.character.skills || {};
-          state.character.skills[name] = { value: v };
-          if (occCheck && occCheck.checked) {
-            state.character.occupationSkills = Array.isArray(state.character.occupationSkills) ? state.character.occupationSkills : [];
-            if (!state.character.occupationSkills.includes(name)) state.character.occupationSkills.push(name);
-          }
-          renderSkills();
-          persistCurrent();
-          toast(`"${name}" adicionada`, { type: "success" });
-        }}
-      ]
-    });
-  }
+  // ─── PERÍCIAS — extraído para js/views/skills.js (M3.3) ──────────────────
+  // Delegações locais para compatibilidade com renderAll() e outros call sites.
+  function renderSkills()      { window.CoC.views.skills.render(); }
+  function refreshSkillBadges(){ window.CoC.views.skills.refreshBadges(); }
 
   // ─── ARSENAL ──────────────────────────────────────────────────────────
   function renderWeapons() {
@@ -1200,8 +792,11 @@
     const direct = Number(c?.skills?.[name]?.value);
     if (!isNaN(direct)) return direct;
     const def = window.CoCData.findSkill(name) || window.CoCData.findSkill(name.replace(/\s*\(.+\)$/, ""));
+    if (!def) return 0;
     const attrs = Object.fromEntries(Object.entries(c?.attributes || {}).map(([k, x]) => [k, x.value]));
-    return def ? computeBaseValue(def, attrs) : 0;
+    if (def.baseFormula === "DES/2") return Math.floor((attrs.DES || 0) / 2);
+    if (def.baseFormula === "EDU")   return attrs.EDU || 0;
+    return Number(def.base) || 0;
   }
 
   function rollAttribute(code, difficultyOverride) {
@@ -1494,22 +1089,7 @@
     };
 
     $("#btn-add-weapon").onclick = () => editWeapon(state.character?.weapons?.length || 0);
-
-    // Filtros de perícia
-    $$(".filter-chip").forEach(chip => {
-      chip.onclick = () => {
-        $$(".filter-chip").forEach(c => c.classList.remove("active"));
-        chip.classList.add("active");
-        state.skillFilter = chip.dataset.filter;
-        renderSkills();
-      };
-    });
-    $$(".filter-chip[data-filter='all']").forEach(c => c.classList.add("active"));
-
-    $("#skill-search-input").oninput = (e) => {
-      state.skillSearch = e.target.value;
-      renderSkills();
-    };
+    // Filtros de perícia e search-input → gerenciados por window.CoC.views.skills.init()
   }
 
   function rollAllAttributes() {

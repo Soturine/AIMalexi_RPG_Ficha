@@ -47,13 +47,15 @@ window.CoC = window.CoC || {};
     REMOVE_STATUS:   "REMOVE_STATUS",
 
     // ── Ficha (edição do próprio investigador) ───────────────────────────
-    SET_ATTRIBUTE:   "SET_ATTRIBUTE",
-    SET_SKILL:       "SET_SKILL",
-    SET_IDENTITY:    "SET_IDENTITY",
-    SET_IMAGE:       "SET_IMAGE",
-    EQUIP_WEAPON:    "EQUIP_WEAPON",
-    ADD_ITEM:        "ADD_ITEM",
-    REMOVE_ITEM:     "REMOVE_ITEM"
+    SET_ATTRIBUTE:          "SET_ATTRIBUTE",
+    SET_SKILL:              "SET_SKILL",
+    TOGGLE_OCCUPATION_SKILL:"TOGGLE_OCCUPATION_SKILL",
+    ADD_CUSTOM_SKILL:       "ADD_CUSTOM_SKILL",
+    SET_IDENTITY:           "SET_IDENTITY",
+    SET_IMAGE:              "SET_IMAGE",
+    EQUIP_WEAPON:           "EQUIP_WEAPON",
+    ADD_ITEM:               "ADD_ITEM",
+    REMOVE_ITEM:            "REMOVE_ITEM"
   });
 
   // Campos SAGRADOS (Constituição §8): no multiplayer o jogador NÃO aplica
@@ -99,9 +101,11 @@ window.CoC = window.CoC || {};
     removeStatus:   (status)                        => make(TYPES.REMOVE_STATUS,   { status }),
 
     // Ficha
-    setAttribute:   (code, value)                  => make(TYPES.SET_ATTRIBUTE,   { code, value }),
-    setSkill:       (name, value)                  => make(TYPES.SET_SKILL,       { name, value }),
-    setIdentity:    (field, value)                 => make(TYPES.SET_IDENTITY,    { field, value }),
+    setAttribute:          (code, value)                     => make(TYPES.SET_ATTRIBUTE,          { code, value }),
+    setSkill:              (name, value)                     => make(TYPES.SET_SKILL,              { name, value }),
+    toggleOccupationSkill: (skillName)                       => make(TYPES.TOGGLE_OCCUPATION_SKILL, { skillName }),
+    addCustomSkill:        (skillName, value, isOccupation)  => make(TYPES.ADD_CUSTOM_SKILL,        { skillName, value, isOccupation: !!isOccupation }),
+    setIdentity:           (field, value)                    => make(TYPES.SET_IDENTITY,            { field, value }),
     setImage:       (slot, ref)                    => make(TYPES.SET_IMAGE,       { slot, ref }), // slot: "banner" | "portrait"
     equipWeapon:    (weaponId, equipped = true)    => make(TYPES.EQUIP_WEAPON,    { weaponId, equipped }),
     addItem:        (item)                         => make(TYPES.ADD_ITEM,        { item }),
