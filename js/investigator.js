@@ -1175,20 +1175,28 @@
   function bindMobileTabs() {
     $$(".mobile-tab").forEach(t => {
       t.onclick = () => {
-        $$(".mobile-tab").forEach(x => x.classList.remove("active"));
-        t.classList.add("active");
         state.mobileTab = t.dataset.tab;
-        applyMobileTab();
+        applyTab();
       };
     });
-    applyMobileTab();
+    $$(".desktop-tab").forEach(t => {
+      t.onclick = () => {
+        state.mobileTab = t.dataset.tab;
+        applyTab();
+      };
+    });
+    applyTab();
   }
 
-  function applyMobileTab() {
+  function applyTab() {
     const tab = state.mobileTab;
-    // No desktop, todas as sections estão visíveis. No mobile, só a ativa.
     $$("[data-tab]").forEach(s => s.classList.toggle("tab-active", s.dataset.tab === tab));
+    $$(".mobile-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+    $$(".desktop-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
   }
+
+  // Alias para compatibilidade com chamadas existentes
+  const applyMobileTab = applyTab;
 
   // ═════════════════════════════════════════════════════════════════════
   // DIRTY TRACKING

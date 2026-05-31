@@ -162,6 +162,53 @@
   overflow-y: auto;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESKTOP TABS — M3.5.2
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.desktop-tabs {
+  display: none; /* activated at >768px */
+  grid-column: 1 / -1;
+  gap: 0;
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--brass);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  overflow: hidden;
+  padding: 0 0.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.desktop-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-dim);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.desktop-tab:hover  { color: var(--ink); }
+.desktop-tab.active {
+  color: var(--brass-bright);
+  border-bottom-color: var(--brass);
+}
+
+/* On desktop: hide all sections by default, show only active tab */
+@media (min-width: 769px) {
+  .desktop-tabs { display: flex; }
+  .main-panel > .content-col > .section { display: none; }
+  .main-panel > .content-col > .section.tab-active { display: block; }
+  .sidebar-col { display: none; }
+  .sidebar-col.tab-active { display: block; }
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 
 @media (max-width: 1200px) {

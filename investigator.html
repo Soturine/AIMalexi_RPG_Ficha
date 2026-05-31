@@ -134,6 +134,10 @@
       ⚔️ Combate
     </button>
 
+    <button class="mobile-tab" data-tab="inventario">
+      🎒 Inventário
+    </button>
+
     <button class="mobile-tab" data-tab="diario">
       📔 Diário
     </button>
@@ -163,6 +167,15 @@
 
     <!-- ═══ PAINEL PRINCIPAL ═══ -->
     <div class="main-panel">
+
+      <nav class="desktop-tabs no-print" id="desktop-tabs" aria-label="Navegação da ficha">
+        <button class="desktop-tab active" data-tab="personagem">👤 Personagem</button>
+        <button class="desktop-tab" data-tab="pericias">📜 Perícias</button>
+        <button class="desktop-tab" data-tab="combate">⚔️ Combate</button>
+        <button class="desktop-tab" data-tab="inventario">🎒 Inventário</button>
+        <button class="desktop-tab" data-tab="diario">📔 Diário</button>
+        <button class="desktop-tab" data-tab="log">🎲 Log</button>
+      </nav>
 
     <!-- ═══ CONTEÚDO ═══ -->
     <div class="content-col">
@@ -283,7 +296,7 @@
 
 
       <!-- DERIVADOS -->
-      <section class="section" data-tab="personagem">
+      <section class="section" data-tab="combate">
 
         <h2 class="section-title">
           Estatísticas Derivadas
@@ -352,7 +365,7 @@
       </section>
 
       <!-- FINANÇAS -->
-      <section class="section" data-tab="combate">
+      <section class="section" data-tab="personagem">
 
         <h2 class="section-title">
           Finanças
@@ -364,11 +377,11 @@
       </section>
 
       <!-- DIÁRIO -->
-      <section class="section" data-tab="diario">
+      <section class="section" data-tab="personagem">
 
         <h2 class="section-title">
-          Diário do Investigador
-          <span class="meta">Background, ideologia, traços</span>
+          Background & Conceito
+          <span class="meta">Origem, traços, convicções, pessoas importantes</span>
         </h2>
 
         <div class="background-grid">
@@ -439,6 +452,28 @@
 
         </div>
 
+      </section>
+
+      <!-- INVENTÁRIO — M3.5 stub -->
+      <section class="section" data-tab="inventario">
+        <h2 class="section-title">
+          Inventário
+          <span class="meta">Em desenvolvimento</span>
+        </h2>
+        <p class="dim" style="padding: 2rem 0; text-align: center;">
+          📦 Gestão de itens e equipamentos em breve.
+        </p>
+      </section>
+
+      <!-- DIÁRIO — M3.5 stub -->
+      <section class="section" data-tab="diario">
+        <h2 class="section-title">
+          Diário de Campanha
+          <span class="meta">Em desenvolvimento</span>
+        </h2>
+        <p class="dim" style="padding: 2rem 0; text-align: center;">
+          📔 Journal de pistas, NPCs e eventos em breve.
+        </p>
       </section>
 
     </div>
