@@ -73,6 +73,13 @@ window.CoC.core = window.CoC.core || {};
       status: 'live',
       boundary_randomness: false,
     },
+    ADD_MYTHOS: {
+      aggregate: 'character', domain: 'sanity',
+      renders: ['vitals'], persists: true, sacred: true,
+      effects: ['check:sanMax'],
+      status: 'live',
+      boundary_randomness: false,
+    },
     LOSE_SANITY: {
       aggregate: 'character', domain: 'sanity',
       renders: ['vitals'], persists: true, sacred: true,

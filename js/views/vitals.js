@@ -169,11 +169,7 @@ window.CoC.views = window.CoC.views || {};
     if (delta === 0) return;
 
     if (key === "Mitos") {
-      // ADD_MYTHOS action pending M3+ — direct mutation; bus handles side-effects
-      const char = cocStore.getState().character;
-      char.derived.Mitos.value = Math.max(0, (char.derived.Mitos.value || 0) + delta);
-      bus.publish("vitals:mitos-changed", {});
-      renderVitals();   // Mitos bypasses store → explicit re-render
+      cocExecutor.execute({ type: 'ADD_MYTHOS', payload: { delta } });
       return;
     }
 
@@ -203,6 +199,7 @@ window.CoC.views = window.CoC.views || {};
     RECOVER_SANITY: { key: "SAN", sign:  1 },
     SPEND_MAGIC:    { key: "PM",  sign: -1 },
     RESTORE_MAGIC:  { key: "PM",  sign:  1 },
+    ADD_MYTHOS:     { key: "Mitos", sign: 1 },
   };
 
   function initVitals() {

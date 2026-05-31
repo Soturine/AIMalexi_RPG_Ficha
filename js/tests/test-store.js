@@ -467,3 +467,61 @@ assert(store.getState() === _stateBeforePush,
 store.dispatch({ type: 'PUSH_ROLL', payload: { skillName: 'Lutar', skillValue: 50, roll: 99, level: 'fumble' }});
 assert(store.getState() === _stateBeforePush,
   'PUSH_ROLL múltiplos dispatches: estado permanece inalterado');
+
+// ── ADD_MYTHOS — reducer com efeito em SAN.max ───────────────────────────────
+group('store — ADD_MYTHOS: atualiza Mitos e recalcula SAN.max');
+
+function _loadMythosChar() {
+  store.dispatch({ type: 'SET_CHARACTER', payload: {
+    investigator: { name: 'Mythos Test' },
+    attributes: { FOR:{value:60},CON:{value:60},TAM:{value:60},DES:{value:50},
+      APA:{value:50},INT:{value:70},POD:{value:60},EDU:{value:75},Sorte:{value:50} },
+    derived: { PV:{value:12,current:12},
+      SAN:{value:60,current:60,max:99},  // POD=60, Mitos=0 → max=99
+      PM:{value:12,current:12},
+      Mitos:{value:0,label:'Mythos de Cthulhu'},
+      MOV:{value:8},DB:{label:'+0'},Build:{value:0} },
+    status:{majorWound:false,unconscious:false,dying:false,dead:false,
+      tempInsane:false,indefInsane:false,incurablyInsane:false,sanLossesToday:0},
+    skills:{},weapons:[],inventory:[],journal:[],spells:[],tomes:[],
+  }});
+}
+
+_loadMythosChar();
+store.dispatch({ type: 'ADD_MYTHOS', payload: { delta: 5 } });
+var _afterMythos5 = store.getState().character;
+assert(_afterMythos5.derived.Mitos.value === 5,    'ADD_MYTHOS +5: Mitos.value = 5');
+assert(_afterMythos5.derived.SAN.max === 94,        'ADD_MYTHOS +5: SAN.max = 99-5 = 94 (calcSANMax)');
+
+store.dispatch({ type: 'ADD_MYTHOS', payload: { delta: -2 } });
+var _afterMythosDown = store.getState().character;
+assert(_afterMythosDown.derived.Mitos.value === 3,  'ADD_MYTHOS -2: Mitos.value = 3');
+assert(_afterMythosDown.derived.SAN.max === 96,     'ADD_MYTHOS -2: SAN.max = 99-3 = 96');
+
+// Clamp em 0
+store.dispatch({ type: 'ADD_MYTHOS', payload: { delta: -100 } });
+assert(store.getState().character.derived.Mitos.value === 0, 'ADD_MYTHOS clamp em 0');
+
+// Clamp em 99
+_loadMythosChar();
+store.dispatch({ type: 'ADD_MYTHOS', payload: { delta: 200 } });
+assert(store.getState().character.derived.Mitos.value === 99, 'ADD_MYTHOS clamp em 99');
+
+// SAN.current clampado se Mitos sobe muito
+_loadMythosChar();
+store.dispatch({ type: 'SET_CHARACTER', payload: Object.assign({}, store.getState().character, {
+  derived: Object.assign({}, store.getState().character.derived, {
+    SAN: { value: 60, current: 80, max: 99 }
+  })
+}) });
+store.dispatch({ type: 'ADD_MYTHOS', payload: { delta: 30 } });
+var _afterBigMythos = store.getState().character;
+assert(_afterBigMythos.derived.SAN.max === 69,      'ADD_MYTHOS +30: SAN.max = 99-30 = 69');
+assert(_afterBigMythos.derived.SAN.current <= 69,   'ADD_MYTHOS +30: SAN.current clampado ao novo max');
+
+// Imutabilidade
+_loadMythosChar();
+var _stateBeforeM = store.getState();
+store.dispatch({ type: 'ADD_MYTHOS', payload: { delta: 1 } });
+assert(store.getState() !== _stateBeforeM,           'ADD_MYTHOS: cria nova referência de estado');
+assert(_stateBeforeM.character.derived.Mitos.value === 0, 'estado anterior não mutado por ADD_MYTHOS');

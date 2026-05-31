@@ -70,6 +70,23 @@ window.CoC = window.CoC || {};
       }
 
       // ── SAN ───────────────────────────────────────────────────────────────
+      case "ADD_MYTHOS": {
+        if (!c || !c.derived) return state;
+        const nc = deepClone(c);
+        nc.derived.Mitos = nc.derived.Mitos || { label: "Mythos de Cthulhu", value: 0 };
+        nc.derived.Mitos.value = Math.max(0, Math.min(99, (nc.derived.Mitos.value || 0) + (action.payload.delta || 0)));
+        const _r = window.CoC && window.CoC.rules;
+        if (_r) {
+          const newSANMax = _r.calcSANMax(nc.derived.Mitos.value);
+          nc.derived.SAN = nc.derived.SAN || {};
+          nc.derived.SAN.max = newSANMax;
+          if (nc.derived.SAN.current != null && nc.derived.SAN.current > newSANMax) {
+            nc.derived.SAN.current = newSANMax;
+          }
+        }
+        return Object.assign({}, state, { character: nc });
+      }
+
       case "LOSE_SANITY": {
         if (!c || !c.derived || !c.derived.SAN) return state;
         const nc = deepClone(c);
