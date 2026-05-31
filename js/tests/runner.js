@@ -18,6 +18,7 @@
 
 // ── Shimming do ambiente browser ──────────────────────────────────────────
 global.window    = global;
+global.self      = global;   // dice.js usa self.crypto.getRandomValues
 global.performance = global.performance || { now: () => Date.now() };
 
 // ── Carregamento dos arquivos de fonte ────────────────────────────────────
@@ -31,6 +32,7 @@ function load(rel) {
 // Ordem importa: CoCData antes das regras (calcDB lê window.CoCData em call time)
 load('data/damage-bonus-table.js');
 load('js/engine/coc7e-rules.js');
+load('js/engine/dice.js');
 
 // Core: signals → bus → store (cada um depende do anterior)
 load('js/core/signals.js');
@@ -77,6 +79,7 @@ global.group = function group(name) {
 const t0 = Date.now();
 load('js/tests/test-rules.js');
 load('js/tests/test-store.js');
+load('js/tests/test-dice.js');
 const elapsed = Date.now() - t0;
 
 // ── Relatório final ───────────────────────────────────────────────────────
