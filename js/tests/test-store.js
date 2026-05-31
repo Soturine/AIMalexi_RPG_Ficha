@@ -449,3 +449,21 @@ store.dispatch({ type: 'ROLL_SKILL', payload: { skillName: 'Lutar', skillValue: 
 store.dispatch({ type: 'ROLL_SKILL', payload: { skillName: 'Lutar', skillValue: 50, roll: 99, level: 'fumble' }});
 assert(store.getState() === _stateBeforeRollSkill,
   'ROLL_SKILL múltiplos dispatches: estado permanece inalterado');
+
+// ── PUSH_ROLL — no-op no reducer (persists:false, session-only) ─────────────
+group('store — PUSH_ROLL: no-op no reducer');
+
+store.dispatch({ type: 'SET_CHARACTER', payload: _minChar2 });
+var _stateBeforePush = store.getState();
+
+store.dispatch({ type: 'PUSH_ROLL', payload: {
+  skillName: 'Lutar', skillValue: 50, roll: 44, level: 'regular',
+  difficulty: 'regular', bp: null, pushed: true, originalRoll: 78, originalLevel: 'fail',
+}});
+assert(store.getState() === _stateBeforePush,
+  'PUSH_ROLL: retorna mesma referência de estado (no-op — persists:false)');
+
+// PUSH_ROLL idempotente
+store.dispatch({ type: 'PUSH_ROLL', payload: { skillName: 'Lutar', skillValue: 50, roll: 99, level: 'fumble' }});
+assert(store.getState() === _stateBeforePush,
+  'PUSH_ROLL múltiplos dispatches: estado permanece inalterado');

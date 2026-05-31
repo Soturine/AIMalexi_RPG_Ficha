@@ -199,7 +199,7 @@ window.CoC.core = window.CoC.core || {};
       aggregate: 'session', domain: 'rolls',
       renders: null, persists: false, sacred: false,
       effects: ['roll:logged', 'roll:pushed'],
-      status: 'planned',
+      status: 'live',
       boundary_randomness: true,
       resolved_fields: ['roll', 'skillValue', 'level'],
     },

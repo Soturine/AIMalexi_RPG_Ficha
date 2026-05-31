@@ -325,3 +325,43 @@ var _warnsBefore = _warnsBatch.length;
 _cExec.execute({ type: 'ROLL_SKILL', payload: { skillName: 'Esquiva' }});
 assert(_warnsBatch.length > _warnsBefore,
   'ROLL_SKILL sem roll/skillValue/level → executor:payload-warning emitido');
+
+// ── PUSH_ROLL live + luckCost snapshot (Sprint 15) ──────────────────────────
+group('event-ontology — PUSH_ROLL promovido a live');
+
+assert(_cOnto.CATALOG['PUSH_ROLL'].status === 'live',
+  'PUSH_ROLL.status === "live" após Sprint 15');
+assert(_cOnto.CATALOG['PUSH_ROLL'].boundary_randomness === true,
+  'PUSH_ROLL.boundary_randomness é true');
+assert(Array.isArray(_cOnto.BOUNDARY_FIELDS['PUSH_ROLL']),
+  'PUSH_ROLL está em BOUNDARY_FIELDS');
+assert(_cOnto.BOUNDARY_FIELDS['PUSH_ROLL'].includes('roll'),
+  'PUSH_ROLL.resolved_fields contém "roll"');
+assert(_cOnto.BOUNDARY_FIELDS['PUSH_ROLL'].includes('skillValue'),
+  'PUSH_ROLL.resolved_fields contém "skillValue"');
+assert(_cOnto.BOUNDARY_FIELDS['PUSH_ROLL'].includes('level'),
+  'PUSH_ROLL.resolved_fields contém "level"');
+
+// executor.execute com PUSH_ROLL válido → zero warnings adicionais
+var _warnsBefore2 = _warnsBatch.length;
+_cExec.execute({ type: 'PUSH_ROLL', payload: {
+  skillName: 'Lutar', skillValue: 50, roll: 34, level: 'regular',
+  difficulty: 'regular', bp: null, pushed: true, originalRoll: 78, originalLevel: 'fail',
+}});
+assert(_warnsBatch.length === _warnsBefore2,
+  'PUSH_ROLL com payload completo → zero warnings');
+
+// PUSH_ROLL sem campos obrigatórios → warning
+var _warnsBefore3 = _warnsBatch.length;
+_cExec.execute({ type: 'PUSH_ROLL', payload: { skillName: 'Lutar' }});
+assert(_warnsBatch.length > _warnsBefore3,
+  'PUSH_ROLL sem roll/skillValue/level → executor:payload-warning');
+
+// PUSH_ROLL no-op no reducer
+var _stateAfterPush = _cStore.getState();
+_cExec.execute({ type: 'PUSH_ROLL', payload: {
+  skillName: 'Lutar', skillValue: 50, roll: 44, level: 'regular',
+  difficulty: 'regular', bp: null, pushed: true, originalRoll: 78, originalLevel: 'fail',
+}});
+assert(_cStore.getState() === _stateAfterPush,
+  'PUSH_ROLL live não muta estado do store');

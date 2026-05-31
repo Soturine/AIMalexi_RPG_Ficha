@@ -138,6 +138,7 @@ window.CoC = window.CoC || {};
       // executor:action → executionTrace captura o fato para observabilidade.
       case "ROLL_SKILL":
       case "ROLL_ATTRIBUTE":
+      case "PUSH_ROLL":
         return state;
 
       // ── Perícias ──────────────────────────────────────────────────────────
