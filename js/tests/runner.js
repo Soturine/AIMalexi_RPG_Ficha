@@ -47,6 +47,7 @@ load('js/core/render-pipeline.js');
 load('js/core/state-machine.js');
 load('js/core/executor.js');
 load('js/core/replay-consumer.js');
+load('js/core/session-export.js');
 
 // Views (somente o necessário para testes; DOM não é chamado no carregamento)
 load('js/views/combat.js');
@@ -102,6 +103,7 @@ load('js/tests/test-event-ontology.js');
 load('js/tests/test-state-machine.js');
 load('js/tests/test-executor.js');
 load('js/tests/test-replay.js');
+load('js/tests/test-session-export.js');
 load('js/tests/test-architecture.js');
 const elapsed = Date.now() - t0;
 

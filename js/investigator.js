@@ -506,6 +506,11 @@
       if (ok) toast("✓ JSON exportado — guarde este arquivo como backup!", { type: "success", duration: 4000 });
     };
 
+    $("#btn-session-export").onclick = () => {
+      const se = window.CoC.core && window.CoC.core.sessionExport;
+      if (se) se.exportSession();
+    };
+
     $("#btn-delete").onclick = async () => {
       if (!state.character) return;
       const name = state.character.investigator?.name || "(sem nome)";
