@@ -255,3 +255,73 @@ assert(_warnings[0].missing.includes('roll'), 'warning.missing contém "roll"');
 _warnings = [];
 _exec2.execute({ type: 'ATTACK_RESOLVED', payload: { weaponId:'w1', hit:true, isFired:false, roll:47, damage:0 } });
 assertEq(_warnings.length, 0, 'payload completo → zero warnings');
+
+// ── ROLL_SKILL e ROLL_ATTRIBUTE: status live (Sprint 14) ────────────────────
+group('event-ontology — ROLL_SKILL e ROLL_ATTRIBUTE promovidos a live');
+
+var _cLog    = window.CoC.eventLog;
+var _ctrace  = window.CoC.executionTrace;
+var _cExec   = window.CoC.core.executor;
+var _cStore  = window.CoC.store;
+var _cOnto   = window.CoC.core.eventOntology;
+
+assert(_cOnto.CATALOG['ROLL_SKILL'].status === 'live',
+  'ROLL_SKILL.status === "live" após Sprint 14');
+assert(_cOnto.CATALOG['ROLL_ATTRIBUTE'].status === 'live',
+  'ROLL_ATTRIBUTE.status === "live" após Sprint 14');
+
+// ROLL_SKILL permanece em BOUNDARY_FIELDS (boundary_randomness:true)
+assert(Array.isArray(_cOnto.BOUNDARY_FIELDS['ROLL_SKILL']),
+  'ROLL_SKILL ainda tem entrada em BOUNDARY_FIELDS');
+assert(_cOnto.BOUNDARY_FIELDS['ROLL_SKILL'].includes('roll'),
+  'ROLL_SKILL.resolved_fields contém "roll"');
+assert(_cOnto.BOUNDARY_FIELDS['ROLL_SKILL'].includes('skillValue'),
+  'ROLL_SKILL.resolved_fields contém "skillValue"');
+assert(_cOnto.BOUNDARY_FIELDS['ROLL_SKILL'].includes('level'),
+  'ROLL_SKILL.resolved_fields contém "level"');
+
+// executor.execute com ROLL_SKILL válido → zero warnings
+_cStore.dispatch({ type: 'SET_CHARACTER', payload: {
+  investigator: { name: 'Live Test' },
+  attributes: { FOR:{value:60},CON:{value:60},TAM:{value:60},DES:{value:50},
+    APA:{value:50},INT:{value:70},POD:{value:60},EDU:{value:75},Sorte:{value:50} },
+  derived: { PV:{value:12,current:12},SAN:{value:60,current:60,max:100},
+    PM:{value:12,current:12},Mitos:{value:0},MOV:{value:8},DB:{label:'+0'},Build:{value:0} },
+  status:{majorWound:false,unconscious:false,dying:false,dead:false,
+    tempInsane:false,indefInsane:false,incurablyInsane:false,sanLossesToday:0},
+  skills:{},weapons:[],inventory:[],journal:[],spells:[],tomes:[],
+}});
+
+var _warnCount = 0;
+var _warnUnsub = _cExec ? null : null;
+// Subscription para capturar warnings desta seção
+var _warnsBatch = [];
+window.CoC.bus.subscribe('executor:payload-warning', function(ev) { _warnsBatch.push(ev); });
+
+_ctrace.clear();
+_cExec.execute({ type: 'ROLL_SKILL', payload: {
+  skillName: 'Biblioteca', skillValue: 60, roll: 34, level: 'regular',
+  difficulty: 'regular', bp: null, pushed: false,
+}});
+
+var _trace14 = _ctrace.tail(1);
+assert(_trace14.length === 1,           'executionTrace captura ROLL_SKILL live');
+assert(_trace14[0].type === 'ROLL_SKILL', 'trace entry.type === ROLL_SKILL');
+assert(_trace14[0].payload.skillName === 'Biblioteca', 'trace payload.skillName preservado');
+assert(_trace14[0].payload.roll === 34, 'trace payload.roll = 34 (boundary value)');
+assert(_trace14[0].payload.level === 'regular', 'trace payload.level preservado');
+
+// Estado não muda (persists:false, no-op no reducer)
+var _stateAfterRoll = _cStore.getState();
+_cExec.execute({ type: 'ROLL_SKILL', payload: {
+  skillName: 'Lutar', skillValue: 50, roll: 1, level: 'crit',
+  difficulty: 'regular', bp: null, pushed: false,
+}});
+assert(_cStore.getState() === _stateAfterRoll,
+  'ROLL_SKILL live não muta estado do store (no-op)');
+
+// ROLL_SKILL sem resolved_fields → warning (mas não quebra runtime)
+var _warnsBefore = _warnsBatch.length;
+_cExec.execute({ type: 'ROLL_SKILL', payload: { skillName: 'Esquiva' }});
+assert(_warnsBatch.length > _warnsBefore,
+  'ROLL_SKILL sem roll/skillValue/level → executor:payload-warning emitido');

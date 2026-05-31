@@ -164,12 +164,11 @@ window.CoC.core = window.CoC.core || {};
     },
     ROLL_SKILL: {
       aggregate: 'session', domain: 'rolls',
-      renders: ['skills'], persists: false, sacred: false,
+      renders: null, persists: false, sacred: false,
       effects: ['roll:logged', 'roll:badge-inc'],
-      status: 'planned',
+      status: 'live',
       boundary_randomness: true,
-      resolved_fields: ['roll', 'skillValue', 'level'],  // d100 + valor alvo + classificação
-      note: 'Atualmente em views/rolls.js fora do fluxo de store; RENDER_MAP ignorado',
+      resolved_fields: ['roll', 'skillValue', 'level'],
     },
     SKILL_IMPROVED: {
       aggregate: 'character', domain: 'skills',
@@ -184,7 +183,7 @@ window.CoC.core = window.CoC.core || {};
       aggregate: 'session', domain: 'rolls',
       renders: null, persists: false, sacred: false,
       effects: ['roll:logged'],
-      status: 'planned',
+      status: 'live',
       boundary_randomness: true,
       resolved_fields: ['roll', 'attribute', 'result'],
     },

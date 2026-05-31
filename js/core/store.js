@@ -133,6 +133,13 @@ window.CoC = window.CoC || {};
         return Object.assign({}, state, { character: nc });
       }
 
+      // ── Rolagens de sessão (boundary_randomness — sem mutação de estado) ───
+      // Resultado já calculado na view antes do dispatch; executor emite
+      // executor:action → executionTrace captura o fato para observabilidade.
+      case "ROLL_SKILL":
+      case "ROLL_ATTRIBUTE":
+        return state;
+
       // ── Perícias ──────────────────────────────────────────────────────────
       case "SET_SKILL": {
         if (!c) return state;

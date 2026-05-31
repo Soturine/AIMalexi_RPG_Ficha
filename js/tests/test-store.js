@@ -414,3 +414,38 @@ store.dispatch({ type: 'SET_CHARACTER', payload: null });
 var stateNullRD = store.getState();
 store.dispatch({ type: 'RECALC_DERIVED' });
 assert(store.getState() === stateNullRD,               'RECALC_DERIVED sem personagem: no-op (mesma referência)');
+
+// ── ROLL_SKILL e ROLL_ATTRIBUTE — session actions (no-op no reducer) ────────
+group('store — ROLL_SKILL e ROLL_ATTRIBUTE: no-op no reducer (persists:false)');
+
+var _minChar2 = {
+  investigator: { name: 'NoOp Test' },
+  attributes: { FOR:{value:60}, CON:{value:60}, TAM:{value:60}, DES:{value:50},
+    APA:{value:50}, INT:{value:70}, POD:{value:60}, EDU:{value:75}, Sorte:{value:50} },
+  derived: { PV:{value:12,current:12}, SAN:{value:60,current:60,max:100},
+    PM:{value:12,current:12}, Mitos:{value:0}, MOV:{value:8}, DB:{label:'+0'}, Build:{value:0} },
+  status: { majorWound:false, unconscious:false, dying:false, dead:false,
+    tempInsane:false, indefInsane:false, incurablyInsane:false, sanLossesToday:0 },
+  skills:{}, weapons:[], inventory:[], journal:[], spells:[], tomes:[],
+};
+
+store.dispatch({ type: 'SET_CHARACTER', payload: _minChar2 });
+var _stateBeforeRollSkill = store.getState();
+
+store.dispatch({ type: 'ROLL_SKILL', payload: {
+  skillName: 'Biblioteca', skillValue: 60, roll: 34, level: 'regular', difficulty: 'regular', bp: null, pushed: false
+}});
+assert(store.getState() === _stateBeforeRollSkill,
+  'ROLL_SKILL: retorna mesma referência de estado (no-op — persists:false)');
+
+store.dispatch({ type: 'ROLL_ATTRIBUTE', payload: {
+  attribute: 'FOR', result: 60, roll: 45, level: 'regular', difficulty: 'regular', bp: null
+}});
+assert(store.getState() === _stateBeforeRollSkill,
+  'ROLL_ATTRIBUTE: retorna mesma referência de estado (no-op — persists:false)');
+
+// Ambas as ações são idempotentes — múltiplos dispatches não modificam estado
+store.dispatch({ type: 'ROLL_SKILL', payload: { skillName: 'Lutar', skillValue: 50, roll: 1, level: 'crit' }});
+store.dispatch({ type: 'ROLL_SKILL', payload: { skillName: 'Lutar', skillValue: 50, roll: 99, level: 'fumble' }});
+assert(store.getState() === _stateBeforeRollSkill,
+  'ROLL_SKILL múltiplos dispatches: estado permanece inalterado');

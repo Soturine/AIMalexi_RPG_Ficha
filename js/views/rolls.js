@@ -29,9 +29,10 @@ window.CoC.views = window.CoC.views || {};
 (function () {
 
   const { $, el, escapeHtml, toastRoll, appendRoll, modal: _modal, confirm } = window.CoC.ui;
-  const dice     = window.CoC.dice;
-  const cocStore = window.CoC.store;
-  const bus      = window.CoC.bus;
+  const dice        = window.CoC.dice;
+  const cocStore    = window.CoC.store;
+  const bus         = window.CoC.bus;
+  const cocExecutor = window.CoC.core.executor;
 
   // Estado interno de modificadores de rolagem — sincronizado por investigator.js
   let _mods = { difficulty: "regular", bp: "" };
@@ -96,6 +97,20 @@ window.CoC.views = window.CoC.views || {};
       note:     bp ? `[${bp}]` : "",
       pushed:   !!opts.pushed
     };
+
+    cocExecutor.execute({
+      type: 'ROLL_SKILL',
+      payload: {
+        skillName:  name,
+        skillValue: v,
+        roll:       result.value,
+        level,
+        difficulty,
+        bp:         bp || null,
+        pushed:     !!opts.pushed,
+      },
+    });
+
     registerRoll(entry);
   }
 
@@ -122,6 +137,19 @@ window.CoC.views = window.CoC.views || {};
       level,
       pushed:   false
     };
+
+    cocExecutor.execute({
+      type: 'ROLL_ATTRIBUTE',
+      payload: {
+        attribute: code,
+        result:    v,
+        roll:      result.value,
+        level,
+        difficulty,
+        bp:        bp || null,
+      },
+    });
+
     registerRoll(entry);
   }
 
