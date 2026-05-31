@@ -91,6 +91,13 @@
     // M3.3 — Skills slice init + bus hooks (persist via middleware for SET_SKILL, TOGGLE_*, ADD_CUSTOM_*)
     window.CoC.views.skills.init();
     window.CoC.bus.subscribe("skill:dirty", function () { markDirty(); });
+    // M3.6 — Background slice init
+    window.CoC.views.background.init(cocStore);
+    window.CoC.bus.subscribe("background:dirty",              function () { markDirty(); });
+    window.CoC.bus.subscribe("background:persist-requested",  function () { persistCurrent(); });
+    // M3.7 — Finances slice init
+    window.CoC.views.finances.init(cocStore);
+    window.CoC.bus.subscribe("finances:persist-requested",    function () { persistCurrent(); });
     // M4.1 — Inventory slice init
     window.CoC.views.inventory.init();
     // M4.2 — Journal slice init
@@ -293,8 +300,8 @@
     _sr.safeRender('vitals',     function () { window.CoC.views.vitals.render(); });
     _sr.safeRender('skills',     renderSkills);
     _sr.safeRender('weapons',    function () { window.CoC.views.combat.render(); });
-    _sr.safeRender('finances',   renderFinances);
-    _sr.safeRender('background', renderBackground);
+    _sr.safeRender('finances',   function () { window.CoC.views.finances.render(); });
+    _sr.safeRender('background', function () { window.CoC.views.background.render(); });
     _sr.safeRender('inventory',  function () { window.CoC.views.inventory.render(); });
     _sr.safeRender('journal',    function () { window.CoC.views.journal.render(); });
     _sr.safeRender('spells',     function () { window.CoC.views.spells.render(); });
@@ -562,172 +569,13 @@
   // render, init, _editWeapon, _attack e setRollMods vivem agora em combat.js.
   // As actions ADD/UPDATE/REMOVE_WEAPON e ATTACK_RESOLVED passam pelo store.
 
-  // ─── FINANÇAS ─────────────────────────────────────────────────────────
-  // Carteira do investigador: Crédito (Posses) → Caixa/Gasto/Patrimônio (regra
-  // CoC 7E em rules.calcFinances). "cash" é o dinheiro à mão, ajustável em jogo
-  // pelos botões ±100/±10/±1. Tudo vive em c.finances (viaja no JSON/backup).
+  // ─── FINANÇAS — extraído para js/views/finances.js (M3.7) ────────────────
+  // render, adjustCash, ensureFinances, formatMoney, getCreditRating,
+  // setCreditRating vivem agora em finances.js.
 
-  function ensureFinances(c) {
-    if (!c.finances || typeof c.finances !== "object") c.finances = { cash: 0 };
-    c.finances.cash = Number(c.finances.cash) || 0;
-    return c.finances;
-  }
-
-  // Nível de Crédito é uma PERÍCIA (CoC 7E) — a carteira e os derivados leem dela.
-  function getCreditRating(c) {
-    return Number(c && c.skills && c.skills["Nível de Crédito"] && c.skills["Nível de Crédito"].value) || 0;
-  }
-  function setCreditRating(c, v) {
-    c.skills = c.skills || {};
-    c.skills["Nível de Crédito"] = c.skills["Nível de Crédito"] || {};
-    c.skills["Nível de Crédito"].value = v;
-  }
-
-  // Formata em pt-BR com prefixo "$" (milhar com ".", decimal só se fracionário).
-  function formatMoney(n) {
-    const v = Number(n) || 0;
-    const str = Number.isInteger(v)
-      ? v.toLocaleString("pt-BR")
-      : v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 });
-    return "$" + str;
-  }
-
-  function renderFinances() {
-    const host = $("#finances-card");
-    if (!host) return;
-    const c = state.character;
-    if (!c) { host.innerHTML = ""; return; }
-    const fin = ensureFinances(c);
-
-    const occName = c.investigator?.occupation;
-    const occ = occName ? window.CoCData.findOccupation(occName) : null;
-    const range = occ && Array.isArray(occ.credit) ? occ.credit : null;
-    const cr = getCreditRating(c);
-    const derived = window.CoC.rules.calcFinances(cr);
-
-    host.innerHTML = `
-      <div class="fin-credit-row">
-        <label class="fin-credit">Nível de Crédito
-          <input type="number" id="fin-cr" min="0" max="99" step="1" inputmode="numeric" value="${cr}" />
-          <span class="dim">/ 99</span>
-        </label>
-        ${range
-          ? `<span class="fin-hint">Faixa da ocupação: <b>${range[0]}–${range[1]}%</b></span>`
-          : `<span class="fin-hint dim">Defina a ocupação para ver a faixa de Posses</span>`}
-      </div>
-
-      <div class="fin-derived">
-        Nível: <b id="fin-tier">${derived.tierLabel}</b>
-        · Nível de Gastos: <b id="fin-spend">${formatMoney(derived.spending)}</b>
-        · Patrimônio: <b id="fin-assets">${formatMoney(derived.assets)}</b>
-      </div>
-
-      <div class="fin-wallet">
-        <span class="fin-wallet-label">Dinheiro em Mãos</span>
-        <span class="fin-wallet-value" id="fin-cash">${formatMoney(fin.cash)}</span>
-        <button id="fin-seed" class="btn-ghost no-print" title="Definir o dinheiro à mão com a Caixa inicial do Crédito">↻ inicial</button>
-      </div>
-
-      <div class="fin-buttons no-print">
-        <div class="fin-btn-row">
-          <button type="button" data-cash="100" class="btn-cash gain">+100</button>
-          <button type="button" data-cash="10"  class="btn-cash gain">+10</button>
-          <button type="button" data-cash="1"   class="btn-cash gain">+1</button>
-        </div>
-        <div class="fin-btn-row">
-          <button type="button" data-cash="-100" class="btn-cash spend">−100</button>
-          <button type="button" data-cash="-10"  class="btn-cash spend">−10</button>
-          <button type="button" data-cash="-1"   class="btn-cash spend">−1</button>
-        </div>
-      </div>
-    `;
-
-    // Crédito: aplica no change (não no input) → não perde foco nem re-renderiza tudo.
-    const crInput = $("#fin-cr", host);
-    crInput.onchange = () => {
-      let v = Math.round(Number(crInput.value));
-      if (!isFinite(v) || v < 0) v = 0;
-      if (v > 99) v = 99;
-      crInput.value = v;
-      setCreditRating(c, v);
-      const d = window.CoC.rules.calcFinances(v);
-      $("#fin-tier", host).textContent = d.tierLabel;
-      $("#fin-spend", host).textContent = formatMoney(d.spending);
-      $("#fin-assets", host).textContent = formatMoney(d.assets);
-      renderSkills();        // "Nível de Crédito" é perícia — mantém a aba sincronizada
-      persistCurrent();
-    };
-
-    // Semeia a carteira com a Caixa inicial derivada do Crédito.
-    $("#fin-seed", host).onclick = () => {
-      const d = window.CoC.rules.calcFinances(getCreditRating(c));
-      fin.cash = d.cash;
-      $("#fin-cash", host).textContent = formatMoney(fin.cash);
-      persistCurrent();
-      toast(`Dinheiro em Mãos definido em ${formatMoney(fin.cash)} (inicial do Nível de Crédito ${getCreditRating(c)}).`, { type: "success", duration: 2600 });
-    };
-
-    // ±100/±10/±1: muta cash e atualiza só o display (rápido, sem perder foco).
-    $$("[data-cash]", host).forEach(b => {
-      b.onclick = () => adjustCash(parseInt(b.dataset.cash, 10));
-    });
-  }
-
-  function adjustCash(delta) {
-    const c = state.character;
-    if (!c) return;
-    const fin = ensureFinances(c);
-    let next = fin.cash + delta;
-    if (next < 0) next = 0;   // dinheiro à mão não negativa
-    fin.cash = next;
-    const span = $("#fin-cash");
-    if (span) span.textContent = formatMoney(fin.cash);
-    persistCurrent();
-  }
-
-  // ─── BACKGROUND ───────────────────────────────────────────────────────
-  function renderBackground() {
-    const c = state.character;
-    if (!c) return;
-    c.background = c.background || {};
-    const fields = ["description", "ideology", "significantPeople", "meaningfulLocations",
-                    "treasuredPossessions", "traits", "injuriesScars", "phobiasManias",
-                    "tomes", "encounters"];
-    fields.forEach(f => {
-      const node = $(`[data-bind="background.${f}"]`);
-      if (!node) return;
-      node.value = c.background[f] || "";
-      node.oninput = () => { c.background[f] = node.value; markDirty(); };
-      node.onblur = persistCurrent;
-    });
-
-    // Status toggles
-    c.status = c.status || {};
-    ["majorWound", "unconscious", "dying"].forEach(f => {
-      const node = $(`[data-bind="status.${f}"]`);
-      if (!node) return;
-      node.checked = !!c.status[f];
-      node.onchange = () => { c.status[f] = node.checked; persistCurrent(); };
-    });
-    ["temporaryInsanity", "indefiniteInsanity"].forEach(f => {
-      const node = $(`[data-bind="status.${f}"]`);
-      if (!node) return;
-      node.value = c.status[f] || "";
-      node.oninput = () => { c.status[f] = node.value; markDirty(); };
-      node.onblur = persistCurrent;
-    });
-
-    // Equipment como textarea
-    const equipNode = $("#bg-equipment");
-    if (equipNode) {
-      equipNode.value = (c.equipment || []).join("\n");
-      equipNode.oninput = () => {
-        c.equipment = equipNode.value.split("\n").map(s => s.trim()).filter(Boolean);
-        markDirty();
-      };
-      equipNode.onblur = persistCurrent;
-    }
-  }
+  // ─── BACKGROUND — extraído para js/views/background.js (M3.6) ───────────
+  // render e binding de campos background/status/equipment vivem agora em
+  // background.js (publica background:dirty e background:persist-requested).
 
   // ═════════════════════════════════════════════════════════════════════
   // ROLAGENS
