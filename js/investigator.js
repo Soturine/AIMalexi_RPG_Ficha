@@ -6,18 +6,7 @@
 (function () {
 
   // ─── Atalhos ──────────────────────────────────────────────────────────
-  const { $, $$, el, toast, toastRoll, modal, confirm, prompt, appendRoll, clearLog, exportLogAsMarkdown, escapeHtml, copyToClipboard, bottomSheet } = window.CoC.ui;
-
-  // Wrapper: sempre que registramos uma rolagem no log, também dispara um
-  // toast colorido na tela atual (resolve UX mobile sem precisar trocar de aba).
-  function logAndToast(entry) {
-    appendRoll($("#roll-log"), entry);
-    if (entry && entry.level) toastRoll(entry);
-    if (state.logFab && typeof state.logFab.setBadge === "function") {
-      state.rollCount = (state.rollCount || 0) + 1;
-      state.logFab.setBadge(state.rollCount);
-    }
-  }
+  const { $, $$, el, toast, modal, confirm, prompt, clearLog, exportLogAsMarkdown, escapeHtml, copyToClipboard, bottomSheet } = window.CoC.ui;
   const dice = window.CoC.dice;
   const rules = window.CoC.rules;
   const store = window.CoC.storage;
@@ -80,7 +69,6 @@
       recalcDerived();
       persistCurrent();
     });
-    window.CoC.bus.subscribe("roll:logged", logAndToast);
     // M3.2 — Luck slice: re-render Sorte card + persist after spend
     window.CoC.bus.subscribe("store:dispatch", function (event) {
       if (event.changed && event.action.type === "SPEND_LUCK") {
@@ -90,7 +78,6 @@
     });
     // M3.3 — Skills slice init + bus hooks
     window.CoC.views.skills.init();
-    window.CoC.bus.subscribe("skill:roll-requested",  function (data) { rollSkill(data.name); });
     window.CoC.bus.subscribe("skill:persist-requested", function () { persistCurrent(); });
     window.CoC.bus.subscribe("skill:dirty",            function () { markDirty(); });
     window.CoC.bus.subscribe("store:dispatch", function (event) {
@@ -98,6 +85,20 @@
       const t = event.action.type;
       if (t === "TOGGLE_OCCUPATION_SKILL" || t === "ADD_CUSTOM_SKILL") persistCurrent();
     });
+    // M3.4 — Rolls slice init + bus hooks
+    window.CoC.views.rolls.init();       // wires roll:logged → logAndToast
+    window.CoC.views.rolls.setRollMods(state.rollMods);  // sync inicial
+    window.CoC.bus.subscribe("skill:roll-requested", function (data) {
+      window.CoC.views.rolls.rollSkill(data.name, {
+        difficulty: state.rollMods.difficulty,
+        bp: state.rollMods.bp
+      });
+    });
+    window.CoC.bus.subscribe("roll:badge-inc", function () {
+      state.rollCount = (state.rollCount || 0) + 1;
+      if (state.logFab?.setBadge) state.logFab.setBadge(state.rollCount);
+    });
+    window.CoC.bus.subscribe("rolls:persist-requested", function () { persistCurrent(); });
 
     populateOccupationDropdown();
     bindToolbar();
@@ -596,7 +597,7 @@
       dmgStr = `${w.damage} → ${d.total}${isImpale ? " ⚡EMPALA" : ""} ${diceStr}`;
     }
 
-    registerRoll({
+    window.CoC.views.rolls.registerRoll({
       kind: "weapon-attack",
       skill: `⚔ ${w.name}`,
       skillRaw: w.skill,
@@ -786,8 +787,8 @@
   // ROLAGENS
   // ═════════════════════════════════════════════════════════════════════
 
-  // Valor corrente de uma perícia: usa o valor salvo se numérico; senão deriva
-  // a base pela definição (resolvendo especializações "Perícia (Foco)").
+  // ─── ROLLS — extraído para js/views/rolls.js (M3.4) ─────────────────────
+  // getSkillValue() mantida aqui: usada por attackWithWeapon() (domínio Weapons)
   function getSkillValue(c, name) {
     const direct = Number(c?.skills?.[name]?.value);
     if (!isNaN(direct)) return direct;
@@ -798,171 +799,12 @@
     if (def.baseFormula === "EDU")   return attrs.EDU || 0;
     return Number(def.base) || 0;
   }
-
+  // Stub local: passes current mods to rolls.js
   function rollAttribute(code, difficultyOverride) {
-    const c = state.character;
-    const v = Number(c?.attributes?.[code]?.value) || 0;
-    const difficulty = difficultyOverride || state.rollMods.difficulty;
-    const target = difficulty === "hard" ? dice.half(v) : (difficulty === "extreme" ? dice.fifth(v) : v);
-    const result = dice.rollD100(state.rollMods.bp || null);
-    const level = dice.classifyRoll(result.value, v);
-    const entry = {
-      kind: "attribute",
-      skill: code,
-      skillRaw: code,
-      target,
-      targetRaw: v,
-      label: difficulty === "regular" ? v : `${v} → ${difficulty === "hard" ? "Difícil" : "Extremo"} ${target}`,
-      d100: result.value,
-      level,
-      pushed: false
-    };
-    registerRoll(entry);
-  }
-
-  function rollSkill(name, opts = {}) {
-    const c = state.character;
-    const v = getSkillValue(c, name);
-    const result = dice.rollD100(state.rollMods.bp || null);
-    const level = dice.classifyRoll(result.value, v);
-    const entry = {
-      kind: "skill",
-      skill: name + (opts.pushed ? "  ⚠ PUSHED" : ""),
-      skillRaw: name,
-      target: v,
-      targetRaw: v,
-      d100: result.value,
-      level,
-      note: state.rollMods.bp ? `[${state.rollMods.bp}]` : "",
-      pushed: !!opts.pushed
-    };
-    registerRoll(entry);
-  }
-
-  /**
-   * Pipeline central: registra a rolagem no estado + log + toast,
-   * e oferece ações pós-rolagem (Gastar Sorte / Forçar) quando aplicável.
-   */
-  function registerRoll(entry) {
-    state.lastRoll = entry;
-    logAndToast(entry);
-    persistCurrent();
-    presentPostRollActions(entry);
-  }
-
-  /**
-   * Apresenta no roll-log o card de ações pós-rolagem:
-   *  - Gastar Sorte (se falha + Sorte ≥ diferença)
-   *  - Forçar (se já não foi forçada; só faz sentido em sucessos menores OU falhas)
-   *
-   * O card é EFÊMERO: some quando uma nova rolagem entra (substituído).
-   */
-  function presentPostRollActions(entry) {
-    // Remove qualquer card de ação anterior
-    const old = $("#post-roll-actions");
-    if (old) old.remove();
-    if (!entry || entry.kind === "weapon-attack") return;  // ataques têm fluxo próprio
-
-    const c = state.character;
-    const luck = Number(c?.attributes?.Sorte?.value) || 0;
-    const diff = entry.d100 - (Number(entry.target) || 0);
-    const canSpendLuck =
-      !entry.pushed
-      && (entry.level === "fail" || entry.level === "fumble" || entry.level === "regular")
-      && diff > 0
-      && luck >= diff
-      && entry.level !== "fumble";  // fumble não pode ser convertido (regra do livro)
-    const canPush =
-      !entry.pushed
-      && entry.kind === "skill"
-      && (entry.level === "fail" || entry.level === "regular" || entry.level === "hard");
-
-    if (!canSpendLuck && !canPush) return;
-
-    const panel = el("div", {
-      id: "post-roll-actions",
-      class: "post-roll-actions",
-      style: {
-        marginTop: "0.5rem", padding: "0.5rem 0.6rem",
-        background: "var(--bg-card-hi)",
-        borderLeft: "3px solid var(--brass)",
-        borderRadius: "var(--radius)",
-        fontSize: "0.8rem"
-      }
+    window.CoC.views.rolls.rollAttribute(code, {
+      difficulty: difficultyOverride || state.rollMods.difficulty,
+      bp: state.rollMods.bp
     });
-    const dimEntry = entry.skillRaw || entry.skill || "rolagem";
-    const header = el("div", {
-      style: { color: "var(--ink-dim)", marginBottom: "0.35rem", fontFamily: "var(--font-mono)", fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase" }
-    }, [`Ações pós-rolagem · ${dimEntry}`]);
-    panel.appendChild(header);
-
-    const row = el("div", { style: { display: "flex", gap: "0.35rem", flexWrap: "wrap" } });
-
-    if (canSpendLuck) {
-      const cost = diff;
-      const btn = el("button", {
-        class: "btn-primary",
-        title: `Reduz sua Sorte em ${cost} para tornar este teste um sucesso Regular.`,
-        on: { click: () => window.CoC.views.luck.spendLuck(entry, cost) }
-      }, [`🍀 Gastar ${cost} Sorte (vira Regular)`]);
-      row.appendChild(btn);
-    }
-
-    if (canPush) {
-      const btn = el("button", {
-        class: "btn-danger",
-        title: "Forçar a rolagem — relança com risco de consequência grave em caso de falha.",
-        on: { click: () => pushRoll(entry) }
-      }, ["⚡ Forçar Rolagem"]);
-      row.appendChild(btn);
-    }
-
-    const dismiss = el("button", {
-      class: "btn-ghost",
-      on: { click: () => panel.remove() }
-    }, ["Dispensar"]);
-    row.appendChild(dismiss);
-
-    panel.appendChild(row);
-    const log = $("#roll-log");
-    if (log) log.insertBefore(panel, log.firstChild.nextSibling || null);
-  }
-
-
-  /**
-   * Forçar Rolagem (Push) — relança com flag pushed=true.
-   * Em CoC 7E, falhar uma rolagem forçada = consequência narrativa decidida pelo Guardião.
-   */
-  async function pushRoll(entry) {
-    const old = $("#post-roll-actions");
-    if (old) old.remove();
-    const confirmed = await confirm(
-      `Forçar a rolagem de "${entry.skillRaw || entry.skill}"? Falha numa rolagem forçada gera consequência narrativa GRAVE decidida pelo Guardião.`,
-      { title: "Forçar Rolagem", danger: true, confirmLabel: "Forçar" }
-    );
-    if (!confirmed) return;
-    if (entry.kind === "skill") {
-      rollSkill(entry.skillRaw, { pushed: true });
-    } else if (entry.kind === "attribute") {
-      // Reaplica rolagem de atributo com flag de pushed
-      const code = entry.skillRaw;
-      const c = state.character;
-      const v = Number(c?.attributes?.[code]?.value) || 0;
-      const result = dice.rollD100(state.rollMods.bp || null);
-      const level = dice.classifyRoll(result.value, v);
-      const e = {
-        kind: "attribute",
-        skill: code + "  ⚠ PUSHED",
-        skillRaw: code,
-        target: v,
-        targetRaw: v,
-        label: v,
-        d100: result.value,
-        level,
-        pushed: true
-      };
-      registerRoll(e);
-    }
   }
 
   // ═════════════════════════════════════════════════════════════════════
@@ -1224,6 +1066,7 @@
         $$("#modifier-difficulty button").forEach(x => x.classList.remove("active"));
         b.classList.add("active");
         state.rollMods.difficulty = b.dataset.difficulty;
+        window.CoC.views.rolls.setRollMods(state.rollMods);
       };
     });
     $$("#modifier-bonus button").forEach(b => {
@@ -1231,6 +1074,7 @@
         $$("#modifier-bonus button").forEach(x => x.classList.remove("active"));
         b.classList.add("active");
         state.rollMods.bp = b.dataset.bp || "";
+        window.CoC.views.rolls.setRollMods(state.rollMods);
       };
     });
   }
@@ -1283,6 +1127,7 @@
             wrap.querySelectorAll("[data-difficulty]").forEach(x => x.classList.remove("active"));
             b.classList.add("active");
             state.rollMods.difficulty = b.dataset.difficulty;
+            window.CoC.views.rolls.setRollMods(state.rollMods);
             // Espelha no painel desktop
             $$("#modifier-difficulty button").forEach(x => {
               x.classList.toggle("active", x.dataset.difficulty === state.rollMods.difficulty);
@@ -1294,6 +1139,7 @@
             wrap.querySelectorAll("[data-bp]").forEach(x => x.classList.remove("active"));
             b.classList.add("active");
             state.rollMods.bp = b.dataset.bp || "";
+            window.CoC.views.rolls.setRollMods(state.rollMods);
             $$("#modifier-bonus button").forEach(x => {
               x.classList.toggle("active", (x.dataset.bp || "") === state.rollMods.bp);
             });
