@@ -37,12 +37,23 @@ window.CoC.campaign = window.CoC.campaign || {};
 
 (function () {
 
-  var _channel    = null;   // Supabase RealtimeChannel
-  var _client     = null;   // Supabase SupabaseClient (cached)
-  var _handlers   = [];
-  var _campaignId = null;
-  var _peerId     = null;
-  var _seen       = null;   // Set<eventId> — dedup em memória
+  var _channel       = null;   // Supabase RealtimeChannel
+  var _client        = null;   // Supabase SupabaseClient (cached)
+  var _handlers      = [];
+  var _campaignId    = null;
+  var _peerId        = null;
+  var _seen          = null;   // Set<eventId> — dedup em memória
+  var _lastSeqByPeer = {};     // { peerId → lastSeqNo } — gap detection
+
+  function _debug(label, data) {
+    var cfg = window.CoC && window.CoC.config;
+    if (!cfg || !cfg.transportDebug) return;
+    console.log(
+      '%c[transport:sb:' + label + ']',
+      'color:#5b9bd5;font-weight:bold',
+      data
+    );
+  }
 
   function _uuid() {
     if (crypto.randomUUID) return crypto.randomUUID();
@@ -81,10 +92,11 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   // ── init ──────────────────────────────────────────────────────────────────
   function init(campaignId, role) {
-    _campaignId = campaignId;
-    _peerId     = _peerId || _uuid();
-    _handlers   = [];
-    _seen       = new Set();
+    _campaignId    = campaignId;
+    _peerId        = _peerId || _uuid();
+    _handlers      = [];
+    _seen          = new Set();
+    _lastSeqByPeer = {};
     _close();
 
     var client = _getClient();
@@ -131,6 +143,13 @@ window.CoC.campaign = window.CoC.campaign || {};
       ts:         Date.now()
     });
 
+    _debug('send', {
+      type:    envelope.type,
+      eventId: envelope.eventId || null,
+      seqNo:   envelope.seqNo   || null,
+      channel: 'coc-campaign:' + _campaignId
+    });
+
     _channel.send({
       type:    'broadcast',
       event:   'coc_event',
@@ -153,10 +172,35 @@ window.CoC.campaign = window.CoC.campaign || {};
 
     // Deduplicação at-least-once por eventId
     if (data.eventId) {
-      if (_seen.has(data.eventId)) return;
+      if (_seen.has(data.eventId)) {
+        _debug('dup', { eventId: data.eventId, type: data.type });
+        return;
+      }
       _seen.add(data.eventId);
-      if (_seen.size > 2000) _seen = new Set(); // evita crescimento ilimitado
+      if (_seen.size > 2000) _seen = new Set();
     }
+
+    // Gap detection — apenas para eventos com seqNo (EXECUTION_TRACE)
+    if (data.seqNo != null && data.peerId) {
+      var last = _lastSeqByPeer[data.peerId];
+      if (last != null && data.seqNo !== last + 1) {
+        _debug('gap', {
+          peerId:   data.peerId,
+          expected: last + 1,
+          received: data.seqNo,
+          type:     data.type
+        });
+      }
+      _lastSeqByPeer[data.peerId] = data.seqNo;
+    }
+
+    _debug('recv', {
+      type:    data.type,
+      eventId: data.eventId || null,
+      seqNo:   data.seqNo   || null,
+      peerId:  data.peerId,
+      latency: data.ts ? (Date.now() - data.ts) + 'ms' : 'n/a'
+    });
 
     _handlers.forEach(function (h) {
       try { h(data); } catch (err) { console.error('[supabase-transport] handler error', err); }
@@ -185,9 +229,10 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   function close() {
     _close();
-    _handlers   = [];
-    _campaignId = null;
-    _seen       = null;
+    _handlers      = [];
+    _campaignId    = null;
+    _seen          = null;
+    _lastSeqByPeer = {};
   }
 
   window.CoC.campaign.supabaseTransport = Object.freeze({

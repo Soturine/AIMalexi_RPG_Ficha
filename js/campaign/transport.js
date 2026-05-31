@@ -51,6 +51,16 @@ window.CoC.campaign = window.CoC.campaign || {};
   var _campaignId = null;
   var _peerId     = null;
 
+  function _debug(label, data) {
+    var cfg = window.CoC && window.CoC.config;
+    if (!cfg || !cfg.transportDebug) return;
+    console.log(
+      '%c[transport:bc:' + label + ']',
+      'color:#b8924f;font-weight:bold',
+      data
+    );
+  }
+
   function _uuid() {
     if (crypto.randomUUID) return crypto.randomUUID();
     var arr = new Uint8Array(16);
@@ -71,6 +81,13 @@ window.CoC.campaign = window.CoC.campaign || {};
       _channel = new BroadcastChannel('coc-campaign-' + campaignId);
       _channel.onmessage = function (e) {
         if (!e.data || e.data.peerId === _peerId) return;
+        _debug('recv', {
+          type:    e.data.type,
+          eventId: e.data.eventId || null,
+          seqNo:   e.data.seqNo   || null,
+          peerId:  e.data.peerId,
+          latency: e.data.ts ? (Date.now() - e.data.ts) + 'ms' : 'n/a'
+        });
         _handlers.forEach(function (h) {
           try { h(e.data); } catch (err) { console.error('[transport] handler error', err); }
         });
@@ -94,6 +111,12 @@ window.CoC.campaign = window.CoC.campaign || {};
       peerId:     _peerId,
       campaignId: _campaignId,
       ts:         Date.now()
+    });
+    _debug('send', {
+      type:    envelope.type,
+      eventId: envelope.eventId || null,
+      seqNo:   envelope.seqNo   || null,
+      channel: 'coc-campaign:' + _campaignId
     });
     try { _channel.postMessage(envelope); } catch (e) {}
   }

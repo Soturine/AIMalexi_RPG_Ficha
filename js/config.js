@@ -21,7 +21,8 @@
 window.CoC = window.CoC || {};
 
 window.CoC.config = Object.freeze({
-  supabaseUrl:  '',       // ex: 'https://abcdefgh.supabase.co'
-  supabaseKey:  '',       // ex: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-  useSupabase:  false,    // flip para true após preencher url + key acima
+  supabaseUrl:     '',      // ex: 'https://abcdefgh.supabase.co'
+  supabaseKey:     '',      // ex: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  useSupabase:     false,   // flip para true após preencher url + key acima
+  transportDebug:  false,   // Sprint 18: logs detalhados de transport (send/recv/dup/gap)
 });
