@@ -13,7 +13,6 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   var _tp  = null;
   var _cs  = null;
-  var _ex  = null;
   var _str = null;
   var _playerName = '';
 
@@ -22,7 +21,6 @@ window.CoC.campaign = window.CoC.campaign || {};
   function init() {
     _tp  = window.CoC.campaign && window.CoC.campaign.transport;
     _cs  = window.CoC.campaign && window.CoC.campaign.store;
-    _ex  = window.CoC && window.CoC.executor;
     _str = window.CoC && window.CoC.store;
 
     if (!_tp || !_cs || !_str) return;
@@ -30,6 +28,7 @@ window.CoC.campaign = window.CoC.campaign || {};
     _bindPlayerUI();
     _listenStore();
     _listenTransport();
+    _listenBus();
 
     // Restaurar sessão
     var saved = _cs.getState();
@@ -179,36 +178,44 @@ window.CoC.campaign = window.CoC.campaign || {};
     }
   }
 
-  // ── Hook no executor para broadcast de trace events ─────────────────────────
-  function _hookExecutor() {
-    if (!window.CoC.executor) return;
-    var orig = window.CoC.executor.execute;
-    window.CoC.executor.execute = function (action) {
-      var result = orig(action);
+  // ── Bus listener para broadcast de trace events ─────────────────────────────
+  // Subscribes to executor:action published by js/core/executor.js on every
+  // successful dispatch. No monkey-patching needed — executor is frozen.
+  function _listenBus() {
+    var bus = window.CoC && window.CoC.bus;
+    if (!bus || !bus.subscribe) return;
+
+    bus.subscribe('executor:action', function (data) {
+      if (!_cs || !_tp) return;
       var cState = _cs.getState();
-      if (cState.connected) {
-        var charState = _str ? _str.getState() : null;
-        var inv = charState && charState.character && charState.character.investigator || {};
-        _tp.broadcast({
-          type:          'EXECUTION_TRACE',
-          characterName: inv.name || '?',
-          playerName:    _playerName || inv.playerName || '?',
-          entry:         { type: action.type, payload: action.payload }
-        });
-        _broadcastStatus();
-      }
-      return result;
-    };
+      if (!cState.connected) return;
+
+      var charState  = _str ? _str.getState() : null;
+      var inv        = charState && charState.character && charState.character.investigator || {};
+      var ontology   = window.CoC.campaign && window.CoC.campaign.ontology;
+
+      var event = ontology
+        ? ontology.make('EXECUTION_TRACE', {
+            characterName: inv.name       || '?',
+            playerName:    _playerName    || inv.playerName || '?',
+            entry:         { type: data.type, payload: data.payload }
+          })
+        : {
+            type:          'EXECUTION_TRACE',
+            characterName: inv.name       || '?',
+            playerName:    _playerName    || inv.playerName || '?',
+            entry:         { type: data.type, payload: data.payload }
+          };
+
+      _tp.broadcast(event);
+      _broadcastStatus();
+    });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
-      init();
-      setTimeout(_hookExecutor, 500);
-    });
+    document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
-    setTimeout(_hookExecutor, 500);
   }
 
   window.CoC.campaign.playerSync = Object.freeze({ init: init });

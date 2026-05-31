@@ -51,6 +51,14 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   function broadcast(event) {
     if (!_channel) return;
+    // Soft-validate against ontology when available — warns but never blocks.
+    var ontology = window.CoC.campaign && window.CoC.campaign.ontology;
+    if (ontology && event && event.type) {
+      var result = ontology.validate(event.type, event);
+      if (!result.ok) {
+        console.warn('[transport] broadcast validation:', result.errors.join('; '), event);
+      }
+    }
     var envelope = Object.assign({}, event, {
       peerId:     _peerId,
       campaignId: _campaignId,

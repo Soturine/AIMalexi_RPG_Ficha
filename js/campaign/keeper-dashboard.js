@@ -14,18 +14,20 @@ window.CoC.campaign = window.CoC.campaign || {};
 
 (function () {
 
-  var _cs    = null;
-  var _tp    = null;
-  var _pinSys = null;
+  var _cs      = null;
+  var _tp      = null;
+  var _pinSys  = null;
+  var _ontology = null;
 
   function $s(sel) { return document.querySelector(sel); }
   function $all(sel) { return Array.from(document.querySelectorAll(sel)); }
 
   // ── Boot ──────────────────────────────────────────────────────────────────
   function init() {
-    _cs     = window.CoC.campaign && window.CoC.campaign.store;
-    _tp     = window.CoC.campaign && window.CoC.campaign.transport;
-    _pinSys = window.CoC.campaign && window.CoC.campaign.pin;
+    _cs       = window.CoC.campaign && window.CoC.campaign.store;
+    _tp       = window.CoC.campaign && window.CoC.campaign.transport;
+    _pinSys   = window.CoC.campaign && window.CoC.campaign.pin;
+    _ontology = window.CoC.campaign && window.CoC.campaign.ontology;
 
     if (!_cs || !_tp || !_pinSys) {
       console.warn('[keeper-dashboard] campaign modules not loaded');
@@ -73,7 +75,10 @@ window.CoC.campaign = window.CoC.campaign || {};
     _tp.onEvent(_onTransportEvent);
 
     // Broadcast presença do host
-    _tp.broadcast({ type: 'HOST_ONLINE', campaignId: pin, pin: pin, campaignName: name });
+    var hostEvent = _ontology
+      ? _ontology.make('HOST_ONLINE', { campaignId: pin, pin: pin, campaignName: name })
+      : { type: 'HOST_ONLINE', campaignId: pin, pin: pin, campaignName: name };
+    _tp.broadcast(hostEvent);
 
     _renderDashboard(_cs.getState());
     _openCampaignModal();
@@ -91,7 +96,10 @@ window.CoC.campaign = window.CoC.campaign || {};
     _cs.joinCampaign(pin, pin, 'player');
     _tp.init(pin, 'player');
     _tp.onEvent(_onTransportEvent);
-    _tp.broadcast({ type: 'PLAYER_CONNECTED', pin: pin });
+    var joinEvent = _ontology
+      ? _ontology.make('PLAYER_CONNECTED', { playerName: 'Guardião', pin: pin })
+      : { type: 'PLAYER_CONNECTED', playerName: 'Guardião', pin: pin };
+    _tp.broadcast(joinEvent);
     _renderDashboard(_cs.getState());
   }
 
@@ -117,7 +125,10 @@ window.CoC.campaign = window.CoC.campaign || {};
           cls:  'ev-roll'
         });
         // Request status from the new player
-        _tp.broadcast({ type: 'REQUEST_STATUS', pin: _cs.getState().pin });
+        var reqEvent = _ontology
+          ? _ontology.make('REQUEST_STATUS', { pin: _cs.getState().pin })
+          : { type: 'REQUEST_STATUS', pin: _cs.getState().pin };
+        _tp.broadcast(reqEvent);
         break;
 
       case 'PLAYER_DISCONNECTED':
@@ -325,7 +336,10 @@ window.CoC.campaign = window.CoC.campaign || {};
     var btnEnd = body.querySelector('#btn-end-campaign');
     if (btnEnd) btnEnd.onclick = function () {
       if (!confirm('Encerrar a campanha? Isso desconecta todos os jogadores.')) return;
-      _tp.broadcast({ type: 'CAMPAIGN_ENDED', pin: state.pin });
+      var endEvent = _ontology
+        ? _ontology.make('CAMPAIGN_ENDED', { pin: state.pin })
+        : { type: 'CAMPAIGN_ENDED', pin: state.pin };
+      _tp.broadcast(endEvent);
       _tp.close();
       _cs.leaveCampaign();
       _closeModal();
