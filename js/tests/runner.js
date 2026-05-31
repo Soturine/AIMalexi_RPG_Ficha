@@ -100,6 +100,7 @@ load('js/tests/test-render-pipeline.js');
 load('js/tests/test-event-ontology.js');
 load('js/tests/test-state-machine.js');
 load('js/tests/test-executor.js');
+load('js/tests/test-architecture.js');
 const elapsed = Date.now() - t0;
 
 // ── Relatório final ───────────────────────────────────────────────────────

@@ -26,6 +26,7 @@ window.CoC.core = window.CoC.core || {};
     var sm       = window.CoC.core && window.CoC.core.stateMachine;
     var store    = window.CoC.store;
     var pipeline = window.CoC.core && window.CoC.core.renderPipeline;
+    var bus      = window.CoC.bus;
 
     // Fallback: sem state-machine ou pipeline, dispatch direto sem transação
     if (!sm || !pipeline || typeof pipeline.beginTransaction !== 'function') {
@@ -39,11 +40,22 @@ window.CoC.core = window.CoC.core || {};
       ? sm.evaluate(action.type, action, ctx)
       : { transitions: [], effects: [] };
 
-    // 2. Transação: ação primária + efeitos em lote, renders suprimidos até o fim
+    var effects = result.effects || [];
+
+    // 2. Trace do execute (ação + decisão SM) — separado do store:dispatch log
+    if (bus && typeof bus.publish === 'function') {
+      bus.publish('executor:action', {
+        type:    action.type,
+        payload: action.payload,
+        effects: effects.map(function (e) { return e.type; }),
+        ts:      (typeof performance !== 'undefined' ? performance.now() : Date.now()),
+      });
+    }
+
+    // 3. Transação: ação primária + efeitos em lote, renders suprimidos até o fim
     pipeline.beginTransaction();
     try {
       store.dispatch(action);
-      var effects = result.effects || [];
       for (var i = 0; i < effects.length; i++) {
         store.dispatch(effects[i]);
       }
