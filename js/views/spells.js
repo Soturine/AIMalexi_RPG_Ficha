@@ -300,14 +300,14 @@ window.CoC.views = window.CoC.views || {};
 
       if (delBtn) {
         if (!await uiConfirm(`Remover "${spell.name}"?`, { danger: true, confirmLabel: "Remover" })) return;
-        cocStore.dispatch({ type: "REMOVE_SPELL", payload: { id: spellId } });
+        cocExecutor.execute({ type: "REMOVE_SPELL", payload: { id: spellId } });
         bus.publish("spells:persist-requested", {});
         return;
       }
 
       const updated = await _openSpellModal(spell);
       if (!updated) return;
-      cocStore.dispatch({ type: "UPDATE_SPELL", payload: { spell: updated } });
+      cocExecutor.execute({ type: "UPDATE_SPELL", payload: { spell: updated } });
       bus.publish("spells:persist-requested", {});
     });
 
@@ -316,7 +316,7 @@ window.CoC.views = window.CoC.views || {};
       btnAdd.addEventListener("click", async () => {
         const spell = await _openSpellModal(null);
         if (!spell) return;
-        cocStore.dispatch({ type: "ADD_SPELL", payload: { spell } });
+        cocExecutor.execute({ type: "ADD_SPELL", payload: { spell } });
         bus.publish("spells:persist-requested", {});
       });
     }

@@ -18,8 +18,9 @@ window.CoC.views = window.CoC.views || {};
 (function () {
 
   const { $, el, escapeHtml, toast, modal, confirm: uiConfirm } = window.CoC.ui;
-  const cocStore = window.CoC.store;
-  const bus      = window.CoC.bus;
+  const cocStore    = window.CoC.store;
+  const cocExecutor = window.CoC.core.executor;
+  const bus         = window.CoC.bus;
 
   const CATEGORIES = [
     { id: "arma",        label: "Armas" },
@@ -208,14 +209,14 @@ window.CoC.views = window.CoC.views || {};
 
       if (delBtn) {
         if (!await uiConfirm(`Remover "${item.name}" do inventário?`, { danger: true, confirmLabel: "Remover" })) return;
-        cocStore.dispatch({ type: "REMOVE_INVENTORY_ITEM", payload: { id: itemId } });
+        cocExecutor.execute({ type: "REMOVE_INVENTORY_ITEM", payload: { id: itemId } });
         bus.publish("inventory:persist-requested", {});
         return;
       }
 
       const updated = await _openItemModal(item);
       if (!updated) return;
-      cocStore.dispatch({ type: "UPDATE_INVENTORY_ITEM", payload: { item: updated } });
+      cocExecutor.execute({ type: "UPDATE_INVENTORY_ITEM", payload: { item: updated } });
       bus.publish("inventory:persist-requested", {});
     });
 
@@ -224,7 +225,7 @@ window.CoC.views = window.CoC.views || {};
       btnAdd.addEventListener("click", async () => {
         const item = await _openItemModal(null);
         if (!item) return;
-        cocStore.dispatch({ type: "ADD_INVENTORY_ITEM", payload: { item } });
+        cocExecutor.execute({ type: "ADD_INVENTORY_ITEM", payload: { item } });
         bus.publish("inventory:persist-requested", {});
       });
     }

@@ -26,6 +26,7 @@ window.CoC.views  = window.CoC.views  || {};
 
   // Referências lazy — preenchidas em init()
   var _store     = null;
+  var _executor  = null;
   var _dice      = null;
   var _rollMods  = { bp: null, difficulty: 'regular' };
 
@@ -140,10 +141,10 @@ window.CoC.views  = window.CoC.views  || {};
             magical: $s2('w-magical').checked
           };
           if (isNew) {
-            _store.dispatch({ type: 'ADD_WEAPON', payload: { weapon: updated } });
+            _executor.execute({ type: 'ADD_WEAPON', payload: { weapon: updated } });
           } else {
             updated.id = w.id;
-            _store.dispatch({ type: 'UPDATE_WEAPON', payload: { weapon: updated } });
+            _executor.execute({ type: 'UPDATE_WEAPON', payload: { weapon: updated } });
           }
         }}
       ]
@@ -205,7 +206,7 @@ window.CoC.views  = window.CoC.views  || {};
       });
     }
 
-    _store.dispatch({
+    _executor.execute({
       type: 'ATTACK_RESOLVED',
       payload: { weaponId: weaponId, isFired: isFired, hit: ok, level: level }
     });
@@ -218,8 +219,9 @@ window.CoC.views  = window.CoC.views  || {};
 
   // ── ONE-TIME event delegation ──────────────────────────────────────────────
   function init(store) {
-    _store = store || window.CoC.store;
-    _dice  = window.CoC.dice;
+    _store    = store || window.CoC.store;
+    _executor = window.CoC.core.executor;
+    _dice     = window.CoC.dice;
 
     var container = $s('#weapons-list');
     if (!container) return;
@@ -256,11 +258,11 @@ window.CoC.views  = window.CoC.views  || {};
         if (confirmFn) {
           confirmFn('Remover "' + (w2 && w2.name || '') + '"?', { danger: true, title: 'Remover arma' })
             .then(function(ok) {
-              if (ok) _store.dispatch({ type: 'REMOVE_WEAPON', payload: { id: wid2 } });
+              if (ok) _executor.execute({ type: 'REMOVE_WEAPON', payload: { id: wid2 } });
             });
         } else {
           if (confirm('Remover arma?')) {
-            _store.dispatch({ type: 'REMOVE_WEAPON', payload: { id: wid2 } });
+            _executor.execute({ type: 'REMOVE_WEAPON', payload: { id: wid2 } });
           }
         }
       }

@@ -173,7 +173,7 @@ window.CoC.views = window.CoC.views || {};
     const newProg = Math.max(0, prog + delta);
     const isNowComplete = req > 0 && newProg >= req && !wasComplete;
 
-    cocStore.dispatch({ type: "UPDATE_TOME", payload: {
+    cocExecutor.execute({ type: "UPDATE_TOME", payload: {
       tome: Object.assign({}, tome, { studyProgress: newProg })
     }});
 
@@ -338,14 +338,14 @@ window.CoC.views = window.CoC.views || {};
 
       if (delBtn) {
         if (!await uiConfirm(`Remover "${tome.name}"?`, { danger: true, confirmLabel: "Remover" })) return;
-        cocStore.dispatch({ type: "REMOVE_TOME", payload: { id: tomeId } });
+        cocExecutor.execute({ type: "REMOVE_TOME", payload: { id: tomeId } });
         bus.publish("tomes:persist-requested", {});
         return;
       }
 
       const updated = await _openTomeModal(tome);
       if (!updated) return;
-      cocStore.dispatch({ type: "UPDATE_TOME", payload: { tome: updated } });
+      cocExecutor.execute({ type: "UPDATE_TOME", payload: { tome: updated } });
       bus.publish("tomes:persist-requested", {});
     });
 
@@ -354,7 +354,7 @@ window.CoC.views = window.CoC.views || {};
       btnAdd.addEventListener("click", async () => {
         const tome = await _openTomeModal(null);
         if (!tome) return;
-        cocStore.dispatch({ type: "ADD_TOME", payload: { tome } });
+        cocExecutor.execute({ type: "ADD_TOME", payload: { tome } });
         bus.publish("tomes:persist-requested", {});
       });
     }
