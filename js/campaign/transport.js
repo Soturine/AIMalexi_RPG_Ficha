@@ -34,6 +34,7 @@ window.CoC.campaign = window.CoC.campaign || {};
   function init(campaignId, role) {
     _campaignId = campaignId;
     _peerId     = _peerId || _uuid();
+    _handlers   = [];   // new channel → callers must re-register; prevents duplicate handlers
     _close();
 
     if ('BroadcastChannel' in window) {
@@ -68,7 +69,9 @@ window.CoC.campaign = window.CoC.campaign || {};
   }
 
   function onEvent(handler) {
-    if (typeof handler === 'function') _handlers.push(handler);
+    if (typeof handler === 'function' && _handlers.indexOf(handler) === -1) {
+      _handlers.push(handler);
+    }
   }
 
   function offEvent(handler) {
