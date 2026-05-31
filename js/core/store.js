@@ -215,6 +215,33 @@ window.CoC = window.CoC || {};
         return Object.assign({}, state, { character: nc });
       }
 
+      // ── Magias (M4.3) ────────────────────────────────────────────────────
+      case "ADD_SPELL": {
+        if (!c) return state;
+        const nc = deepClone(c);
+        nc.spells = Array.isArray(nc.spells) ? nc.spells : [];
+        const spell = Object.assign({}, action.payload.spell);
+        if (!spell.id) spell.id = _uuid();
+        nc.spells.push(spell);
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "UPDATE_SPELL": {
+        if (!c || !Array.isArray(c.spells)) return state;
+        const nc = deepClone(c);
+        nc.spells = nc.spells.map(s =>
+          s.id === action.payload.spell.id ? Object.assign({}, s, action.payload.spell) : s
+        );
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "REMOVE_SPELL": {
+        if (!c || !Array.isArray(c.spells)) return state;
+        const nc = deepClone(c);
+        nc.spells = nc.spells.filter(s => s.id !== action.payload.id);
+        return Object.assign({}, state, { character: nc });
+      }
+
       default:
         return state;
     }

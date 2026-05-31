@@ -92,6 +92,9 @@
     // M4.2 — Journal slice init + bus hooks
     window.CoC.views.journal.init();
     window.CoC.bus.subscribe("journal:persist-requested", function () { persistCurrent(); });
+    // M4.3 — Spells slice init + bus hooks
+    window.CoC.views.spells.init();
+    window.CoC.bus.subscribe("spells:persist-requested", function () { persistCurrent(); });
 
     // M3.4 — Rolls slice init + bus hooks
     window.CoC.views.rolls.init();       // wires roll:logged → logAndToast
@@ -272,6 +275,7 @@
     renderBackground();
     window.CoC.views.inventory.render();
     window.CoC.views.journal.render();
+    window.CoC.views.spells.render();
   }
 
   // ─── TEMA ─────────────────────────────────────────────────────────────
@@ -310,6 +314,10 @@
     if (jList) jList.innerHTML = "";
     const jCount = $("#journal-count");
     if (jCount) jCount.textContent = "";
+    const sList = $("#spells-list");
+    if (sList) sList.innerHTML = "";
+    const sCount = $("#spells-count");
+    if (sCount) sCount.textContent = "";
     if (window.CoC.sanityFx) window.CoC.sanityFx.clear();
   }
 

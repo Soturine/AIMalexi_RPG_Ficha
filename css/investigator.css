@@ -1251,3 +1251,132 @@
 
 /* Modal de entrada */
 .journal-form { display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAGIAS E RITUAIS (M4.3)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.spells-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+#spells-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-faded);
+  letter-spacing: 0.04em;
+}
+
+.spells-empty {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--ink-dim);
+  font-style: italic;
+}
+
+.spells-group { margin-bottom: 1.1rem; }
+
+.spells-group-header {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-faded);
+  border-bottom: 1px solid var(--ink-faded);
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spells-count {
+  background: var(--bg-card-hi);
+  color: var(--ink-dim);
+  font-size: 0.65rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--ink-faded);
+}
+
+.spells-rows { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.spell-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-card-hi);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius);
+  transition: border-color 0.15s;
+}
+.spell-card:hover { border-color: var(--brass); }
+
+.spell-main { flex: 1; min-width: 0; }
+
+.spell-name {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.spell-costs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.3rem;
+}
+
+.spell-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius);
+  border: 1px solid;
+  letter-spacing: 0.05em;
+}
+.spell-mp   { color: #9b7fd4; border-color: #6b4f9a; background: rgba(107,79,154,0.12); }
+.spell-san  { color: var(--blood); border-color: var(--blood); background: rgba(139,26,26,0.10); }
+.spell-time { color: var(--ink-faded); border-color: var(--ink-faded); }
+
+.spell-excerpt {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  font-style: italic;
+  margin-top: 0.2rem;
+  word-break: break-word;
+}
+
+.spell-row-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.spell-secondary {
+  display: flex;
+  gap: 0.1rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.spell-card:hover .spell-secondary { opacity: 1; }
+
+.spell-cast { white-space: nowrap; }
+
+/* Modal de magia */
+.spell-form   { display: flex; flex-direction: column; gap: 0.6rem; }
+.form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
