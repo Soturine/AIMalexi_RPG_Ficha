@@ -11,10 +11,11 @@ window.CoC.campaign = window.CoC.campaign || {};
 
 (function () {
 
-  var _tp  = null;
-  var _cs  = null;
-  var _str = null;
+  var _tp         = null;
+  var _cs         = null;
+  var _str        = null;
   var _playerName = '';
+  var _seqNo      = 0;   // monotonic per-session counter for EXECUTION_TRACE ordering
 
   function $s(sel) { return document.querySelector(sel); }
 
@@ -150,6 +151,7 @@ window.CoC.campaign = window.CoC.campaign || {};
       type:          'INVESTIGATOR_STATUS',
       playerName:    _playerName || inv.playerName || 'Jogador',
       characterName: inv.name || '?',
+      seqNo:         _seqNo,
       status: {
         hp:     c.derived && c.derived.pvAtual != null ? c.derived.pvAtual : (c.derived && c.derived.pvMax || 0),
         hpMax:  c.derived && c.derived.pvMax   || 1,
@@ -195,18 +197,17 @@ window.CoC.campaign = window.CoC.campaign || {};
       var inv        = charState && charState.character && charState.character.investigator || {};
       var ontology   = window.CoC.campaign && window.CoC.campaign.ontology;
 
+      var seq = ++_seqNo;
+      var tracePayload = {
+        characterName: inv.name    || '?',
+        playerName:    _playerName || inv.playerName || '?',
+        entry:         { type: data.type, payload: data.payload },
+        seqNo:         seq,
+        eventId:       (_tp.getPeerId() || '?') + ':' + seq
+      };
       var event = ontology
-        ? ontology.make('EXECUTION_TRACE', {
-            characterName: inv.name       || '?',
-            playerName:    _playerName    || inv.playerName || '?',
-            entry:         { type: data.type, payload: data.payload }
-          })
-        : {
-            type:          'EXECUTION_TRACE',
-            characterName: inv.name       || '?',
-            playerName:    _playerName    || inv.playerName || '?',
-            entry:         { type: data.type, payload: data.payload }
-          };
+        ? ontology.make('EXECUTION_TRACE', tracePayload)
+        : Object.assign({ type: 'EXECUTION_TRACE' }, tracePayload);
 
       _tp.broadcast(event);
       _broadcastStatus();

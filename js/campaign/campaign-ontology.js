@@ -32,7 +32,9 @@ window.CoC.campaign = window.CoC.campaign || {};
     INVESTIGATOR_STATUS: { domain: 'status',  requiredFields: ['playerName', 'characterName', 'status'] },
 
     // ── Rastro de execução ────────────────────────────────────────────────────
-    EXECUTION_TRACE:     { domain: 'trace',   requiredFields: ['characterName', 'playerName', 'entry'] },
+    // seqNo:   monotonic counter per investigator session — enables loss detection
+    // eventId: peerId + ':' + seqNo — deduplication key for Supabase at-least-once delivery
+    EXECUTION_TRACE:     { domain: 'trace',   requiredFields: ['characterName', 'playerName', 'entry', 'seqNo', 'eventId'] },
   };
 
   // ── validate(type, payload) → { ok, errors[] } ────────────────────────────
