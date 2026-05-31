@@ -30,6 +30,13 @@ window.CoC.views = window.CoC.views || {};
     { id: "outro",       label: "Outros" },
   ];
 
+  const _CAT_IDS = new Set(CATEGORIES.map(c => c.id));
+
+  // Normaliza categorias desconhecidas (import de JSON externo, futuros schemas) → "outro"
+  function _resolveCategory(cat) {
+    return (cat && _CAT_IDS.has(cat)) ? cat : "outro";
+  }
+
   // ── Render ──────────────────────────────────────────────────────────────
 
   function render() {
@@ -61,7 +68,7 @@ window.CoC.views = window.CoC.views || {};
     }
 
     for (const cat of CATEGORIES) {
-      const group = items.filter(it => (it.category || "outro") === cat.id);
+      const group = items.filter(it => _resolveCategory(it.category) === cat.id);
       if (group.length === 0) continue;
 
       const groupEl = el("div", { class: "inv-group" });
