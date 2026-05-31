@@ -242,6 +242,34 @@ window.CoC = window.CoC || {};
         return Object.assign({}, state, { character: nc });
       }
 
+      // ── Grimórios (M4.4) ─────────────────────────────────────────────────
+      case "ADD_TOME": {
+        if (!c) return state;
+        const nc = deepClone(c);
+        nc.tomes = Array.isArray(nc.tomes) ? nc.tomes : [];
+        const tome = Object.assign({}, action.payload.tome);
+        if (!tome.id) tome.id = _uuid();
+        if (tome.studyProgress == null) tome.studyProgress = 0;
+        nc.tomes.push(tome);
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "UPDATE_TOME": {
+        if (!c || !Array.isArray(c.tomes)) return state;
+        const nc = deepClone(c);
+        nc.tomes = nc.tomes.map(t =>
+          t.id === action.payload.tome.id ? Object.assign({}, t, action.payload.tome) : t
+        );
+        return Object.assign({}, state, { character: nc });
+      }
+
+      case "REMOVE_TOME": {
+        if (!c || !Array.isArray(c.tomes)) return state;
+        const nc = deepClone(c);
+        nc.tomes = nc.tomes.filter(t => t.id !== action.payload.id);
+        return Object.assign({}, state, { character: nc });
+      }
+
       default:
         return state;
     }

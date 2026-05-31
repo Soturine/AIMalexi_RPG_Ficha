@@ -66,6 +66,12 @@ window.CoC = window.CoC || {};
     ADD_SPELL:    "ADD_SPELL",
     UPDATE_SPELL: "UPDATE_SPELL",
     REMOVE_SPELL: "REMOVE_SPELL",
+
+    // ── Grimórios (M4.4) ─────────────────────────────────────────────────
+    // Sem vínculo obrigatório com spells[]. spellIds[] é extensão futura (M4.5).
+    ADD_TOME:    "ADD_TOME",
+    UPDATE_TOME: "UPDATE_TOME",
+    REMOVE_TOME: "REMOVE_TOME",
     // INVARIANTE: character.inventory[] e character.weapons[] são domínios distintos.
     // weapons[] = recursos mecânicos de combate. inventory[] = posses narrativas.
     // Não existe sincronização entre os arrays — a duplicação é intencional.
@@ -141,6 +147,11 @@ window.CoC = window.CoC || {};
     addSpell:    (spell) => make(TYPES.ADD_SPELL,    { spell }),
     updateSpell: (spell) => make(TYPES.UPDATE_SPELL, { spell }),
     removeSpell: (id)    => make(TYPES.REMOVE_SPELL, { id }),
+
+    // Grimórios (M4.4)
+    addTome:    (tome) => make(TYPES.ADD_TOME,    { tome }),
+    updateTome: (tome) => make(TYPES.UPDATE_TOME, { tome }),
+    removeTome: (id)   => make(TYPES.REMOVE_TOME, { id }),
   };
 
   function isSacred(action) {

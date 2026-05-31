@@ -1380,3 +1380,104 @@
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
 }
+
+/* ── GRIMÓRIOS (M4.4) ─────────────────────────────────────────────────── */
+.tomes-toolbar { margin-bottom: 0.75rem; }
+.tomes-empty { color: var(--ink-faded); font-style: italic; font-size: 0.88rem; }
+
+.tome-card {
+  background: var(--bg-card-hi);
+  border: 1px solid var(--ink-faded);
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.55rem;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.tome-card:hover { border-color: var(--brass); }
+
+.tome-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+.tome-name {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink-bright);
+  flex: 1;
+  min-width: 0;
+}
+
+.tome-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15em 0.55em;
+  border-radius: 10px;
+  border: 1px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ts-none     { color: var(--ink-faded);  border-color: var(--ink-faded);  background: transparent; }
+.ts-idle     { color: var(--ink-mid);    border-color: var(--ink-mid);    background: rgba(150,130,100,0.1); }
+.ts-progress { color: var(--brass);      border-color: var(--brass);      background: rgba(180,140,60,0.12); }
+.ts-done     { color: #5a9060;           border-color: #3d7a44;           background: rgba(60,120,70,0.12); }
+
+.tome-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  margin-bottom: 0.35rem;
+}
+.tome-meta-item {
+  font-size: 0.8rem;
+  color: var(--ink-mid);
+}
+.tome-san { color: var(--blood); }
+
+/* Progress bar */
+.tome-progress { margin: 0.45rem 0 0.1rem; }
+.tome-progress-bar {
+  height: 6px;
+  background: var(--bg-deep);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.4rem;
+}
+.tome-progress-fill {
+  height: 100%;
+  background: var(--brass);
+  border-radius: 3px;
+  transition: width 0.25s ease;
+}
+.tome-progress-fill.done { background: #4a8a54; }
+
+.tome-study-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tome-notes {
+  font-size: 0.82rem;
+  color: var(--ink-mid);
+  margin: 0.35rem 0 0;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.tome-secondary {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.2rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tome-card:hover .tome-secondary { opacity: 1; }
+
+/* Modal de grimório */
+.tome-form { display: flex; flex-direction: column; gap: 0.6rem; }
