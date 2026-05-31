@@ -1,53 +1,35 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    AIMalexi RPG · js/campaign/supabase-transport.js
-   Sprint 17 — SupabaseRealtimeTransport
+   Sprint 17 — SupabaseRealtimeTransport (Model A: Realtime-only, sem persistência)
 
-   Implementa a mesma interface de transport.js com Supabase Realtime.
-   Para ativar: troque window.CoC.campaign.transport por este módulo
-   (ou use uma factory em transport.js que escolhe a implementação).
+   Implementa a mesma interface de transport.js.
+   Ativado quando window.CoC.config.useSupabase === true.
 
    PRÉ-REQUISITOS:
    ─────────────────────────────────────────────────────────────────────
-   1. Projeto Supabase criado (supabase.com)
-   2. SDK carregado em js/vendor/supabase.js
-   3. Variáveis de ambiente expostas em js/config.js:
-        window.CoC.config.supabaseUrl  = "https://<project>.supabase.co"
-        window.CoC.config.supabaseKey  = "<anon-public-key>"
-   4. Tabela `campaign_events` criada (schema abaixo)
+   1. Projeto Supabase criado (supabase.com — plano Free é suficiente)
+   2. SDK v2 em js/vendor/supabase.js (baixar de:
+        https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js
+      e commitar localmente — offline-first proíbe CDN em runtime)
+   3. js/config.js preenchido com url + key e useSupabase: true
+   4. No Supabase Dashboard → Realtime → ativar "Broadcast" para o projeto
 
-   SCHEMA SQL (execute no Supabase SQL Editor):
+   PROTOCOLO (Model A — Realtime Broadcast sem tabela de eventos):
    ─────────────────────────────────────────────────────────────────────
-   CREATE TABLE campaign_events (
-     id          BIGSERIAL PRIMARY KEY,
-     event_id    TEXT NOT NULL UNIQUE,        -- peerId:seqNo — deduplicação
-     campaign_id TEXT NOT NULL,
-     peer_id     TEXT NOT NULL,
-     type        TEXT NOT NULL,
-     payload     JSONB NOT NULL DEFAULT '{}',
-     ts          BIGINT NOT NULL,
-     created_at  TIMESTAMPTZ DEFAULT NOW()
-   );
-   CREATE INDEX ON campaign_events (campaign_id, ts);
-   ALTER TABLE campaign_events ENABLE ROW LEVEL SECURITY;
-   -- Política: qualquer pessoa com anon key pode ler/inserir dentro da campanha
-   CREATE POLICY "campaign read" ON campaign_events FOR SELECT USING (true);
-   CREATE POLICY "campaign insert" ON campaign_events FOR INSERT WITH CHECK (true);
+   - Cada campanha usa um canal: 'coc-campaign:{pin}'
+   - Eventos broadcast com event name 'coc_event'
+   - Late joiner recebe snapshot via REQUEST_STATUS → INVESTIGATOR_STATUS
+   - Sem persistência — sem tabela campaign_events (adicionável em Sprint 18)
 
-   PROTOCOLO DE SINCRONIZAÇÃO:
+   PROBLEMAS DISTRIBUÍDOS TRATADOS:
    ─────────────────────────────────────────────────────────────────────
-   - Mensagens enviadas via Realtime Broadcast (sem persistência) para latência
-     mínima. A tabela campaign_events é opcional (para replay / histórico).
-   - Late joiner recebe INVESTIGATOR_STATUS snapshot via REQUEST_STATUS
-     handshake — sem replay de eventos (decisão de design, ver transport.js).
-   - Deduplicação: seen Set em memória + eventId único por sessão.
-   - Echo suppression: mesma guard que BroadcastChannel (peerId === _peerId).
-
-   PROBLEMAS DISTRIBUÍDOS A TRATAR NESTA SPRINT:
-   ─────────────────────────────────────────────────────────────────────
-   1. Duplicação: Supabase entrega at-least-once → usar _seen Set + eventId
-   2. Reordenação: bufferizar por seqNo quando gap detectado (ou descartar)
-   3. Reconexão: Supabase SDK faz auto-reconnect; re-broadcast HOST_ONLINE após
-   4. Latência: sem impacto no modelo de estado (store é local, transport é sync)
+   - Echo:        { self: false } no config do canal (Supabase não retransmite)
+                  + guard peerId === _peerId como segunda linha de defesa
+   - Duplicação:  _seen Set por eventId (at-least-once delivery do Supabase)
+   - Reordenação: aceita e processa na ordem de chegada (adequado para CoC —
+                  eventos independentes, sem transação distribuída)
+   - Reconexão:   Supabase SDK faz auto-reconnect; o evento 'SUBSCRIBED' é
+                  reemitido, permitindo re-broadcast de HOST_ONLINE
    ═══════════════════════════════════════════════════════════════════════════ */
 
 window.CoC = window.CoC || {};
@@ -56,10 +38,11 @@ window.CoC.campaign = window.CoC.campaign || {};
 (function () {
 
   var _channel    = null;   // Supabase RealtimeChannel
+  var _client     = null;   // Supabase SupabaseClient (cached)
   var _handlers   = [];
   var _campaignId = null;
   var _peerId     = null;
-  var _seen       = null;   // Set<eventId> — deduplicação em memória
+  var _seen       = null;   // Set<eventId> — dedup em memória
 
   function _uuid() {
     if (crypto.randomUUID) return crypto.randomUUID();
@@ -71,12 +54,29 @@ window.CoC.campaign = window.CoC.campaign || {};
     }).join('');
   }
 
+  // ── Client factory ────────────────────────────────────────────────────────
   function _getClient() {
-    // TODO Sprint 17: inicializar Supabase client com config
-    // var cfg = window.CoC.config || {};
-    // return supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
-    console.error('[supabase-transport] Supabase não configurado — ver js/config.js');
-    return null;
+    if (_client) return _client;
+
+    var cfg = window.CoC && window.CoC.config;
+    if (!cfg || !cfg.useSupabase || !cfg.supabaseUrl || !cfg.supabaseKey) {
+      return null;
+    }
+
+    var sdk = window.supabase;
+    if (!sdk || typeof sdk.createClient !== 'function') {
+      console.error(
+        '[supabase-transport] SDK não carregado. ' +
+        'Baixe https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js ' +
+        'e salve em js/vendor/supabase.js'
+      );
+      return null;
+    }
+
+    _client = sdk.createClient(cfg.supabaseUrl, cfg.supabaseKey, {
+      realtime: { params: { eventsPerSecond: 10 } }
+    });
+    return _client;
   }
 
   // ── init ──────────────────────────────────────────────────────────────────
@@ -90,23 +90,33 @@ window.CoC.campaign = window.CoC.campaign || {};
     var client = _getClient();
     if (!client) return;
 
-    // TODO Sprint 17: substituir pelo canal Supabase Realtime
-    // _channel = client
-    //   .channel('campaign:' + campaignId, { config: { broadcast: { self: false } } })
-    //   .on('broadcast', { event: 'campaign_event' }, function (payload) {
-    //     _onMessage(payload.payload);
-    //   })
-    //   .subscribe(function (status) {
-    //     if (status === 'SUBSCRIBED') {
-    //       console.log('[supabase-transport] conectado à campanha', campaignId);
-    //     }
-    //   });
+    _channel = client
+      .channel('coc-campaign:' + campaignId, {
+        config: {
+          broadcast: { self: false, ack: false }
+          // self: false — Supabase não retransmite para o emissor
+          // ack: false  — fire-and-forget (menor latência)
+        }
+      })
+      .on('broadcast', { event: 'coc_event' }, function (payload) {
+        _onMessage(payload.payload);
+      })
+      .subscribe(function (status) {
+        if (status === 'SUBSCRIBED') {
+          console.log('[supabase-transport] conectado: campanha', campaignId, '· role', role);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[supabase-transport] erro no canal da campanha', campaignId);
+        } else if (status === 'TIMED_OUT') {
+          console.warn('[supabase-transport] timeout — Supabase tentará reconectar');
+        }
+      });
   }
 
   // ── broadcast ────────────────────────────────────────────────────────────
   function broadcast(event) {
     if (!_channel) return;
 
+    // Soft-valida contra ontologia
     var ontology = window.CoC.campaign && window.CoC.campaign.ontology;
     if (ontology && event && event.type) {
       var result = ontology.validate(event.type, event);
@@ -121,35 +131,32 @@ window.CoC.campaign = window.CoC.campaign || {};
       ts:         Date.now()
     });
 
-    // TODO Sprint 17:
-    // _channel.send({ type: 'broadcast', event: 'campaign_event', payload: envelope });
+    _channel.send({
+      type:    'broadcast',
+      event:   'coc_event',
+      payload: envelope
+    }).then(function (res) {
+      if (res === 'error') {
+        console.warn('[supabase-transport] falha ao enviar evento', event.type);
+      }
+    }).catch(function (err) {
+      console.warn('[supabase-transport] broadcast error', err);
+    });
   }
 
-  // ── onMessage (internal) ─────────────────────────────────────────────────
+  // ── _onMessage (interno) ─────────────────────────────────────────────────
   function _onMessage(data) {
     if (!data) return;
 
-    // Echo suppression — Supabase retransmite para o emissor
+    // Segunda linha de defesa contra eco (self:false já trata no SDK)
     if (data.peerId === _peerId) return;
 
-    // Deduplicação at-least-once
+    // Deduplicação at-least-once por eventId
     if (data.eventId) {
       if (_seen.has(data.eventId)) return;
       _seen.add(data.eventId);
-      // Limpar seen periodicamente para evitar crescimento ilimitado
-      if (_seen.size > 1000) _seen = new Set();
+      if (_seen.size > 2000) _seen = new Set(); // evita crescimento ilimitado
     }
-
-    // TODO Sprint 17: detecção de gap por seqNo
-    // if (data.seqNo && _lastSeqByPeer[data.peerId] !== undefined) {
-    //   var expected = _lastSeqByPeer[data.peerId] + 1;
-    //   if (data.seqNo > expected) {
-    //     console.warn('[supabase-transport] gap detectado para', data.peerId,
-    //                  'esperado', expected, 'recebido', data.seqNo);
-    //     // Política: aceitar e registrar gap (não bufferizar para CoC)
-    //   }
-    // }
-    // _lastSeqByPeer[data.peerId] = data.seqNo;
 
     _handlers.forEach(function (h) {
       try { h(data); } catch (err) { console.error('[supabase-transport] handler error', err); }
@@ -171,7 +178,7 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   function _close() {
     if (_channel) {
-      // TODO Sprint 17: _channel.unsubscribe();
+      try { _channel.unsubscribe(); } catch (e) {}
       _channel = null;
     }
   }
@@ -183,8 +190,6 @@ window.CoC.campaign = window.CoC.campaign || {};
     _seen       = null;
   }
 
-  // Exportado mas NÃO registrado em window.CoC.campaign.transport até Sprint 17.
-  // Para ativar: trocar a atribuição abaixo em transport.js ou usar uma factory.
   window.CoC.campaign.supabaseTransport = Object.freeze({
     init:      init,
     broadcast: broadcast,
@@ -193,5 +198,13 @@ window.CoC.campaign = window.CoC.campaign || {};
     getPeerId: getPeerId,
     close:     close,
   });
+
+  // ── Selector ──────────────────────────────────────────────────────────────
+  // Se useSupabase: true, este transport substitui o BroadcastChannel.
+  // Carregado após transport.js — a última atribuição vence.
+  if (window.CoC.config && window.CoC.config.useSupabase) {
+    window.CoC.campaign.transport = window.CoC.campaign.supabaseTransport;
+    console.info('[supabase-transport] ativo — modo remoto (Supabase Realtime)');
+  }
 
 })();
