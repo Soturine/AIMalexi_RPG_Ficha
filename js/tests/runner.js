@@ -52,6 +52,9 @@ load('js/core/session-export.js');
 // Views (somente o necessário para testes; DOM não é chamado no carregamento)
 load('js/views/combat.js');
 
+// Campaign — camada de persistência durável (lógica pura; Fase M)
+load('js/campaign/campaign-persistence.js');
+
 // ── Framework de assertions ───────────────────────────────────────────────
 let _passed = 0, _failed = 0;
 const _failures = [];
@@ -106,6 +109,7 @@ load('js/tests/test-replay.js');
 load('js/tests/test-session-export.js');
 load('js/tests/test-architecture.js');
 load('js/tests/test-occupation.js');
+load('js/tests/test-campaign-persistence.js');
 const elapsed = Date.now() - t0;
 
 // ── Relatório final ───────────────────────────────────────────────────────

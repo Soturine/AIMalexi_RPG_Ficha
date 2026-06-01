@@ -196,6 +196,20 @@ Auditoria de 2026-06-01 contra o código (não contra docs antigos):
 - *Próxima etapa:* **verificação em navegador** do layout; depois seguir para a **Fase M**
   (multiplayer durável). Pendente da RI: refinamento fino de espaçamentos e ajuste do tier de APA.
 
+### 2026-06-01 — Sessão 3 (Fase M — fundação da persistência durável)
+
+- *Anterior:* multiplayer era "Model A" (Supabase Realtime broadcast-only); eventos evaporavam na
+  desconexão; campanha só em sessionStorage (some ao fechar). Sem tabelas, RLS, fila offline ou replay-from-DB.
+- *Atual:* design oficial em `FASE_M_ARQUITETURA.md` (Supabase compartilhado, PIN, RLS robusto).
+  `supabase/schema.sql`: tabelas `campaigns` / `campaign_members` / `campaign_events` /
+  `investigator_snapshots` + RLS por associação + RPCs `create_campaign`/`join_campaign` + eventos
+  sagrados só do host. `js/campaign/campaign-persistence.js`: lógica desacoplada (client + storage
+  injetados) — seq monotônico, dedupe/idempotência, late-join (snapshot + eventos > cursor) e outbox;
+  coberta por `test-campaign-persistence.js`.
+- *Impacto:* fundação **testável** (778/778) para campanha durável, sem depender de infra ao vivo.
+- *Próxima etapa (M-live):* vendar o SDK Supabase, adapters reais (Supabase + IndexedDB),
+  `useSupabase:true`, fiação em `supabase-transport`/`player-sync`, e verificação com projeto real.
+
 ---
 
 ## §9. Critérios de sucesso (da diretriz)
