@@ -55,6 +55,19 @@
     <button id="btn-export" class="btn-export" title="Exportar biblioteca completa como JSON (BACKUP)">💾 Exportar</button>
   </div>
 
+  <!-- ═══ NAVEGAÇÃO POR ABAS (Fase RK) ═══ -->
+  <nav class="keeper-tabs" id="keeper-tabs" aria-label="Abas do Mestre">
+    <button class="keeper-tab active" data-ktab="investigadores" type="button">👥 Investigadores</button>
+    <button class="keeper-tab" data-ktab="compendio" type="button">📚 Compêndio</button>
+    <button class="keeper-tab" data-ktab="npcs" type="button">🎭 NPCs</button>
+    <button class="keeper-tab" data-ktab="encontro" type="button">⚔️ Encontro</button>
+    <button class="keeper-tab" data-ktab="timeline" type="button">📜 Timeline</button>
+    <button class="keeper-tab" data-ktab="lore" type="button">🗺️ Lore</button>
+    <button class="keeper-tab" data-ktab="diario" type="button">📔 Diário</button>
+  </nav>
+
+  <!-- ═══ T1 · INVESTIGADORES ═══ -->
+  <section class="ktab-panel active" data-ktab="investigadores">
   <!-- ═══ PAINEL DE CAMPANHA ═══ -->
   <!-- Estado: sem campanha -->
   <div class="campaign-setup" id="campaign-setup">
@@ -116,9 +129,17 @@
     </div>
 
   </div>
+  </section><!-- /T1 Investigadores -->
 
-  <!-- Keeper Grid (3 colunas) -->
-  <div class="keeper-grid">
+  <!-- ═══ T2 · COMPÊNDIO ═══ -->
+  <section class="ktab-panel" data-ktab="compendio">
+    <p class="ktab-hint">Regras, perícias, ocupações, combate, sanidade e Mythos. <a href="compendium.html" target="_blank" rel="noopener">Abrir em nova aba ↗</a></p>
+    <iframe class="compendio-frame" src="compendium.html" title="Compêndio de Regras" loading="lazy"></iframe>
+  </section>
+
+  <!-- ═══ T3 · NPCs (biblioteca + workspace) ═══ -->
+  <section class="ktab-panel" data-ktab="npcs">
+  <div class="keeper-grid npcs-grid">
 
     <!-- ─── BIBLIOTECA ─── -->
     <aside class="library-col">
@@ -149,9 +170,11 @@
         </div>
       </div>
     </div>
+  </div><!-- /npcs-grid -->
+  </section><!-- /T3 NPCs -->
 
-    <!-- ─── ENCONTRO + TIMELINE + LOG ─── -->
-    <aside class="encounter-col">
+  <!-- ═══ T4 · ENCONTRO & COMBATE ═══ -->
+  <section class="ktab-panel" data-ktab="encontro">
 
       <!-- Tracker de Encontro -->
       <div class="encounter-panel">
@@ -163,6 +186,11 @@
           <div class="encounter-empty">Nenhuma criatura ativa.<br>Use <b>+ Encontro</b>.</div>
         </div>
       </div>
+
+  </section><!-- /T4 Encontro -->
+
+  <!-- ═══ T5 · TIMELINE & LOG ═══ -->
+  <section class="ktab-panel" data-ktab="timeline">
 
       <!-- Timeline de Eventos -->
       <div class="timeline-panel" id="timeline-panel">
@@ -187,9 +215,26 @@
         <ul style="list-style:none; padding:0; margin:0;"></ul>
       </div>
 
-    </aside>
+  </section><!-- /T5 Timeline -->
 
-  </div><!-- /keeper-grid -->
+  <!-- ═══ T6 · LORE DA CAMPANHA ═══ -->
+  <section class="ktab-panel" data-ktab="lore">
+    <p class="ktab-hint">Wiki interna do Guardião — salva localmente neste dispositivo.</p>
+    <div class="lore-grid">
+      <div class="lore-card"><label for="lore-faccoes">Facções</label><textarea id="lore-faccoes" placeholder="Organizações, cultos, grupos..."></textarea></div>
+      <div class="lore-card"><label for="lore-misterios">Mistérios</label><textarea id="lore-misterios" placeholder="Enigmas, ameaças, verdades ocultas..."></textarea></div>
+      <div class="lore-card"><label for="lore-locais">Locais</label><textarea id="lore-locais" placeholder="Lugares importantes..."></textarea></div>
+      <div class="lore-card"><label for="lore-pistas">Pistas</label><textarea id="lore-pistas" placeholder="Evidências, handouts, conexões..."></textarea></div>
+      <div class="lore-card"><label for="lore-personagens">Personagens</label><textarea id="lore-personagens" placeholder="NPCs importantes da trama..."></textarea></div>
+      <div class="lore-card"><label for="lore-cronologia">Cronologia</label><textarea id="lore-cronologia" placeholder="Linha do tempo da campanha..."></textarea></div>
+    </div>
+  </section>
+
+  <!-- ═══ T7 · DIÁRIO DO MESTRE ═══ -->
+  <section class="ktab-panel" data-ktab="diario">
+    <p class="ktab-hint">Anotações livres — planejamento, ideias, preparação. Salvo localmente.</p>
+    <textarea id="keeper-journal" class="keeper-journal" placeholder="Anotações da sessão, ganchos, lembretes..."></textarea>
+  </section>
 
   <!-- Modal: Gerenciar Campanha -->
   <div class="modal-overlay" id="modal-campaign" style="display:none">
@@ -250,6 +295,8 @@
      ═══════════════════════════════════════════════════════════════════════ -->
 <script src="js/keeper.js"></script>
 <script src="js/campaign/keeper-dashboard.js"></script>
+<script src="js/keeper-tabs.js"></script>
+<script src="js/keeper-notes.js"></script>
 
 </body>
 </html>
