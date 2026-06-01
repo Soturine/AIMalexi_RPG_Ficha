@@ -320,6 +320,122 @@
   font-size: 0.95rem;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   FASE RI — Layout desktop do Investigador (mockup do proprietário)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Vitais como pills coloridas por-stat: PV vermelho · SAN azul · PM roxo · Sorte verde */
+.svital {
+  padding: 0.3rem 0.45rem;
+  border-radius: var(--radius);
+  border-left: 3px solid transparent;
+  background: var(--bg-card-hi);
+}
+.svital-pv   { border-left-color: var(--blood); }
+.svital-san  { border-left-color: #5a8fb5; }
+.svital-pm   { border-left-color: #7b5ea7; }
+.svital-luck { border-left-color: #5a9e6f; }
+.svital-san  .svital-fill { background: #5a8fb5; }
+.svital-luck .svital-fill { background: #5a9e6f; }
+.svital-label::before { margin-right: 0.3rem; }
+.svital-pv   .svital-label::before { content: "\2764"; }   /* ❤ */
+.svital-san  .svital-label::before { content: "\1F9E0"; }  /* 🧠 */
+.svital-pm   .svital-label::before { content: "\2726"; }   /* ✦ */
+.svital-luck .svital-label::before { content: "\1F340"; }  /* 🍀 */
+
+/* Botão "Editar Investigador" no rodapé da sidebar */
+.sidebar-edit-btn {
+  margin-top: 0.2rem;
+  width: 100%;
+  border: 1px solid var(--brass);
+  background: transparent;
+  color: var(--brass-bright);
+  border-radius: var(--radius);
+  padding: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sidebar-edit-btn:hover { background: var(--bg-card-hi); }
+
+/* Atributos em grade 2 colunas (apenas com sidebar vertical, ≥901px) */
+@media (min-width: 901px) {
+  .sidebar-attributes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem 0.4rem;
+  }
+  .sidebar-attributes .sattr-row {
+    flex-wrap: wrap;
+    padding: 0.3rem 0.45rem;
+    background: var(--bg-card-hi);
+  }
+  .sidebar-attributes .sattr-label { width: auto; flex: 1 1 auto; }
+  .sidebar-attributes .sattr-value { font-size: 1.2rem; }
+  .sidebar-attributes .sattr-fracs { flex-basis: 100%; margin-left: 0; text-align: right; }
+}
+
+/* Aba Personagem — usa a largura: identidade (esq.) + narrativa curta (dir.) */
+.persona-top {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--gap-lg);
+  align-items: start;
+  margin-top: 0.5rem;
+}
+.persona-side { display: flex; flex-direction: column; gap: 0.7rem; }
+.persona-side label,
+.persona-background label,
+.persona-cols label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--brass);
+  margin-bottom: 0.2rem;
+}
+.persona-side textarea { width: 100%; box-sizing: border-box; min-height: 52px; }
+
+/* Background em largura total */
+.persona-background { margin-top: 1rem; }
+.persona-background textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 150px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Convicções · Crenças · Pessoas Importantes */
+.persona-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--gap-lg);
+  margin-top: 1rem;
+}
+.persona-cols textarea { width: 100%; box-sizing: border-box; min-height: 90px; }
+
+/* Demais campos (recolhível) */
+.persona-more { margin-top: 1.25rem; border-top: 1px dashed var(--ink-faded); padding-top: 0.75rem; }
+.persona-more > summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+}
+.persona-more .background-grid-mini { margin-top: 0.75rem; }
+.persona-equipment { margin-top: 0.75rem; }
+.persona-equipment textarea { width: 100%; box-sizing: border-box; min-height: 70px; }
+
+@media (max-width: 768px) {
+  .persona-top { grid-template-columns: 1fr; }
+}
+
 /* ─── Imagens: retrato ───────────────────────────────────────────────── */
 .identity-section .identity-grid { flex: 1 1 auto; min-width: 0; }
 

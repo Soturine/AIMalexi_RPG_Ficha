@@ -26,7 +26,7 @@ window.CoC.views = window.CoC.views || {};
   var BG_TEXT_FIELDS = [
     'description', 'ideology', 'significantPeople', 'meaningfulLocations',
     'treasuredPossessions', 'traits', 'injuriesScars', 'phobiasManias',
-    'tomes', 'encounters'
+    'tomes', 'encounters', 'hobbies', 'convictions'
   ];
   var STATUS_BOOL_FIELDS   = ['majorWound', 'unconscious', 'dying'];
   var STATUS_STRING_FIELDS = ['temporaryInsanity', 'indefiniteInsanity'];

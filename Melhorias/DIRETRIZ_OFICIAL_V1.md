@@ -180,6 +180,22 @@ Auditoria de 2026-06-01 contra o código (não contra docs antigos):
 - *Impacto:* atributos editáveis com segurança; rolagem disponível desktop/mobile.
 - *Próxima etapa:* redesign visual do componente (tamanho/grid/legibilidade) na Fase RI.
 
+### 2026-06-01 — Sessão 2 (Fase RI — layout desktop do Investigador, conforme mockup do proprietário)
+
+- *Anterior:* retrato ocupava uma coluna na seção de identidade (`portrait-bg-layout`);
+  edição/atributos no sidebar; narrativa comprimida ao lado do retrato.
+- *Atual:* **retrato único no topo da sidebar**; **botão "Editar Investigador"** no rodapé da
+  sidebar; **vitais como pills coloridas** (PV vermelho · SAN azul · PM roxo · Sorte verde, com
+  ícones); **atributos em grade 2 colunas** (≥901px) com valor em destaque. Aba **Personagem**
+  reorganizada para usar a largura: Identidade (esq.) + Conceito/Traço de Personalidade/Hobbies
+  (dir.) → **Background** em largura total → **Convicções · Crenças · Pessoas Importantes** em 3
+  colunas → demais campos CoC (locais, posses, ferimentos, fobias, tomos, encontros, equipamento)
+  num painel recolhível "Mais detalhes". Dois campos novos em `background`: `hobbies`, `convictions`.
+- *Impacto:* layout desktop real (menos scroll, narrativa usando a largura), imagem única,
+  atributos legíveis. Nenhum campo perdido (todos preservados/realocados).
+- *Próxima etapa:* **verificação em navegador** do layout; depois seguir para a **Fase M**
+  (multiplayer durável). Pendente da RI: refinamento fino de espaçamentos e ajuste do tier de APA.
+
 ---
 
 ## §9. Critérios de sucesso (da diretriz)
