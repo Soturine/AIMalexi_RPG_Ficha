@@ -211,127 +211,79 @@
           <span class="meta">Quem é o investigador?</span>
         </h2>
 
-        <div class="persona-top">
+        <div class="sheet-card identity-card">
         <div class="identity-grid">
 
           <div>
             <label for="id-name">Nome</label>
-            <input
-              type="text"
-              id="id-name"
-              data-bind="investigator.name"
-              placeholder="Nome do personagem"
-            />
+            <input type="text" id="id-name" data-bind="investigator.name" placeholder="Nome do personagem" />
           </div>
 
           <div>
             <label for="id-player">Jogador</label>
-            <input
-              type="text"
-              id="id-player"
-              data-bind="investigator.playerName"
-              placeholder="Seu nome"
-            />
+            <input type="text" id="id-player" data-bind="investigator.playerName" placeholder="Seu nome" />
+          </div>
+
+          <div>
+            <label for="id-tagline">Conceito</label>
+            <input type="text" id="id-tagline" data-bind="investigator.tagline" placeholder="Ex: Médico cético perseguindo o impossível" />
           </div>
 
           <div>
             <label for="id-occupation">Ocupação</label>
-
-            <select
-              id="id-occupation"
-              data-bind="investigator.occupation"
-            >
+            <select id="id-occupation" data-bind="investigator.occupation">
               <option value="">— escolher —</option>
             </select>
           </div>
 
           <div>
             <label for="id-age">Idade</label>
-
-            <input
-              type="number"
-              id="id-age"
-              data-bind="investigator.age"
-              min="15"
-              max="99"
-            />
-          </div>
-
-          <div>
-            <label for="id-sex">Sexo / Pronomes</label>
-
-            <input
-              type="text"
-              id="id-sex"
-              data-bind="investigator.sex"
-              placeholder="ex: Masculino, ele/dele"
-            />
+            <input type="number" id="id-age" data-bind="investigator.age" min="15" max="99" />
           </div>
 
           <div>
             <label for="id-residence">Residência</label>
+            <input type="text" id="id-residence" data-bind="investigator.residence" placeholder="Cidade atual" />
+          </div>
 
-            <input
-              type="text"
-              id="id-residence"
-              data-bind="investigator.residence"
-              placeholder="Cidade atual"
-            />
+          <div>
+            <label for="id-sex">Sexo / Pronomes</label>
+            <input type="text" id="id-sex" data-bind="investigator.sex" placeholder="ex: Masculino, ele/dele" />
           </div>
 
           <div>
             <label for="id-birthplace">Local de Nascimento</label>
-
-            <input
-              type="text"
-              id="id-birthplace"
-              data-bind="investigator.birthplace"
-              placeholder="Cidade natal"
-            />
+            <input type="text" id="id-birthplace" data-bind="investigator.birthplace" placeholder="Cidade natal" />
           </div>
 
         </div><!-- /identity-grid -->
-
-          <div class="persona-side">
-            <div>
-              <label for="id-tagline">Conceito</label>
-              <input type="text" id="id-tagline" data-bind="investigator.tagline" placeholder="Ex: Médico cético perseguindo o impossível" />
-            </div>
-            <div>
-              <label for="bg-traits">Traço de Personalidade</label>
-              <textarea id="bg-traits" data-bind="background.traits" placeholder="Como age, fala, reage; marcas pessoais."></textarea>
-            </div>
-            <div>
-              <label for="bg-hobbies">Hobbies</label>
-              <textarea id="bg-hobbies" data-bind="background.hobbies" placeholder="Leitura, xadrez, arqueologia..."></textarea>
-            </div>
-          </div>
-
-        </div><!-- /persona-top -->
+        </div><!-- /identity-card -->
 
         <p class="identity-tagline" id="identity-display">—</p>
 
-        <!-- BACKGROUND — largura total -->
-        <div class="persona-background">
-          <label for="bg-description">Background</label>
-          <textarea
-            id="bg-description"
-            data-bind="background.description"
-            placeholder="História do investigador: origem, motivação, modos, primeira impressão, como chegou ao Mythos..."
-          ></textarea>
-        </div>
-
-        <!-- CONVICÇÕES · CRENÇAS · PESSOAS IMPORTANTES -->
-        <div class="persona-cols">
-          <div>
+        <!-- Cards narrativos — grid 2 col (≥1600px) · 3 col (≥1900px) -->
+        <div class="persona-cards">
+          <div class="sheet-card persona-card--wide">
+            <label for="bg-description">Background</label>
+            <textarea id="bg-description" data-bind="background.description" placeholder="História do investigador: origem, motivação, modos, primeira impressão, como chegou ao Mythos..."></textarea>
+          </div>
+          <div class="sheet-card">
+            <label for="bg-traits">Traço de Personalidade</label>
+            <textarea id="bg-traits" data-bind="background.traits" placeholder="Como age, fala, reage; marcas pessoais."></textarea>
+          </div>
+          <div class="sheet-card">
+            <label for="bg-hobbies">Hobbies</label>
+            <textarea id="bg-hobbies" data-bind="background.hobbies" placeholder="Leitura, xadrez, arqueologia..."></textarea>
+          </div>
+          <div class="sheet-card">
             <label for="bg-convictions">Convicções</label>
             <textarea id="bg-convictions" data-bind="background.convictions" placeholder="O que o move; linhas que não cruza."></textarea>
           </div>
-          <div>
+          <div class="sheet-card">
             <label for="bg-ideology">Crenças</label>
             <textarea id="bg-ideology" data-bind="background.ideology" placeholder="Visão de mundo, fé, ideologia."></textarea>
           </div>
-          <div>
+          <div class="sheet-card">
             <label for="bg-people">Pessoas Importantes</label>
             <textarea id="bg-people" data-bind="background.significantPeople" placeholder="Mentor, família, aliados, rivais."></textarea>
           </div>
