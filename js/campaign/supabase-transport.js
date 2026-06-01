@@ -172,12 +172,13 @@ window.CoC.campaign = window.CoC.campaign || {};
 
     // Deduplicação at-least-once por eventId
     if (data.eventId) {
+      if (!_seen) return;   // close() was called before this delayed callback fired
       if (_seen.has(data.eventId)) {
         _debug('dup', { eventId: data.eventId, type: data.type });
         return;
       }
       _seen.add(data.eventId);
-      if (_seen.size > 2000) _seen = new Set();
+      if (_seen.size > 2000) _seen.delete(_seen.values().next().value);
     }
 
     // Gap detection — apenas para eventos com seqNo (EXECUTION_TRACE)

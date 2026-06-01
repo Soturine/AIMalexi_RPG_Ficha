@@ -28,7 +28,6 @@ window.CoC.campaign = window.CoC.campaign || {};
 
     _bindPlayerUI();
     _listenStore();
-    _listenTransport();
     _listenBus();
 
     // Auto-restore session on page refresh. Players reconnect silently.
@@ -72,7 +71,11 @@ window.CoC.campaign = window.CoC.campaign || {};
     if (state.connected) {
       var leave = confirm('Você está na campanha "' + state.name + '" (PIN: ' + state.pin + ').\n\nSair da campanha?');
       if (leave) {
-        _tp.broadcast({ type: 'PLAYER_DISCONNECTED', playerName: _playerName });
+        var ontologyLeave = window.CoC.campaign && window.CoC.campaign.ontology;
+        var discEvt = ontologyLeave
+          ? ontologyLeave.make('PLAYER_DISCONNECTED', { playerName: _playerName })
+          : { type: 'PLAYER_DISCONNECTED', playerName: _playerName };
+        _tp.broadcast(discEvt);
         _tp.close();
         _cs.leaveCampaign();
         _renderPlayerCampaignBadge();
@@ -95,8 +98,12 @@ window.CoC.campaign = window.CoC.campaign || {};
     _tp.init(pin.trim(), 'player');
     _tp.onEvent(_onTransportEvent);
 
+    var ontology = window.CoC.campaign && window.CoC.campaign.ontology;
     _broadcastStatus();
-    _tp.broadcast({ type: 'PLAYER_CONNECTED', playerName: _playerName });
+    var connEvt = ontology
+      ? ontology.make('PLAYER_CONNECTED', { playerName: _playerName })
+      : { type: 'PLAYER_CONNECTED', playerName: _playerName };
+    _tp.broadcast(connEvt);
     _renderPlayerCampaignBadge();
   }
 
@@ -147,25 +154,26 @@ window.CoC.campaign = window.CoC.campaign || {};
     var inv = c.investigator || {};
     var der = c.derived     || {};
 
-    _tp.broadcast({
-      type:          'INVESTIGATOR_STATUS',
+    var ontology = window.CoC.campaign && window.CoC.campaign.ontology;
+    var statusPayload = {
       playerName:    _playerName || inv.playerName || 'Jogador',
       characterName: inv.name || '?',
       seqNo:         _seqNo,
       status: {
-        hp:     c.derived && c.derived.pvAtual != null ? c.derived.pvAtual : (c.derived && c.derived.pvMax || 0),
-        hpMax:  c.derived && c.derived.pvMax   || 1,
-        san:    c.derived && c.derived.sanAtual != null ? c.derived.sanAtual : (c.derived && c.derived.sanMax || 0),
-        sanMax: c.derived && c.derived.sanMax   || 1,
-        mp:     c.derived && c.derived.pmAtual  != null ? c.derived.pmAtual  : (c.derived && c.derived.pmMax || 0),
-        mpMax:  c.derived && c.derived.pmMax    || 1,
-        luck:   c.attributes && c.attributes.SOR && c.attributes.SOR.value || 0
+        hp:     der.PV  ? (der.PV.current  != null ? der.PV.current  : der.PV.value  || 0) : 0,
+        hpMax:  der.PV  ? (der.PV.value    || 1) : 1,
+        san:    der.SAN ? (der.SAN.current != null ? der.SAN.current : der.SAN.value || 0) : 0,
+        sanMax: der.SAN ? (der.SAN.max     || 1) : 1,
+        mp:     der.PM  ? (der.PM.current  != null ? der.PM.current  : der.PM.value  || 0) : 0,
+        mpMax:  der.PM  ? (der.PM.value    || 1) : 1,
+        luck:   c.attributes && c.attributes.Sorte ? (c.attributes.Sorte.value || 0) : 0
       }
-    });
+    };
+    var statusEvt = ontology
+      ? ontology.make('INVESTIGATOR_STATUS', statusPayload)
+      : Object.assign({ type: 'INVESTIGATOR_STATUS' }, statusPayload);
+    _tp.broadcast(statusEvt);
   }
-
-  // ── Transport listener ──────────────────────────────────────────────────────
-  function _listenTransport() {}
 
   function _onTransportEvent(event) {
     if (!event) return;
@@ -193,9 +201,11 @@ window.CoC.campaign = window.CoC.campaign || {};
       var cState = _cs.getState();
       if (!cState.connected) return;
 
-      var charState  = _str ? _str.getState() : null;
-      var inv        = charState && charState.character && charState.character.investigator || {};
-      var ontology   = window.CoC.campaign && window.CoC.campaign.ontology;
+      var charState = _str ? _str.getState() : null;
+      if (!charState || !charState.character) return;
+
+      var inv      = charState.character.investigator || {};
+      var ontology = window.CoC.campaign && window.CoC.campaign.ontology;
 
       var seq = ++_seqNo;
       var tracePayload = {
@@ -205,12 +215,11 @@ window.CoC.campaign = window.CoC.campaign || {};
         seqNo:         seq,
         eventId:       (_tp.getPeerId() || '?') + ':' + seq
       };
-      var event = ontology
+      var traceEvt = ontology
         ? ontology.make('EXECUTION_TRACE', tracePayload)
         : Object.assign({ type: 'EXECUTION_TRACE' }, tracePayload);
 
-      _tp.broadcast(event);
-      _broadcastStatus();
+      _tp.broadcast(traceEvt);
     });
   }
 

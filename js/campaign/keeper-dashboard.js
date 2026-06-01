@@ -74,13 +74,13 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   // ── Create Campaign ───────────────────────────────────────────────────────
   function _createCampaign() {
-    var pin       = _pinSys.generate();
-    var peerId    = _tp.getPeerId();
-    var name      = window.prompt('Nome da Campanha:', 'Horror em Arkham') || 'Horror em Arkham';
+    var pin  = _pinSys.generate();
+    var name = window.prompt('Nome da Campanha:', 'Horror em Arkham') || 'Horror em Arkham';
 
-    _cs.createCampaign(name, pin, peerId);
     _tp.init(pin, 'host');
     _tp.onEvent(_onTransportEvent);
+    var peerId = _tp.getPeerId();
+    _cs.createCampaign(name, pin, peerId);
 
     // Broadcast presença do host
     var hostEvent = _ontology
@@ -183,44 +183,46 @@ window.CoC.campaign = window.CoC.campaign || {};
   function _handleExecutionTrace(event) {
     if (!event.entry) return;
     var entry = event.entry;
-    var actor = event.characterName || event.playerName || '?';
+    var actor = _esc(event.characterName || event.playerName || '?');
+    var p     = entry.payload || {};
     var text  = '';
     var cls   = 'ev-roll';
 
+    function _amt(v) { return v != null ? v : '?'; }
+
     switch (entry.type) {
       case 'APPLY_DAMAGE':
-        text = '<b>' + actor + '</b> sofreu ' + (entry.payload && entry.payload.amount || '?') + ' de dano.';
+        text = '<b>' + actor + '</b> sofreu ' + _amt(p.amount) + ' de dano.';
         cls  = 'ev-damage';
         break;
       case 'LOSE_SANITY':
-        text = '<b>' + actor + '</b> perdeu ' + (entry.payload && entry.payload.amount || '?') + ' SAN.';
+        text = '<b>' + actor + '</b> perdeu ' + _amt(p.amount) + ' SAN.';
         cls  = 'ev-sanity';
         break;
       case 'HEAL_DAMAGE':
-        text = '<b>' + actor + '</b> recuperou ' + (entry.payload && entry.payload.amount || '?') + ' PV.';
+        text = '<b>' + actor + '</b> recuperou ' + _amt(p.amount) + ' PV.';
         cls  = 'ev-roll';
         break;
       case 'RECOVER_SANITY':
-        text = '<b>' + actor + '</b> recuperou ' + (entry.payload && entry.payload.amount || '?') + ' SAN.';
+        text = '<b>' + actor + '</b> recuperou ' + _amt(p.amount) + ' SAN.';
         cls  = 'ev-sanity';
         break;
       case 'SPEND_MAGIC':
-        text = '<b>' + actor + '</b> gastou ' + (entry.payload && entry.payload.amount || '?') + ' PM.';
+        text = '<b>' + actor + '</b> gastou ' + _amt(p.amount) + ' PM.';
         cls  = 'ev-magic';
         break;
       case 'ROLL_SKILL':
-        text = '<b>' + actor + '</b> rolou ' + (entry.payload && entry.payload.skillName || 'perícia') +
-               ': ' + (entry.payload && entry.payload.roll || '?') + '% vs ' +
-               (entry.payload && entry.payload.value || '?') + '% → ' +
-               (entry.payload && entry.payload.outcome || '?');
+        text = '<b>' + actor + '</b> rolou ' + _esc(p.skillName || 'perícia') +
+               ': ' + _amt(p.roll) + '% vs ' +
+               _amt(p.value) + '% → ' + _esc(p.outcome != null ? String(p.outcome) : '?');
         cls  = 'ev-roll';
         break;
       case 'ATTACK_RESOLVED':
-        text = '<b>' + actor + '</b> atacou com ' + (entry.payload && entry.payload.weaponName || '?') + '.';
+        text = '<b>' + actor + '</b> atacou com ' + _esc(p.weaponName || '?') + '.';
         cls  = 'ev-combat';
         break;
       default:
-        text = '<b>' + actor + '</b>: ' + entry.type.toLowerCase().replace(/_/g, ' ');
+        text = '<b>' + actor + '</b>: ' + _esc(entry.type.toLowerCase().replace(/_/g, ' '));
     }
 
     _cs.pushTimeline({ type: entry.type, text: text, cls: cls });

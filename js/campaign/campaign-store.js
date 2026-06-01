@@ -87,7 +87,8 @@ window.CoC.campaign = window.CoC.campaign || {};
   function leaveCampaign() {
     _state = _defaultState();
     sessionStorage.removeItem(SESSION_KEY);
-    _notify();
+    // Notify subscribers without calling _save() — removeItem already cleared storage.
+    _subs.forEach(function (fn) { try { fn(_state); } catch (e) {} });
   }
 
   // Mark session as stale (page load with saved session — transport gone).
