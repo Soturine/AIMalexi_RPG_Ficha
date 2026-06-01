@@ -22,7 +22,7 @@ window.CoC = window.CoC || {};
 
 window.CoC.config = Object.freeze({
   supabaseUrl:     'https://oveeqntgpusmemmybale.supabase.co',
-  supabaseKey:     'sb_publishable_R30Kj1WQ93aQ7jwDefFYXA_31EFhe1G',  // anon/publishable — pública por design (RLS). NUNCA a secret/service_role aqui.
-  useSupabase:     false,   // mantém DESLIGADO até vendar o SDK + fiação + teste no navegador (go-live)
+  supabaseKey:     'sb_publishable_CYECmDhqtRVdXB-30ElY9Q_F9x51eKL',  // anon/publishable — pública por design (RLS). NUNCA a secret/service_role aqui.
+  useSupabase:     true,    // GO-LIVE (Fase M) — realtime remoto. SDK via CDN interino; vendar em js/vendor/supabase.js depois.
   transportDebug:  false,   // Sprint 18: logs detalhados de transport (send/recv/dup/gap)
 });
