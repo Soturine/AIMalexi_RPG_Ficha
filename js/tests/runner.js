@@ -55,6 +55,7 @@ load('js/views/combat.js');
 // Campaign — camada de persistência durável (lógica pura; Fase M)
 load('js/campaign/campaign-persistence.js');
 load('js/campaign/outbox-indexeddb.js');
+load('js/keeper-dashboard-summary.js');
 
 // ── Framework de assertions ───────────────────────────────────────────────
 let _passed = 0, _failed = 0;
@@ -112,6 +113,7 @@ load('js/tests/test-architecture.js');
 load('js/tests/test-occupation.js');
 load('js/tests/test-campaign-persistence.js');
 load('js/tests/test-outbox.js');
+load('js/tests/test-keeper-dashboard.js');
 const elapsed = Date.now() - t0;
 
 // ── Relatório final ───────────────────────────────────────────────────────
