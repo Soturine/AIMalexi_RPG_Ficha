@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> ⚠️ **Fonte oficial de verdade: [`Melhorias/DIRETRIZ_OFICIAL_V1.md`](Melhorias/DIRETRIZ_OFICIAL_V1.md).**
+> Este arquivo é subordinado a ela. As seções de *roadmap/milestones* abaixo podem estar
+> desatualizadas — a diretriz prevalece. As decisões de arquitetura e a Constituição
+> operacional seguem válidas.
+
 ## What this is
 
 AIMalexi RPG is a browser-based character sheet tool for **Call of Cthulhu 7th Edition** (PT-BR). Three HTML pages: `investigator.html` (player sheet), `keeper.html` (GM tool), `guia-iniciante.html` (beginner guide). Deployed as a static site on GitHub Pages.
@@ -19,11 +24,11 @@ python -m http.server 8765
 # then open http://localhost:8765/
 ```
 
-Manual browser tests live in `test-engine.html` and `test-hotfix.html` — open them directly in a browser.
+Automated tests: `node js/tests/runner.js` — zero-dep Node runner + 16 suites (now also `test-occupation.js`), gated in CI via `.github/workflows/ci.yml`. Manual browser tests also exist (`test-engine.html`, `test-hotfix.html`, `test-fase*.html`).
 
 ## Deployment
 
-Push to `main`. GitHub Pages serves from the root of `main` automatically. After adding any new JS/CSS file, add its path to `PRECACHE_URLS` in `sw.js` **and** bump `CACHE_VERSION` (currently `"v5"`). The SW uses cache-first with no `skipWaiting` (intentional — avoids interrupting a live session).
+Push to `main`. GitHub Pages serves from the root of `main` automatically. After adding any new JS/CSS file, add its path to `PRECACHE_URLS` in `sw.js` **and** bump `CACHE_VERSION` (currently `"v23"`). The SW uses cache-first with no `skipWaiting` (intentional — avoids interrupting a live session).
 
 ## Architecture
 
@@ -40,14 +45,14 @@ js/engine/              ← pure functions, stable
   storage.js            ← IndexedDB with localStorage fallback, cache-first reads
   name-generator.js
 
-js/core/                ← reactive core (M0 scaffold, wiring starts M1)
+js/core/                ← reactive core (LIVE: store/signals/bus/executor/event-log/render-pipeline wired)
   actions.js            ← domain intent catalog (APPLY_DAMAGE, LOSE_SANITY…)
   store.js              ← will hold signals by slice (character/session/rollLog/ui)
   signals.js            ← bridge to vendored Preact Signals
   dispatch.js           ← fixed middleware chain: trace→validate→reduce→persist→sync→log→notify
   bus.js                ← event bus (decoupled from Store)
   lifecycle.js          ← scope/teardown primitives (ObjectURLs, listeners, subscriptions)
-  schema/index.js       ← payload validation
+  schema.js             ← payload validation (also a schema/ dir)
 
 js/shared/              ← shared UI utilities
   ui-components.js
@@ -55,10 +60,12 @@ js/shared/              ← shared UI utilities
   sanity-fx.js          ← sanity degradation effects
   validators.js
 
-js/sync/                ← Supabase sync (M0 scaffold, wires at M5)
-  supabase-client.js
-  syncMiddleware.js
-  queue.js              ← offline queue + reconnect
+js/campaign/            ← multiplayer (BroadcastChannel + Supabase Realtime "Model A", no persist yet)
+  transport.js · supabase-transport.js · player-sync.js · keeper-dashboard.js
+  pin-system.js · campaign-store.js · campaign-ontology.js
+
+js/views/               ← 13 sheet-section views (identity, attributes, skills, combat, rolls…)
+js/tests/               ← runner.js + 16 test suites (Node, CI-gated)
 
 js/vendor/              ← vendored, never edit
   signals-core.js       ← Preact Signals
@@ -79,9 +86,10 @@ The runtime is always the local Store. The UI **never reads from Supabase**. Sup
 
 ## Current milestone status
 
-- **M0 — DONE:** RNG crypto, event delegation, media picker (banner/portrait), scaffold of `js/core/`, `js/sync/`, `js/vendor/` (files exist but most are stubs).
-- **M1 — NEXT:** Wire up store/signals/dispatcher/bus + schema + trace. Reducers go here.
-- **M2–M7:** append-only log → strangle investigator → local dashboard → Supabase sync → security hardening → polish.
+> ⚠️ Superseded by `Melhorias/DIRETRIZ_OFICIAL_V1.md` (phased roadmap there). Real state as of 2026-06-01:
+- **M0–M3 — DONE:** crypto RNG, media picker, reactive core (store/signals/bus/executor/event-log), append-only log, views strangled out of `investigator.js`.
+- **M4–M5 — PARTIAL:** local keeper-dashboard; Supabase Realtime "Model A" (no persistence yet).
+- **Next (per directive):** durable **free multiplayer** (event-sourced persistence) is the top priority — Fase M.
 
 Detailed roadmap: `Melhorias/ARQUITETURA_V3.md`. Known rule bugs backlog: `Melhorias/TODO_AUDIT_CoC7e.md`.
 

@@ -61,10 +61,6 @@
       + Novo
     </button>
 
-    <button id="btn-load-klein" title="Carregar Klein Moretti (exemplo)">
-      📜 Klein
-    </button>
-
     <button id="btn-import" title="Importar JSON">
       📁 Importar
     </button>
@@ -169,7 +165,6 @@
 
     <!-- ═══ CHARACTER SIDEBAR ═══ -->
     <aside id="character-sidebar" class="character-sidebar">
-      <div id="character-portrait" class="character-portrait" title="Retrato do investigador"></div>
       <div class="sidebar-identity">
         <div id="sidebar-name" class="sidebar-name">—</div>
         <div id="sidebar-occupation" class="sidebar-occupation">—</div>
@@ -177,8 +172,21 @@
       <div id="sidebar-vitals" class="sidebar-vitals"></div>
       <div class="sidebar-attr-header">
         <button id="btn-roll-all" class="btn-primary btn-sm" title="Rola todos os atributos do zero">🎲 Rolar Tudo</button>
+        <button id="btn-roll-attr" class="btn-sm" type="button" title="Rolar um atributo (teste na sessão)" aria-expanded="false" aria-controls="attr-roll-panel">🎯 Atributo</button>
       </div>
       <div id="sidebar-attributes" class="sidebar-attributes"></div>
+      <!-- Painel retrátil de rolagem de atributo — reusa a engine das perícias -->
+      <div id="attr-roll-panel" class="attr-roll-panel" hidden style="margin-top:.5rem;padding:.5rem;border-top:1px solid var(--line,#3a342a);display:flex;flex-direction:column;gap:.4rem;">
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;">
+          <select id="attr-roll-which" aria-label="Atributo a rolar" style="flex:1 1 auto;min-width:7rem;"></select>
+          <select id="attr-roll-diff" aria-label="Dificuldade" style="flex:0 0 auto;">
+            <option value="regular">Regular</option>
+            <option value="hard">Difícil</option>
+            <option value="extreme">Extremo</option>
+          </select>
+          <button id="attr-roll-go" class="btn-primary btn-sm" type="button">🎲 Rolar</button>
+        </div>
+      </div>
     </aside>
 
     <!-- ═══ PAINEL PRINCIPAL ═══ -->
@@ -634,7 +642,6 @@
 <script src="data/name-pools.js"></script>
 <script src="data/image-templates.js"></script>
 <script src="data/presets/empty.js"></script>
-<script src="data/presets/klein-moretti.js"></script>
 
 <!-- ═══════════════════════════════════════════════════════════════════════
      ENGINE

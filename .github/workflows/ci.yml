@@ -1,0 +1,24 @@
+name: CI
+
+# Gate da política da DIRETRIZ OFICIAL: "após cada alteração, executar testes automatizados".
+# Projeto é zero-dependência (Vanilla JS), então não há `npm install`.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Suíte de testes (Node)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Rodar suíte
+        run: node js/tests/runner.js
