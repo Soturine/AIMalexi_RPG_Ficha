@@ -21,8 +21,8 @@
 window.CoC = window.CoC || {};
 
 window.CoC.config = Object.freeze({
-  supabaseUrl:     '',      // ex: 'https://abcdefgh.supabase.co'
-  supabaseKey:     '',      // ex: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-  useSupabase:     false,   // flip para true após preencher url + key acima
+  supabaseUrl:     'https://oveeqntgpusmemmybale.supabase.co',
+  supabaseKey:     'sb_publishable_R30Kj1WQ93aQ7jwDefFYXA_31EFhe1G',  // anon/publishable — pública por design (RLS). NUNCA a secret/service_role aqui.
+  useSupabase:     false,   // mantém DESLIGADO até vendar o SDK + fiação + teste no navegador (go-live)
   transportDebug:  false,   // Sprint 18: logs detalhados de transport (send/recv/dup/gap)
 });
