@@ -14,18 +14,20 @@ window.CoC.campaign = window.CoC.campaign || {};
 
 (function () {
 
-  var _cs    = null;
-  var _tp    = null;
-  var _pinSys = null;
+  var _cs      = null;
+  var _tp      = null;
+  var _pinSys  = null;
+  var _ontology = null;
 
   function $s(sel) { return document.querySelector(sel); }
   function $all(sel) { return Array.from(document.querySelectorAll(sel)); }
 
   // ── Boot ──────────────────────────────────────────────────────────────────
   function init() {
-    _cs     = window.CoC.campaign && window.CoC.campaign.store;
-    _tp     = window.CoC.campaign && window.CoC.campaign.transport;
-    _pinSys = window.CoC.campaign && window.CoC.campaign.pin;
+    _cs       = window.CoC.campaign && window.CoC.campaign.store;
+    _tp       = window.CoC.campaign && window.CoC.campaign.transport;
+    _pinSys   = window.CoC.campaign && window.CoC.campaign.pin;
+    _ontology = window.CoC.campaign && window.CoC.campaign.ontology;
 
     if (!_cs || !_tp || !_pinSys) {
       console.warn('[keeper-dashboard] campaign modules not loaded');
@@ -35,27 +37,35 @@ window.CoC.campaign = window.CoC.campaign || {};
     _bindButtons();
     _cs.subscribe(_onCampaignChange);
 
-    // Restaurar estado de sessão anterior
+    // On page load, any saved session is stale — transport channel is always gone.
+    // Mark it so the UI shows the recovery panel instead of the active dashboard.
     var saved = _cs.getState();
     if (saved.connected && saved.id) {
-      _tp.init(saved.id, saved.role);
-      _tp.onEvent(_onTransportEvent);
-      _renderDashboard(saved);
+      _cs.markStale();
     }
+    _renderDashboard(_cs.getState());
   }
 
   // ── Buttons ───────────────────────────────────────────────────────────────
   function _bindButtons() {
-    var btnCreate  = $s('#btn-create-campaign');
-    var btnJoin    = $s('#btn-join-campaign');
-    var btnManage  = $s('#btn-campaign');
-    var btnClose   = $s('#btn-close-campaign-modal');
-    var btnClearTL = $s('#btn-clear-timeline');
+    var btnCreate     = $s('#btn-create-campaign');
+    var btnJoin       = $s('#btn-join-campaign');
+    var btnManage     = $s('#btn-campaign');
+    var btnClose      = $s('#btn-close-campaign-modal');
+    var btnClearTL    = $s('#btn-clear-timeline');
+    var btnReactivate = $s('#btn-reactivate-campaign');
+    var btnDiscard    = $s('#btn-discard-stale');
 
-    if (btnCreate)  btnCreate.onclick  = _createCampaign;
-    if (btnJoin)    btnJoin.onclick    = _joinCampaign;
-    if (btnManage)  btnManage.onclick  = _openCampaignModal;
-    if (btnClose)   btnClose.onclick   = _closeModal;
+    if (btnCreate)     btnCreate.onclick     = _createCampaign;
+    if (btnJoin)       btnJoin.onclick       = _joinCampaign;
+    if (btnManage)     btnManage.onclick     = _openCampaignModal;
+    if (btnClose)      btnClose.onclick      = _closeModal;
+    if (btnReactivate) btnReactivate.onclick = _reactivateCampaign;
+    if (btnDiscard)    btnDiscard.onclick    = function () {
+      if (confirm('Descartar sessão anterior e começar do zero?')) {
+        _cs.leaveCampaign();
+      }
+    };
     if (btnClearTL) btnClearTL.onclick = function () {
       if (_cs) _cs.clearTimeline();
       _renderTimeline([]);
@@ -64,16 +74,19 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   // ── Create Campaign ───────────────────────────────────────────────────────
   function _createCampaign() {
-    var pin       = _pinSys.generate();
-    var peerId    = _tp.getPeerId();
-    var name      = window.prompt('Nome da Campanha:', 'Horror em Arkham') || 'Horror em Arkham';
+    var pin  = _pinSys.generate();
+    var name = window.prompt('Nome da Campanha:', 'Horror em Arkham') || 'Horror em Arkham';
 
-    _cs.createCampaign(name, pin, peerId);
     _tp.init(pin, 'host');
     _tp.onEvent(_onTransportEvent);
+    var peerId = _tp.getPeerId();
+    _cs.createCampaign(name, pin, peerId);
 
     // Broadcast presença do host
-    _tp.broadcast({ type: 'HOST_ONLINE', campaignId: pin, pin: pin, campaignName: name });
+    var hostEvent = _ontology
+      ? _ontology.make('HOST_ONLINE', { campaignId: pin, pin: pin, campaignName: name })
+      : { type: 'HOST_ONLINE', campaignId: pin, pin: pin, campaignName: name };
+    _tp.broadcast(hostEvent);
 
     _renderDashboard(_cs.getState());
     _openCampaignModal();
@@ -91,7 +104,34 @@ window.CoC.campaign = window.CoC.campaign || {};
     _cs.joinCampaign(pin, pin, 'player');
     _tp.init(pin, 'player');
     _tp.onEvent(_onTransportEvent);
-    _tp.broadcast({ type: 'PLAYER_CONNECTED', pin: pin });
+    var joinEvent = _ontology
+      ? _ontology.make('PLAYER_CONNECTED', { playerName: 'Guardião', pin: pin })
+      : { type: 'PLAYER_CONNECTED', playerName: 'Guardião', pin: pin };
+    _tp.broadcast(joinEvent);
+    _renderDashboard(_cs.getState());
+  }
+
+  // ── Reactivate stale session ──────────────────────────────────────────────
+  function _reactivateCampaign() {
+    var state = _cs.getState();
+    if (!state.pin) return;
+
+    _tp.init(state.pin, state.role || 'host');
+    _tp.onEvent(_onTransportEvent);
+    _cs.markActive();
+
+    // Re-announce host and request fresh status from any investigators still open
+    var hostEvt = _ontology
+      ? _ontology.make('HOST_ONLINE', { campaignId: state.pin, pin: state.pin, campaignName: state.name })
+      : { type: 'HOST_ONLINE', campaignId: state.pin, pin: state.pin, campaignName: state.name };
+    _tp.broadcast(hostEvt);
+
+    var reqEvt = _ontology
+      ? _ontology.make('REQUEST_STATUS', { pin: state.pin })
+      : { type: 'REQUEST_STATUS', pin: state.pin };
+    _tp.broadcast(reqEvt);
+
+    _cs.pushTimeline({ type: 'SESSION_RECOVERED', text: 'Sessão reativada.', cls: 'ev-roll' });
     _renderDashboard(_cs.getState());
   }
 
@@ -117,7 +157,10 @@ window.CoC.campaign = window.CoC.campaign || {};
           cls:  'ev-roll'
         });
         // Request status from the new player
-        _tp.broadcast({ type: 'REQUEST_STATUS', pin: _cs.getState().pin });
+        var reqEvent = _ontology
+          ? _ontology.make('REQUEST_STATUS', { pin: _cs.getState().pin })
+          : { type: 'REQUEST_STATUS', pin: _cs.getState().pin };
+        _tp.broadcast(reqEvent);
         break;
 
       case 'PLAYER_DISCONNECTED':
@@ -140,44 +183,46 @@ window.CoC.campaign = window.CoC.campaign || {};
   function _handleExecutionTrace(event) {
     if (!event.entry) return;
     var entry = event.entry;
-    var actor = event.characterName || event.playerName || '?';
+    var actor = _esc(event.characterName || event.playerName || '?');
+    var p     = entry.payload || {};
     var text  = '';
     var cls   = 'ev-roll';
 
+    function _amt(v) { return v != null ? v : '?'; }
+
     switch (entry.type) {
       case 'APPLY_DAMAGE':
-        text = '<b>' + actor + '</b> sofreu ' + (entry.payload && entry.payload.amount || '?') + ' de dano.';
+        text = '<b>' + actor + '</b> sofreu ' + _amt(p.amount) + ' de dano.';
         cls  = 'ev-damage';
         break;
       case 'LOSE_SANITY':
-        text = '<b>' + actor + '</b> perdeu ' + (entry.payload && entry.payload.amount || '?') + ' SAN.';
+        text = '<b>' + actor + '</b> perdeu ' + _amt(p.amount) + ' SAN.';
         cls  = 'ev-sanity';
         break;
       case 'HEAL_DAMAGE':
-        text = '<b>' + actor + '</b> recuperou ' + (entry.payload && entry.payload.amount || '?') + ' PV.';
+        text = '<b>' + actor + '</b> recuperou ' + _amt(p.amount) + ' PV.';
         cls  = 'ev-roll';
         break;
       case 'RECOVER_SANITY':
-        text = '<b>' + actor + '</b> recuperou ' + (entry.payload && entry.payload.amount || '?') + ' SAN.';
+        text = '<b>' + actor + '</b> recuperou ' + _amt(p.amount) + ' SAN.';
         cls  = 'ev-sanity';
         break;
       case 'SPEND_MAGIC':
-        text = '<b>' + actor + '</b> gastou ' + (entry.payload && entry.payload.amount || '?') + ' PM.';
+        text = '<b>' + actor + '</b> gastou ' + _amt(p.amount) + ' PM.';
         cls  = 'ev-magic';
         break;
       case 'ROLL_SKILL':
-        text = '<b>' + actor + '</b> rolou ' + (entry.payload && entry.payload.skillName || 'perícia') +
-               ': ' + (entry.payload && entry.payload.roll || '?') + '% vs ' +
-               (entry.payload && entry.payload.value || '?') + '% → ' +
-               (entry.payload && entry.payload.outcome || '?');
+        text = '<b>' + actor + '</b> rolou ' + _esc(p.skillName || 'perícia') +
+               ': ' + _amt(p.roll) + '% vs ' +
+               _amt(p.value) + '% → ' + _esc(p.outcome != null ? String(p.outcome) : '?');
         cls  = 'ev-roll';
         break;
       case 'ATTACK_RESOLVED':
-        text = '<b>' + actor + '</b> atacou com ' + (entry.payload && entry.payload.weaponName || '?') + '.';
+        text = '<b>' + actor + '</b> atacou com ' + _esc(p.weaponName || '?') + '.';
         cls  = 'ev-combat';
         break;
       default:
-        text = '<b>' + actor + '</b>: ' + entry.type.toLowerCase().replace(/_/g, ' ');
+        text = '<b>' + actor + '</b>: ' + _esc(entry.type.toLowerCase().replace(/_/g, ' '));
     }
 
     _cs.pushTimeline({ type: entry.type, text: text, cls: cls });
@@ -190,20 +235,36 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   function _renderDashboard(state) {
     var setup     = $s('#campaign-setup');
+    var stale     = $s('#campaign-stale');
     var dashboard = $s('#campaign-dashboard');
     var badge     = $s('#campaign-badge');
     var cbName    = $s('#cb-name');
     var cbPin     = $s('#cb-pin');
     var cbPlayers = $s('#cb-players');
 
-    if (!state.connected) {
+    var status = state.status || (state.connected ? 'active' : 'disconnected');
+
+    if (status === 'disconnected' || !state.connected) {
       if (setup)     setup.style.display     = '';
+      if (stale)     stale.style.display     = 'none';
       if (dashboard) dashboard.style.display = 'none';
       if (badge)     badge.style.display     = 'none';
       return;
     }
 
+    if (status === 'stale') {
+      if (setup)     setup.style.display     = 'none';
+      if (dashboard) dashboard.style.display = 'none';
+      if (badge)     badge.style.display     = 'none';
+      if (stale)     stale.style.display     = '';
+      var detail = $s('#stale-detail');
+      if (detail) detail.textContent = (state.name || '?') + ' · PIN ' + (state.pin || '——');
+      return;
+    }
+
+    // status === 'active'
     if (setup)     setup.style.display     = 'none';
+    if (stale)     stale.style.display     = 'none';
     if (dashboard) dashboard.style.display = '';
     if (badge)     badge.style.display     = '';
 
@@ -325,7 +386,10 @@ window.CoC.campaign = window.CoC.campaign || {};
     var btnEnd = body.querySelector('#btn-end-campaign');
     if (btnEnd) btnEnd.onclick = function () {
       if (!confirm('Encerrar a campanha? Isso desconecta todos os jogadores.')) return;
-      _tp.broadcast({ type: 'CAMPAIGN_ENDED', pin: state.pin });
+      var endEvent = _ontology
+        ? _ontology.make('CAMPAIGN_ENDED', { pin: state.pin })
+        : { type: 'CAMPAIGN_ENDED', pin: state.pin };
+      _tp.broadcast(endEvent);
       _tp.close();
       _cs.leaveCampaign();
       _closeModal();

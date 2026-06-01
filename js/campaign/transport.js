@@ -2,13 +2,43 @@
    AIMalexi RPG · js/campaign/transport.js
    Camada de transporte de eventos de campanha.
 
-   Implementação atual: BroadcastChannel (funciona entre abas do mesmo navegador).
-   Slot para Supabase Realtime: substitua _supabaseInit() e _supabaseSend().
+   INTERFACE DO TRANSPORT (contrato para BroadcastChannel e Supabase):
+   ─────────────────────────────────────────────────────────────────────
+   init(campaignId, role)
+     Abre canal para a campanha. Reseta _handlers (callers devem re-registrar).
+     _peerId persiste entre calls — muda apenas em novo page load.
 
-   Arquitetura:
-   - broadcast(event): envia para todos os peers
-   - onEvent(handler): registra receptor de eventos
-   - close(): encerra canal
+   broadcast(event)
+     Adiciona envelope { peerId, campaignId, ts } ao evento e envia.
+     Soft-valida contra campaign-ontology antes de enviar (warn, nunca bloqueia).
+
+   onEvent(handler)
+     Registra receptor. Deduplica — mesmo handler não é registrado duas vezes.
+
+   offEvent(handler) / close()
+     Remove handler / fecha canal e limpa estado.
+
+   getPeerId() → string UUID
+     Identidade deste peer (usada como sourceClientId nos eventos).
+
+   ECHO SUPPRESSION:
+   ─────────────────────────────────────────────────────────────────────
+   Linha 43: if (e.data.peerId === _peerId) return
+   BroadcastChannel não retransmite para o emissor, mas o check existe porque
+   Supabase Realtime retransmite. O guard é idêntico para ambos — nenhuma
+   mudança necessária no adapter de Sprint 17.
+
+   SEQ NUMBER POLICY:
+   ─────────────────────────────────────────────────────────────────────
+   _seqNo é mantido em player-sync.js (não aqui). Reseta a 0 em cada page
+   load. _peerId também muda a cada page load, então eventId = peerId:seqNo
+   é globalmente único — sem colisão entre sessões.
+
+   LATE JOINER PROTOCOL:
+   ─────────────────────────────────────────────────────────────────────
+   Quando PLAYER_CONNECTED chega, Keeper envia REQUEST_STATUS.
+   Investigador responde com INVESTIGATOR_STATUS (snapshot completo).
+   Não há replay de eventos — snapshot é suficiente para CoC.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 window.CoC = window.CoC || {};
@@ -20,6 +50,16 @@ window.CoC.campaign = window.CoC.campaign || {};
   var _handlers   = [];
   var _campaignId = null;
   var _peerId     = null;
+
+  function _debug(label, data) {
+    var cfg = window.CoC && window.CoC.config;
+    if (!cfg || !cfg.transportDebug) return;
+    console.log(
+      '%c[transport:bc:' + label + ']',
+      'color:#b8924f;font-weight:bold',
+      data
+    );
+  }
 
   function _uuid() {
     if (crypto.randomUUID) return crypto.randomUUID();
@@ -34,12 +74,20 @@ window.CoC.campaign = window.CoC.campaign || {};
   function init(campaignId, role) {
     _campaignId = campaignId;
     _peerId     = _peerId || _uuid();
+    _handlers   = [];   // new channel → callers must re-register; prevents duplicate handlers
     _close();
 
     if ('BroadcastChannel' in window) {
       _channel = new BroadcastChannel('coc-campaign-' + campaignId);
       _channel.onmessage = function (e) {
         if (!e.data || e.data.peerId === _peerId) return;
+        _debug('recv', {
+          type:    e.data.type,
+          eventId: e.data.eventId || null,
+          seqNo:   e.data.seqNo   || null,
+          peerId:  e.data.peerId,
+          latency: e.data.ts ? (Date.now() - e.data.ts) + 'ms' : 'n/a'
+        });
         _handlers.forEach(function (h) {
           try { h(e.data); } catch (err) { console.error('[transport] handler error', err); }
         });
@@ -51,16 +99,32 @@ window.CoC.campaign = window.CoC.campaign || {};
 
   function broadcast(event) {
     if (!_channel) return;
+    // Soft-validate against ontology when available — warns but never blocks.
+    var ontology = window.CoC.campaign && window.CoC.campaign.ontology;
+    if (ontology && event && event.type) {
+      var result = ontology.validate(event.type, event);
+      if (!result.ok) {
+        console.warn('[transport] broadcast validation:', result.errors.join('; '), event);
+      }
+    }
     var envelope = Object.assign({}, event, {
       peerId:     _peerId,
       campaignId: _campaignId,
       ts:         Date.now()
     });
+    _debug('send', {
+      type:    envelope.type,
+      eventId: envelope.eventId || null,
+      seqNo:   envelope.seqNo   || null,
+      channel: 'coc-campaign:' + _campaignId
+    });
     try { _channel.postMessage(envelope); } catch (e) {}
   }
 
   function onEvent(handler) {
-    if (typeof handler === 'function') _handlers.push(handler);
+    if (typeof handler === 'function' && _handlers.indexOf(handler) === -1) {
+      _handlers.push(handler);
+    }
   }
 
   function offEvent(handler) {
