@@ -55,6 +55,19 @@
     <button id="btn-export" class="btn-export" title="Exportar biblioteca completa como JSON (BACKUP)">💾 Exportar</button>
   </div>
 
+  <!-- ═══ DASHBOARD EXECUTIVO (Fase D) — visão de 10s, acima das abas ═══ -->
+  <section id="keeper-overview" class="keeper-overview" aria-label="Resumo da campanha">
+    <div class="ko-head">
+      <span class="ko-title">Resumo da Campanha</span>
+      <span class="ko-status" id="ko-status">—</span>
+    </div>
+    <div class="ko-kpis" id="ko-kpis"></div>
+    <div class="ko-cards">
+      <div class="ko-card" id="ko-alerts"><h3>⚠ Alertas</h3><div class="ko-body"></div></div>
+      <div class="ko-card" id="ko-timeline"><h3>📜 Últimos eventos</h3><div class="ko-body"></div></div>
+    </div>
+  </section>
+
   <!-- ═══ NAVEGAÇÃO POR ABAS (Fase RK) ═══ -->
   <nav class="keeper-tabs" id="keeper-tabs" aria-label="Abas do Mestre">
     <button class="keeper-tab active" data-ktab="investigadores" type="button">👥 Investigadores</button>
@@ -299,6 +312,7 @@
 <script src="js/campaign/keeper-dashboard.js"></script>
 <script src="js/keeper-tabs.js"></script>
 <script src="js/keeper-notes.js"></script>
+<script src="js/keeper-dashboard-summary.js"></script>
 
 </body>
 </html>
