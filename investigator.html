@@ -75,13 +75,6 @@
     <span class="toolbar-spacer"></span>
 
     <button
-      id="btn-edit-mode"
-      title="Alternar Modo Editar (permite valores fora dos limites com aprovação)"
-    >
-      ✎ Modo Editar
-    </button>
-
-    <button
       id="btn-sanity-fx"
       class="btn-ghost"
       title="Configurar efeitos visuais de insanidade"
@@ -165,6 +158,11 @@
 
     <!-- ═══ CHARACTER SIDEBAR ═══ -->
     <aside id="character-sidebar" class="character-sidebar">
+      <div
+        id="portrait-main"
+        class="character-portrait portrait-main"
+        title="Retrato · clique para alterar"
+      ></div>
       <div class="sidebar-identity">
         <div id="sidebar-name" class="sidebar-name">—</div>
         <div id="sidebar-occupation" class="sidebar-occupation">—</div>
@@ -187,6 +185,7 @@
           <button id="attr-roll-go" class="btn-primary btn-sm" type="button">🎲 Rolar</button>
         </div>
       </div>
+      <button id="btn-edit-mode" class="sidebar-edit-btn" title="Alternar Modo Editar (permite valores fora dos limites com aprovação)">✎ Editar Investigador</button>
     </aside>
 
     <!-- ═══ PAINEL PRINCIPAL ═══ -->
@@ -212,6 +211,7 @@
           <span class="meta">Quem é o investigador?</span>
         </h2>
 
+        <div class="persona-top">
         <div class="identity-grid">
 
           <div>
@@ -290,105 +290,90 @@
             />
           </div>
 
-          <div class="full-width">
-            <label for="id-tagline">Conceito (1 frase)</label>
+        </div><!-- /identity-grid -->
 
-            <input
-              type="text"
-              id="id-tagline"
-              data-bind="investigator.tagline"
-              placeholder="Ex: Médico cético perseguindo o impossível"
-            />
+          <div class="persona-side">
+            <div>
+              <label for="id-tagline">Conceito</label>
+              <input type="text" id="id-tagline" data-bind="investigator.tagline" placeholder="Ex: Médico cético perseguindo o impossível" />
+            </div>
+            <div>
+              <label for="bg-traits">Traço de Personalidade</label>
+              <textarea id="bg-traits" data-bind="background.traits" placeholder="Como age, fala, reage; marcas pessoais."></textarea>
+            </div>
+            <div>
+              <label for="bg-hobbies">Hobbies</label>
+              <textarea id="bg-hobbies" data-bind="background.hobbies" placeholder="Leitura, xadrez, arqueologia..."></textarea>
+            </div>
           </div>
 
-        </div>
+        </div><!-- /persona-top -->
 
         <p class="identity-tagline" id="identity-display">—</p>
 
-        <!-- Retrato + Background lado a lado -->
-        <div class="portrait-bg-layout">
-
-          <div class="portrait-col">
-            <div
-              id="portrait-main"
-              class="character-portrait portrait-main"
-              title="Retrato · clique para alterar"
-            ></div>
-          </div>
-
-          <div class="bg-col">
-
-            <h3 class="bg-col-title">Background &amp; Conceito</h3>
-
-            <div>
-              <label for="bg-description">Descrição Pessoal</label>
-              <textarea
-                id="bg-description"
-                data-bind="background.description"
-                placeholder="Aparência, modos, primeira impressão..."
-              ></textarea>
-            </div>
-
-            <div class="background-grid-mini">
-
-              <div>
-                <label for="bg-ideology">Ideologia / Crenças</label>
-                <textarea id="bg-ideology" data-bind="background.ideology"></textarea>
-              </div>
-
-              <div>
-                <label for="bg-people">Pessoas Importantes</label>
-                <textarea id="bg-people" data-bind="background.significantPeople"></textarea>
-              </div>
-
-              <div>
-                <label for="bg-locations">Lugares Significativos</label>
-                <textarea id="bg-locations" data-bind="background.meaningfulLocations"></textarea>
-              </div>
-
-              <div>
-                <label for="bg-possessions">Posses Preciosas</label>
-                <textarea id="bg-possessions" data-bind="background.treasuredPossessions"></textarea>
-              </div>
-
-              <div>
-                <label for="bg-traits">Características / Traços</label>
-                <textarea id="bg-traits" data-bind="background.traits"></textarea>
-              </div>
-
-              <div>
-                <label for="bg-injuries">Ferimentos e Cicatrizes</label>
-                <textarea id="bg-injuries" data-bind="background.injuriesScars"></textarea>
-              </div>
-
-              <div>
-                <label for="bg-phobias">Fobias e Manias</label>
-                <textarea id="bg-phobias" data-bind="background.phobiasManias"></textarea>
-              </div>
-
-              <div>
-                <label for="bg-tomes">Tomos Lidos</label>
-                <textarea id="bg-tomes" data-bind="background.tomes"></textarea>
-              </div>
-
-              <div>
-                <label for="bg-encounters">Encontros Sobrenaturais</label>
-                <textarea id="bg-encounters" data-bind="background.encounters"></textarea>
-              </div>
-
-            </div>
-
-            <div>
-              <label for="bg-equipment">Equipamento (um por linha)</label>
-              <textarea
-                id="bg-equipment"
-                placeholder="Lanterna&#10;Caderno e caneta&#10;Lupa..."
-              ></textarea>
-            </div>
-
-          </div>
-
+        <!-- BACKGROUND — largura total -->
+        <div class="persona-background">
+          <label for="bg-description">Background</label>
+          <textarea
+            id="bg-description"
+            data-bind="background.description"
+            placeholder="História do investigador: origem, motivação, modos, primeira impressão, como chegou ao Mythos..."
+          ></textarea>
         </div>
+
+        <!-- CONVICÇÕES · CRENÇAS · PESSOAS IMPORTANTES -->
+        <div class="persona-cols">
+          <div>
+            <label for="bg-convictions">Convicções</label>
+            <textarea id="bg-convictions" data-bind="background.convictions" placeholder="O que o move; linhas que não cruza."></textarea>
+          </div>
+          <div>
+            <label for="bg-ideology">Crenças</label>
+            <textarea id="bg-ideology" data-bind="background.ideology" placeholder="Visão de mundo, fé, ideologia."></textarea>
+          </div>
+          <div>
+            <label for="bg-people">Pessoas Importantes</label>
+            <textarea id="bg-people" data-bind="background.significantPeople" placeholder="Mentor, família, aliados, rivais."></textarea>
+          </div>
+        </div>
+
+        <!-- Demais campos CoC 7e (preservados, em painel recolhível) -->
+        <details class="persona-more">
+          <summary>Mais detalhes — locais, posses, ferimentos, fobias, tomos, encontros, equipamento</summary>
+          <div class="background-grid-mini">
+            <div>
+              <label for="bg-locations">Lugares Significativos</label>
+              <textarea id="bg-locations" data-bind="background.meaningfulLocations"></textarea>
+            </div>
+            <div>
+              <label for="bg-possessions">Posses Preciosas</label>
+              <textarea id="bg-possessions" data-bind="background.treasuredPossessions"></textarea>
+            </div>
+            <div>
+              <label for="bg-injuries">Ferimentos e Cicatrizes</label>
+              <textarea id="bg-injuries" data-bind="background.injuriesScars"></textarea>
+            </div>
+            <div>
+              <label for="bg-phobias">Fobias e Manias</label>
+              <textarea id="bg-phobias" data-bind="background.phobiasManias"></textarea>
+            </div>
+            <div>
+              <label for="bg-tomes">Tomos Lidos</label>
+              <textarea id="bg-tomes" data-bind="background.tomes"></textarea>
+            </div>
+            <div>
+              <label for="bg-encounters">Encontros Sobrenaturais</label>
+              <textarea id="bg-encounters" data-bind="background.encounters"></textarea>
+            </div>
+          </div>
+          <div class="persona-equipment">
+            <label for="bg-equipment">Equipamento (um por linha)</label>
+            <textarea
+              id="bg-equipment"
+              placeholder="Lanterna&#10;Caderno e caneta&#10;Lupa..."
+            ></textarea>
+          </div>
+        </details>
 
       </section>
 
