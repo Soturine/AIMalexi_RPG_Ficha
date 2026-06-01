@@ -210,6 +210,33 @@ Auditoria de 2026-06-01 contra o código (não contra docs antigos):
 - *Próxima etapa (M-live):* vendar o SDK Supabase, adapters reais (Supabase + IndexedDB),
   `useSupabase:true`, fiação em `supabase-transport`/`player-sync`, e verificação com projeto real.
 
+### 2026-06-01 — Sessão 4 (Fase M — adapters live + outbox)
+
+- *Anterior:* só a lógica pura de persistência (sem adapters concretos).
+- *Atual:* `js/campaign/supabase-persistence-adapter.js` (contrato → supabase-js: insert/select/
+  upsert + auth anônimo + RPCs `create_campaign`/`join_campaign`) e `js/campaign/outbox-indexeddb.js`
+  (fila offline durável — cache síncrono + IndexedDB; fallback de memória). `.mcp.json` (MCP do
+  Supabase) já na main. Verificação: **784/784** no CI (inclui outbox) + `node js/tests/mlive-integration.js`
+  **14/14** (fluxo durável ponta-a-ponta com mock supabase-js: online/offline/drain/idempotência/snapshot/late-join).
+- *Impacto:* camada de persistência completa e **verificada por mock**; falta só a fiação ao vivo.
+- *Próxima etapa (go-live; exige o projeto Supabase do dono):* habilitar Anonymous sign-ins, rodar
+  `schema.sql`, vendar o SDK, incluir os `<script>`, conectar em `supabase-transport`/`player-sync`,
+  `useSupabase:true` + chaves, validar no navegador. `useSupabase` segue **desligado** (app intacto em modo local).
+
+### 2026-06-01 — Sessão 5 (Fase RK — Keeper em 7 abas)
+
+- *Anterior:* Keeper em grid de 3 colunas fixo (biblioteca/workspace/encontro+timeline+log); sem
+  abas; sem Lore nem Diário do Mestre; Compêndio em página separada.
+- *Atual:* `keeper.html` reorganizado em **7 abas** (Investigadores · Compêndio · NPCs · Encontro ·
+  Timeline · Lore · Diário) **preservando todos os ids** (keeper.js intacto). `js/keeper-tabs.js`
+  (controlador de abas, lembra a última) e `js/keeper-notes.js` (Lore por categoria + Diário,
+  persistidos em localStorage). Compêndio embutido via iframe. Correção do nome de item de encontro
+  (nowrap/ellipsis); sobreposição resolvida estruturalmente (sem coluna sticky). sw cache v24→v25.
+- *Impacto:* ferramenta do Mestre organizada por abas; Lore e Diário ganham espaço próprio e durável.
+- *Próxima etapa (RK-2):* condições/retrato na aba Investigadores; iniciativa/munição/ferimentos na
+  de Combate; dados de equipamentos/preços no Compêndio; entrada manual na Timeline. Requer
+  verificação visual em navegador.
+
 ---
 
 ## §9. Critérios de sucesso (da diretriz)
