@@ -64,3 +64,22 @@ Orquestração **desacoplada** (client Supabase e storage **injetados** → test
 ## Não-objetivos
 
 Sem VTT. UI nunca lê do Supabase. Nada efêmero entra no Store canônico (tiers de estado).
+
+## Status
+
+- ✅ **Fundação** (`campaign-persistence.js`) + testes puros.
+- ✅ **Adapters** (`supabase-persistence-adapter.js`, `outbox-indexeddb.js`) — verificados por
+  mock: CI 784/784 + `node js/tests/mlive-integration.js` 14/14.
+- ⏳ **Go-live** (exige o projeto Supabase do dono): habilitar Anonymous sign-ins; rodar
+  `supabase/schema.sql`; vendar o SDK; incluir os `<script>`; conectar em
+  `supabase-transport`/`player-sync`; `useSupabase:true` + chaves no `config.js`; validar no navegador.
+
+### Como ativar (go-live)
+1. Supabase → Authentication → habilitar **Anonymous sign-ins**; rodar `supabase/schema.sql`.
+2. Vendar o SDK: salvar o build ESM de `@supabase/supabase-js` em `js/vendor/supabase.js` (expor `window.supabase`).
+3. Incluir em `investigator.html`/`keeper.html` os `<script>` de `outbox-indexeddb.js` e
+   `supabase-persistence-adapter.js` (e o vendor).
+4. `js/config.js`: `supabaseUrl`, `supabaseKey` (publishable/anon), `useSupabase: true`.
+5. Fiação: no fluxo de campanha, criar `persistence = campaign.persistence.create({ client:
+   supabaseAdapter.createPersistenceClient(sb), storage: outbox.create(), campaignId, peerId })`;
+   chamar `recordEvent` junto do broadcast; `drainOutbox` + `loadSince` no reconnect/late-join.
