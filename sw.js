@@ -13,7 +13,7 @@
    Para forçar atualização imediata: incremente CACHE_VERSION abaixo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = "v22";
+const CACHE_VERSION = "v23";
 const CACHE_NAME = "aimalexi-rpg-" + CACHE_VERSION;
 
 // Assets que devem estar disponíveis offline imediatamente após instalação.
@@ -76,7 +76,6 @@ const PRECACHE_URLS = [
   "./data/bestiary.js",
   "./data/npc-archetypes.js",
   "./data/presets/empty.js",
-  "./data/presets/klein-moretti.js",
   "./compendium.html",
   "./css/compendium.css",
   "./js/compendium/compendium.js",

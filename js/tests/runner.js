@@ -105,6 +105,7 @@ load('js/tests/test-executor.js');
 load('js/tests/test-replay.js');
 load('js/tests/test-session-export.js');
 load('js/tests/test-architecture.js');
+load('js/tests/test-occupation.js');
 const elapsed = Date.now() - t0;
 
 // ── Relatório final ───────────────────────────────────────────────────────

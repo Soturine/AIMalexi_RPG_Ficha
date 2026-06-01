@@ -433,6 +433,14 @@ window.CoC = window.CoC || {};
         for (const w of data.weapons) { if (w && RENAMES[w.skill]) w.skill = RENAMES[w.skill]; }
       }
 
+      // Perícias LIVRES da ocupação são referenciadas por NOME em occupationSkills.
+      // Sem renomear aqui, perícias designadas (sobretudo da ocupação "Personalizada")
+      // orfanavam após reload → seus pontos saíam do pool da ocupação e eram recontados
+      // como Interesse Pessoal (bug de distribuição). Renomeia junto. Idempotente.
+      if (Array.isArray(data.occupationSkills)) {
+        data.occupationSkills = data.occupationSkills.map((n) => RENAMES[n] || n);
+      }
+
       // Crédito: campo finances.creditRating → perícia "Nível de Crédito".
       if (data.finances && typeof data.finances === "object" && data.finances.creditRating != null) {
         const crVal = Number(data.finances.creditRating) || 0;

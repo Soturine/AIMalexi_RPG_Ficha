@@ -342,7 +342,8 @@
     const finCard = $("#finances-card");
     if (finCard) finCard.innerHTML = "";
     if (window.CoC.mediaPicker) {
-      window.CoC.mediaPicker.render($("#character-portrait"), null);
+      const portraitMain = $("#portrait-main");
+      if (portraitMain) window.CoC.mediaPicker.render(portraitMain, null);
     }
     const invList = $("#inventory-list");
     if (invList) invList.innerHTML = "";
@@ -425,7 +426,6 @@
     };
 
     $("#btn-new").onclick = openWizard;
-    $("#btn-load-klein").onclick = () => loadPreset("klein");
     $("#btn-import").onclick = () => $("#file-import").click();
     $("#file-import").onchange = async (e) => {
       const file = e.target.files[0];
@@ -638,11 +638,6 @@
           <h4>Rápido</h4>
           <p>Ficha em branco + atributos já rolados aleatoriamente. Você só escolhe ocupação e distribui.</p>
         </div>
-        <div class="wizard-option" data-choice="klein">
-          <span class="icon">📜</span>
-          <h4>Carregar Klein</h4>
-          <p>Klein Moretti (Lord of the Mysteries) como exemplo de ficha completa.</p>
-        </div>
       </div>
     `;
     const m = modal({
@@ -655,18 +650,14 @@
       card.onclick = () => {
         const choice = card.dataset.choice;
         m.close();
-        if (choice === "klein") {
-          loadPreset("klein");
+        loadPreset("empty");
+        if (choice === "quick") {
+          setTimeout(() => rollAllAttributes(), 200);
         } else {
-          loadPreset("empty");
-          if (choice === "quick") {
-            setTimeout(() => rollAllAttributes(), 200);
-          } else {
-            toast("Ficha criada. Use 🎲 Rolar Tudo ou edite manualmente os atributos.", { type: "info" });
-          }
-          // Foco no nome
-          setTimeout(() => $("#id-name")?.focus(), 250);
+          toast("Ficha criada. Use 🎲 Rolar Tudo ou edite manualmente os atributos.", { type: "info" });
         }
+        // Foco no nome
+        setTimeout(() => $("#id-name")?.focus(), 250);
       };
     });
   }

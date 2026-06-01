@@ -110,7 +110,11 @@ window.CoC.views = window.CoC.views || {};
           if (!code) return;
           var char = _store ? _store.getState().character : null;
           if (!char || !char.attributes || !char.attributes[code]) return;
-          var v = Math.max(0, Math.min(99, parseInt(node.textContent, 10) || 0));
+          var prev = Number(char.attributes[code].value) || 0;
+          // Sanitiza: só dígitos. Campo vazio/inválido → mantém o valor anterior (não zera).
+          var raw = String(node.textContent || '').replace(/[^0-9]/g, '');
+          var v   = raw === '' ? prev : Math.max(0, Math.min(99, parseInt(raw, 10)));
+          if (v === prev) { node.textContent = String(prev); return; }
           // Mutação direta ainda necessária enquanto state.character não está 100% no store
           char.attributes[code].value = v;
           render();
@@ -123,10 +127,49 @@ window.CoC.views = window.CoC.views || {};
     }
   }
 
+  // ── Painel retrátil de rolagem de atributo ───────────────────────────────────
+  // Reusa a engine das perícias (window.CoC.views.rolls.rollAttribute) — um único
+  // painel retrátil, sem botões por atributo. Wire idempotente (init roda uma vez).
+  var LABELS = {
+    FOR: 'Força', CON: 'Constituição', TAM: 'Tamanho', DES: 'Destreza',
+    APA: 'Aparência', INT: 'Inteligência', POD: 'Poder', EDU: 'Educação', Sorte: 'Sorte'
+  };
+
+  function _wireRollPanel() {
+    var toggle = $s('#btn-roll-attr');
+    var panel  = $s('#attr-roll-panel');
+    var which  = $s('#attr-roll-which');
+    var diff   = $s('#attr-roll-diff');
+    var go     = $s('#attr-roll-go');
+    if (!toggle || !panel || !which || !go) return;
+
+    if (!which.options.length) {
+      ATTRS.forEach(function(code) {
+        var o = document.createElement('option');
+        o.value = code;
+        o.textContent = code + (LABELS[code] ? ' — ' + LABELS[code] : '');
+        which.appendChild(o);
+      });
+    }
+
+    toggle.onclick = function() {
+      var willOpen = panel.hasAttribute('hidden');
+      if (willOpen) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
+      toggle.setAttribute('aria-expanded', String(willOpen));
+    };
+
+    go.onclick = function() {
+      var rolls = window.CoC.views && window.CoC.views.rolls;
+      if (!rolls || typeof rolls.rollAttribute !== 'function') return;
+      rolls.rollAttribute(which.value, { difficulty: diff ? diff.value : 'regular' });
+    };
+  }
+
   function init(store, opts) {
     _store       = store || window.CoC.store;
     _bus         = window.CoC.bus;
     _getEditMode = (opts && typeof opts.getEditMode === 'function') ? opts.getEditMode : function() { return false; };
+    _wireRollPanel();
   }
 
   window.CoC.views.attributes = Object.freeze({ render: render, init: init });

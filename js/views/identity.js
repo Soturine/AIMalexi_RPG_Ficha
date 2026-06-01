@@ -40,9 +40,6 @@ window.CoC.views = window.CoC.views || {};
     if (!c) return;
     c.investigator = c.investigator || {};
 
-    // Sync sidebar portrait on every render
-    _syncSidebarPortrait(c);
-
     // Preenche campos
     ID_FIELDS.forEach(function(f) {
       var node = document.querySelector('[data-bind="investigator.' + f + '"]');
@@ -125,20 +122,6 @@ window.CoC.views = window.CoC.views || {};
     if (!window.CoC.mediaPicker) return;
     // Main portrait (in identity section) — primary editing interaction
     _setupSlot($s('#portrait-main'), 'portraitId', c, { maxDim: 640, label: 'retrato' });
-    // Sidebar portrait — display mirror (read-only)
-    _syncSidebarPortrait(c);
-  }
-
-  function _syncSidebarPortrait(c) {
-    var sp = $s('#character-portrait');
-    if (!sp || !window.CoC.mediaPicker) return;
-    var blobId = c.investigator && c.investigator.portraitId ? c.investigator.portraitId : null;
-    window.CoC.mediaPicker.render(sp, blobId);
-    // Clicking sidebar portrait opens the main portrait picker
-    sp.onclick = function() {
-      var mp = $s('#portrait-main');
-      if (mp) mp.click();
-    };
   }
 
   function _setupSlot(slotEl, field, c, opts) {
@@ -156,7 +139,6 @@ window.CoC.views = window.CoC.views || {};
         _persist();
         mp.render(slotEl, blobId);
         _refreshRemoveBtn(slotEl, field, c, opts);
-        _syncSidebarPortrait(c);
         var ui = window.CoC.ui || {};
         if (ui.toast) ui.toast('Imagem de ' + opts.label + ' atualizada.', { type: 'success', duration: 1800 });
       });

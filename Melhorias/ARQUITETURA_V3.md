@@ -1,5 +1,9 @@
 # Arquitetura V3 — Hub Narrativo CoC 7e
 
+> ⚠️ **Subordinado a [`DIRETRIZ_OFICIAL_V1.md`](DIRETRIZ_OFICIAL_V1.md).** A seção *Roadmap*
+> (M0–M7) está **superada** pela diretriz. As **decisões de arquitetura** abaixo (zero-build,
+> Preact Signals, Supabase como transporte, offline-first) permanecem válidas e embasam a Fase M.
+
 > Documento durável de arquitetura. Companheiro da `CONSTITUICAO_OPERACIONAL_V1.md`
 > (regras absolutas). Aqui ficam as decisões técnicas, o porquê, e o roadmap.
 

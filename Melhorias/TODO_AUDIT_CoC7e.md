@@ -1,5 +1,10 @@
 # TODO — Auditoria CoC7e (achados diferidos)
 
+> ⚠️ **Subordinado a [`DIRETRIZ_OFICIAL_V1.md`](DIRETRIZ_OFICIAL_V1.md).** Atualização 2026-06-01:
+> itens **#2** (`validateCharacter` — agora ativo no boot/persist) e **#3** (re-roll de Sorte 15-19)
+> **JÁ CORRIGIDOS** no código; **#1** (ajuste por idade) **PARCIAL** (resíduos: tiers de APA,
+> distribuição interativa, caminho de idade manual). A priorização segue o roadmap da diretriz.
+
 Auditoria feita em 2026-05-27 contra o PDF oficial de Chamada de Cthulhu 7ª Edição PT-BR (`pdfcoffee.com_call-of-cthulhu-7th-pt-br-pdf-free.pdf`, 351 páginas) e contra a base de código pós Fase 5 (commit `f29bdbc`).
 
 **O que foi corrigido neste mesmo commit:**

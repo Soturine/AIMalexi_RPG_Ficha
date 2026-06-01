@@ -1,5 +1,9 @@
 # Constituição Operacional V3: Hub Narrativo CoC 7e
 
+> ⚠️ **Fonte oficial de prioridades/roadmap: [`DIRETRIZ_OFICIAL_V1.md`](DIRETRIZ_OFICIAL_V1.md).**
+> Estas regras operacionais permanecem **válidas e inegociáveis** — a diretriz as estende, não
+> as substitui. Em conflito de *prioridade*, prevalece a diretriz.
+
 Este documento define as regras absolutas e inegociáveis do projeto.
 
 O objetivo principal não é construir um VTT, rede social ou plataforma SaaS.
