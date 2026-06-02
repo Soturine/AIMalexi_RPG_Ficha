@@ -946,6 +946,13 @@ body[data-difficulty="extreme"] .skill-frac-sep {
 .skill-enc-panel .enc-note { color: var(--blood, #c0392b); font-size: 0.8rem; margin-top: 0.3rem; }
 .skill-enc-panel .enc-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
 
+/* Proveniência do valor (#32) */
+.skill-enc-panel .prov-block { background: var(--bg-card-hi); border-radius: var(--radius); padding: 0.4rem 0.5rem; }
+.skill-enc-panel .prov-rows { display: flex; flex-direction: column; gap: 0.1rem; }
+.skill-enc-panel .prov-line { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-dim); }
+.skill-enc-panel .prov-line.prov-total { color: var(--brass-bright); font-weight: bold; border-top: 1px solid var(--ink-faded); margin-top: 0.15rem; padding-top: 0.15rem; }
+.skill-enc-panel .prov-cap-warn { display: block; margin-top: 0.3rem; color: var(--blood, #c0392b); font-size: 0.78rem; }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    PAINEL DE DEPENDÊNCIAS (#31)
    ═══════════════════════════════════════════════════════════════════════════ */

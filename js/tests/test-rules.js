@@ -278,6 +278,52 @@ group('rollSkillImprovement — Verificação de Melhoria de Perícia');
 })();
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  computeSkillProvenance — Proveniência do valor de perícia (#32)
+// ─────────────────────────────────────────────────────────────────────────────
+group('computeSkillProvenance — origem rastreável (#32)');
+
+(function () {
+  // Sem ocupação → allocated vai para interesse pessoal
+  var p1 = rules.computeSkillProvenance({
+    attributes: { DES: { value: 60 }, EDU: { value: 70 } },
+    investigator: { occupation: '' },
+    skills: { 'Ocultismo': { value: 45 } },
+    occupationSkills: []
+  }, 'Ocultismo');
+  assertEq(p1.base, 5,       'Ocultismo: base=5');
+  assertEq(p1.total, 45,     'Ocultismo: total=45');
+  assertEq(p1.allocated, 40, 'Ocultismo: allocated=40');
+  assertEq(p1.interest, 40,  'Ocultismo: 40 em interesse');
+  assertEq(p1.occupation, 0, 'Ocultismo: 0 em ocupação');
+  assertEq(p1.source, 'interest', 'Ocultismo: source=interest');
+  assert(p1.withinLimit,     'Ocultismo 45: dentro do limite');
+
+  // Designada como ocupação → allocated vai para ocupação
+  var p2 = rules.computeSkillProvenance({
+    attributes: {}, investigator: { occupation: '' },
+    skills: { 'Ocultismo': { value: 65 } }, occupationSkills: ['Ocultismo']
+  }, 'Ocultismo');
+  assertEq(p2.occupation, 60, 'Ocultismo (ocupação): 60 em ocupação');
+  assertEq(p2.source, 'occupation', 'Ocultismo (ocupação): source=occupation');
+
+  // Base derivada DES/2 (Esquivar), só base
+  var p3 = rules.computeSkillProvenance({
+    attributes: { DES: { value: 60 } }, investigator: {},
+    skills: { 'Esquivar': { value: 30 } }, occupationSkills: []
+  }, 'Esquivar');
+  assertEq(p3.base, 30,      'Esquivar: base=DES/2=30');
+  assertEq(p3.allocated, 0,  'Esquivar: allocated=0');
+  assertEq(p3.source, 'base','Esquivar: source=base');
+
+  // Acima do limite recomendado (>90)
+  var p4 = rules.computeSkillProvenance({
+    attributes: {}, investigator: {},
+    skills: { 'Ocultismo': { value: 95 } }, occupationSkills: []
+  }, 'Ocultismo');
+  assert(!p4.withinLimit, 'Ocultismo 95: acima do limite → requer Guardião');
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Funções auxiliares locais (não disponíveis em window.CoC)
 // ─────────────────────────────────────────────────────────────────────────────
 
