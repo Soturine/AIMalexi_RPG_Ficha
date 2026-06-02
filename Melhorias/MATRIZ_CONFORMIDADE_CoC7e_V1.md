@@ -111,8 +111,8 @@
 
 | # | Regra | Estado | Impacto | Arquivos | Prioridade | Complexidade |
 |---|-------|--------|---------|----------|------------|--------------|
-| 6.1 | Marcar perícia para evolução (sucesso na sessão) | 🔴 | Não implementado | — | P1A (ETAPA 3) | Baixa |
-| 6.2 | Evolução de perícia (d100 > valor → +d10) | 🔴 | Não implementado | — | P1A (ETAPA 3) | Média |
+| 6.1 | Marcar perícia para evolução (sucesso na sessão) | ✅ | **CORRIGIDO ETAPA 3.3** — botão ✓ em cada linha; auto-marca após sucesso natural | `js/views/skills.js`, `js/core/store.js` | — | — |
+| 6.2 | Evolução de perícia (d100 > valor → +d10) | ✅ | **CORRIGIDO ETAPA 3.3** — `rollSkillImprovement()` + `SKILL_IMPROVED` reducer + botão "Fim de Sessão" | `js/engine/coc7e-rules.js`, `js/views/skills.js` | — | — |
 | 6.3 | Verificação de Melhoria de EDU (d100 > EDU → +d10) | ✅ | **CORRIGIDO ETAPA 2.4** — `rollEduImprovement()` implementada e chamada na criação | `js/engine/coc7e-rules.js` | — | — |
 | 6.4 | EDU cap = 99 | ✅ | **CORRIGIDO ETAPA 2.4** — `Math.min(99, edu+gain)` aplicado | `js/engine/coc7e-rules.js` | — | — |
 | 6.5 | Recompensa narrativa de Guardião | 🔴 | Não implementado | — | P3 | Baixa |
@@ -210,14 +210,15 @@
 | Prioridade | Qtd ✅ | Qtd 🟡 | Qtd 🔴 | Qtd ⚫ | Total |
 |-----------|--------|--------|--------|--------|-------|
 | **P1 — Bugs críticos (ETAPA 2)** | 9 | 0 | 0 | 0 | **9 ✅ CONCLUÍDO** |
-| **P1A — Criação completa (ETAPA 3)** | 0 | 1 | 2 | 0 | **3** |
+| **P1A — Criação completa (ETAPA 3)** | 3 | 0 | 0 | 0 | **3 ✅ CONCLUÍDO** |
 | **P2 — Médio prazo (ETAPAs 4–6)** | 0 | 6 | 10 | 2 | **18** |
 | **P3 — Longo prazo (ETAPAs 7–9)** | 0 | 2 | 12 | 2 | **16** |
 | **P4 — Arquitetural (ETAPAs 10–11)** | 0 | 0 | 4 | 1 | **5** |
 | **Já corretos** | 30 | — | — | — | **30** |
-| **TOTAL** | **39** | **9** | **28** | **5** | **81** |
+| **TOTAL** | **42** | **9** | **25** | **5** | **81** |
 
-> **Última atualização:** pós-ETAPA 2 — 9 itens P1 resolvidos (corrigidos). Próxima atualização: pós-ETAPA 3.
+> **Última atualização:** pós-ETAPA 3 — 3 itens P1A resolvidos + fix regressão identity.js.
+> Próxima prioridade: ETAPA 4 (Personagem & Perícias: #6, #7, #8, #9).
 
 ---
 
