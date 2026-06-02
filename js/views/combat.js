@@ -82,11 +82,14 @@ window.CoC.views  = window.CoC.views  || {};
         '<div class="weapon-info">' +
           '<b>Perícia:</b> ' + escHtml(w.skill || '—') + ' (' + skillVal + '%)<br>' +
           '<b>Dano:</b> ' + escHtml(w.damage || '—') + (w.range ? ' · <b>Alc:</b> ' + escHtml(w.range) : '') + '<br>' +
-          (w.ammo != null ? '<b>Munição:</b> ' + escHtml(String(w.ammo)) + (w.shots ? ' (×' + w.shots + '/rd)' : '') + '<br>' : '') +
+          (w.ammo != null ? '<b>Munição:</b> ' + escHtml(String(w.ammo)) + (w.ammoMax != null ? '/' + escHtml(String(w.ammoMax)) : '') + (w.shots ? ' (×' + w.shots + '/rd)' : '') + '<br>' : '') +
         '</div>' +
         (w.note ? '<div class="weapon-note">' + escHtml(w.note) + '</div>' : '') +
         '<div class="weapon-actions no-print">' +
           '<button data-weapon-attack="' + escHtml(w.id || '') + '" class="btn-primary" title="Rolar ataque + dano">🎯 Atacar</button>' +
+          (w.ammoMax != null && Number(w.ammo) < Number(w.ammoMax)
+            ? '<button data-weapon-reload="' + escHtml(w.id || '') + '" class="btn-ghost" title="Recarregar munição">🔄 Recarregar</button>'
+            : '') +
           '<button data-weapon-edit="'   + escHtml(w.id || '') + '" class="btn-ghost btn-icon" title="Editar">✎</button>' +
           '<button data-weapon-del="'    + escHtml(w.id || '') + '" class="btn-danger btn-icon" title="Remover">🗑️</button>' +
         '</div>'
@@ -135,7 +138,8 @@ window.CoC.views  = window.CoC.views  || {};
       '<div><label>Perícia</label><select id="w-skill">' + skillOptions + '</select></div>' +
       '<div><label>Dano</label><input id="w-damage" value="' + escHtml(w.damage || '') + '" placeholder="1D8+DB" /></div>' +
       '<div><label>Alcance</label><input id="w-range" value="' + escHtml(w.range || '') + '" placeholder="Toque, 15m, DES m" /></div>' +
-      '<div><label>Munição</label><input id="w-ammo" type="number" value="' + (w.ammo != null ? w.ammo : '') + '" /></div>' +
+      '<div><label>Munição atual</label><input id="w-ammo" type="number" value="' + (w.ammo != null ? w.ammo : '') + '" /></div>' +
+      '<div><label>Munição máx (recarga)</label><input id="w-ammomax" type="number" value="' + (w.ammoMax != null ? w.ammoMax : '') + '" /></div>' +
       '<div><label>Tiros/rodada</label><input id="w-shots" type="number" value="' + (w.shots != null ? w.shots : '') + '" /></div>' +
       '<div class="full-width"><label>Nota</label><textarea id="w-note">' + escHtml(w.note || '') + '</textarea></div>' +
       '<div class="full-width">' +
@@ -158,6 +162,7 @@ window.CoC.views  = window.CoC.views  || {};
             damage: ($s2('w-damage').value || '').trim(),
             range:  ($s2('w-range').value || '').trim(),
             ammo:   parseInt($s2('w-ammo').value, 10) || null,
+            ammoMax: parseInt($s2('w-ammomax').value, 10) || null,
             shots:  parseInt($s2('w-shots').value, 10) || null,
             note:   ($s2('w-note').value || '').trim(),
             impale: $s2('w-impale').checked,
@@ -260,10 +265,10 @@ window.CoC.views  = window.CoC.views  || {};
     var parent = container.parentElement;
     if (!parent) return;
 
-    // Attack / Edit / Delete — delegated to parent section (survives re-renders)
+    // Attack / Reload / Edit / Delete — delegated to parent section
     parent.addEventListener('click', function(e) {
       var btn = e.target.closest
-        ? e.target.closest('[data-weapon-attack],[data-weapon-edit],[data-weapon-del]')
+        ? e.target.closest('[data-weapon-attack],[data-weapon-reload],[data-weapon-edit],[data-weapon-del]')
         : null;
       if (!btn) return;
 
@@ -272,6 +277,10 @@ window.CoC.views  = window.CoC.views  || {};
 
       if (btn.hasAttribute('data-weapon-attack')) {
         _attack(btn.getAttribute('data-weapon-attack'));
+      } else if (btn.hasAttribute('data-weapon-reload')) {
+        _executor.execute({ type: 'RELOAD_WEAPON', payload: { id: btn.getAttribute('data-weapon-reload') } });
+        var ui = window.CoC.ui;
+        if (ui && ui.toast) ui.toast('🔄 Arma recarregada.', { type: 'info', duration: 2500 });
       } else if (btn.hasAttribute('data-weapon-edit')) {
         var wid = btn.getAttribute('data-weapon-edit');
         var found = null;
