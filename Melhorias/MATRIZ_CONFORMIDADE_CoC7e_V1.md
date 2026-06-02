@@ -76,8 +76,8 @@
 | 3.12 | Armadura absorve dano automaticamente | 🔴 | Não implementado | — | P2 (ETAPA 12) | Média |
 | 3.13 | Munição: decremento automático | ✅ | — | `js/views/combat.js:85`, `js/tests/test-combat.js:196` | — | — |
 | 3.14 | Recarga de arma | 🔴 | Sem botão/ação de recarga | — | P3 (ETAPA 12) | Baixa |
-| 3.15 | Dropdown de perícia da arma (vs texto livre) | 🔴 | Digitação manual de nome de perícia | `js/views/combat.js` | P2 (ETAPA 5) | Baixa |
-| 3.16 | Sistema de slots corporais | 🔴 | Não implementado | — | P3 (ETAPA 5) | Alta |
+| 3.15 | Dropdown de perícia da arma (vs texto livre) | ✅ | **CORRIGIDO ETAPA 5 (#10)** — select dinâmico com combat skills + catálogo | `js/views/combat.js` | — | — |
+| 3.16 | Sistema de slots corporais | ✅ | **CORRIGIDO ETAPA 5 (#11)** — 8 slots, modal equip/remove, SET_BODY_SLOT reducer | `js/views/body-slots.js`, `js/core/store.js` | — | — |
 
 ---
 
@@ -215,10 +215,10 @@
 | **P3 — Longo prazo (ETAPAs 7–9)** | 0 | 2 | 12 | 2 | **16** |
 | **P4 — Arquitetural (ETAPAs 10–11)** | 0 | 0 | 4 | 1 | **5** |
 | **Já corretos** | 30 | — | — | — | **30** |
-| **TOTAL** | **45** | **9** | **22** | **5** | **81** |
+| **TOTAL** | **47** | **9** | **20** | **5** | **81** |
 
-> **Última atualização:** pós-ETAPA 4 — #6, #7, #9 resolvidos; #8 confirmado funcional.
-> Próxima prioridade: ETAPA 5 (Arsenal & Equipamentos: #10 dropdown + #11 slots corporais).
+> **Última atualização:** pós-ETAPA 5 — #10, #11 implementados + gradeRoll em combat fix.
+> Próxima prioridade: ETAPA 6 (Guardião: #12 fix duplicação, #13 compêndio, #14 diário, #15 dashboard).
 
 ---
 
