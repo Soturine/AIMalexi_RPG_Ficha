@@ -201,21 +201,25 @@ window.CoC.views = window.CoC.views || {};
         const capStatus = validators.skillCapStatus(value, document.getElementById("btn-edit-mode")?.classList.contains("active") ?? false);
 
         renderedNames.add(s.name);
+        const isMarked = !!(sk?.marked);
         const row = el("div", {
           class: "skill-row" +
             (isOcc ? " occupation" : "") +
             (capStatus.level === "err" ? " over-cap" : "") +
-            (capStatus.level === "warn" && !capStatus.ok ? " over-cap-warn" : "")
+            (capStatus.level === "warn" && !capStatus.ok ? " over-cap-warn" : "") +
+            (isMarked ? " skill-marked" : "")
         });
         const specTag     = s.specializable ? `<span class="skill-tag">específica</span>` : "";
         const baseFormula = s.baseFormula    ? ` <span class="skill-tag" title="Base derivada">${escapeHtml(s.baseFormula)}=${base}</span>` : "";
         const occMark     = _occToggleHTML(s.name, ctx.mandatory.has(s.name), ctx.chosen.has(s.name));
+        const markBtn     = `<button class="skill-mark btn-ghost${isMarked ? " marked" : ""}" data-mark-skill="${escapeHtml(s.name)}" title="${isMarked ? "Marcada para evolução (clique para desmarcar)" : "Marcar para evolução ao fim da sessão"}" aria-pressed="${isMarked}">${isMarked ? "✓" : "○"}</button>`;
         row.innerHTML = `
           <div class="skill-name">${occMark}${escapeHtml(s.name)}${specTag}${baseFormula}</div>
           <input class="skill-input" type="number" min="0" max="99" value="${value}"
             data-skill="${escapeHtml(s.name)}"
             title="Total da perícia (Base ${base} + alocados)" />
-          <div class="skill-frac" title="Difícil · Extremo">${dice.half(value)} · ${dice.fifth(value)}</div>
+          <div class="skill-frac"><span class="skill-frac-half" title="Difícil">${dice.half(value)}</span><span class="skill-frac-sep"> · </span><span class="skill-frac-fifth" title="Extremo">${dice.fifth(value)}</span></div>
+          ${markBtn}
           <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(s.name)}" title="Rolar perícia">🎲</button>
         `;
         inner.appendChild(row);
@@ -247,18 +251,22 @@ window.CoC.views = window.CoC.views || {};
           const parent    = window.CoCData.findSkill(name.replace(/\s*\(.+\)$/, ""));
           const parentBase = parent ? _computeBaseValue(parent, attrs) : 0;
 
+          const isMarkedCustom = !!(sk?.marked);
           const row = el("div", {
             class: "skill-row" +
               (isOcc ? " occupation" : "") +
               (capStatus.level === "err" ? " over-cap" : "") +
-              (capStatus.level === "warn" && !capStatus.ok ? " over-cap-warn" : "")
+              (capStatus.level === "warn" && !capStatus.ok ? " over-cap-warn" : "") +
+              (isMarkedCustom ? " skill-marked" : "")
           });
           const parentTag = parent ? `<span class="skill-tag" title="Base herdada de ${escapeHtml(parent.name)}">base ${parentBase}</span>` : "";
           const occMark   = _occToggleHTML(name, ctx.mandatory.has(name), ctx.chosen.has(name));
+          const markBtnC  = `<button class="skill-mark btn-ghost${isMarkedCustom ? " marked" : ""}" data-mark-skill="${escapeHtml(name)}" title="${isMarkedCustom ? "Marcada para evolução" : "Marcar para evolução"}" aria-pressed="${isMarkedCustom}">${isMarkedCustom ? "✓" : "○"}</button>`;
           row.innerHTML = `
             <div class="skill-name">${occMark}${escapeHtml(name)}${parentTag}</div>
             <input class="skill-input" type="number" min="0" max="99" value="${value}" data-skill="${escapeHtml(name)}" />
-            <div class="skill-frac" title="Difícil · Extremo">${dice.half(value)} · ${dice.fifth(value)}</div>
+            <div class="skill-frac"><span class="skill-frac-half" title="Difícil">${dice.half(value)}</span><span class="skill-frac-sep"> · </span><span class="skill-frac-fifth" title="Extremo">${dice.fifth(value)}</span></div>
+            ${markBtnC}
             <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(name)}" title="Rolar perícia">🎲</button>
           `;
           inner.appendChild(row);
@@ -274,6 +282,65 @@ window.CoC.views = window.CoC.views || {};
       on: { click: () => _addCustomSkill() }
     });
     container.appendChild(addBtn);
+
+    // Botão Fim de Sessão — só aparece quando há perícias marcadas
+    const markedSkills = Object.entries(c.skills || {}).filter(([, sk]) => sk?.marked);
+    if (markedSkills.length > 0) {
+      const eosBtn = el("button", {
+        class: "btn-primary",
+        style: { marginTop: "0.75rem", marginLeft: "0.5rem" },
+        title: `${markedSkills.length} perícia(s) marcada(s) para evolução`,
+        on: { click: () => _endOfSession() }
+      }, [`⭐ Fim de Sessão (${markedSkills.length} marcada${markedSkills.length > 1 ? "s" : ""})`]);
+      container.appendChild(eosBtn);
+    }
+  }
+
+  // ── Fim de Sessão: evolução de perícias marcadas ───────────────────────────
+
+  async function _endOfSession() {
+    const c = cocStore.getState().character;
+    if (!c) return;
+    const rules = window.CoC.rules;
+    const marked = Object.entries(c.skills || {}).filter(([, sk]) => sk?.marked);
+    if (marked.length === 0) {
+      toast("Nenhuma perícia marcada para evolução.", { type: "info" });
+      return;
+    }
+
+    const results = [];
+    for (const [name, sk] of marked) {
+      const value = Number(sk.value) || 0;
+      const res   = rules.rollSkillImprovement(value);
+      if (res.improved) {
+        cocExecutor.execute({ type: "SKILL_IMPROVED", payload: { name, gain: res.gain } });
+        results.push(`✓ ${name}: d100=${res.rolled} > ${res.before} → +${res.gain} (${res.before}→${res.after})`);
+        // Registrar no log
+        if (window.CoC.views.rolls && window.CoC.views.rolls.registerRoll) {
+          window.CoC.views.rolls.registerRoll({
+            kind:     "skill-improvement",
+            skill:    `Evolução: ${name}`,
+            target:   res.before,
+            d100:     res.rolled,
+            level:    "regular",
+            met:      true,
+            note:     `+${res.gain} (${res.before}→${res.after})`,
+            luckCost: 0,
+          });
+        }
+      } else {
+        // Desmarcar sem ganho
+        cocExecutor.execute({ type: "MARK_SKILL_IMPROVEMENT", payload: { name, marked: false } });
+        results.push(`✗ ${name}: d100=${res.rolled} ≤ ${res.before} — sem evolução`);
+      }
+    }
+
+    bus.publish("skill:persist-requested", {});
+    toast(
+      `Fim de Sessão — evolução de perícias:\n${results.join("\n")}`,
+      { type: results.some(r => r.startsWith("✓")) ? "success" : "info", duration: 8000 }
+    );
+    renderSkills();  // atualiza marcações visuais
   }
 
   // ── Light update (preserva foco durante digitação) ─────────────────────────
@@ -286,7 +353,12 @@ window.CoC.views = window.CoC.views || {};
       const v   = Number(input.value) || 0;
       const row = input.closest(".skill-row");
       const frac = row?.querySelector(".skill-frac");
-      if (frac) frac.textContent = `${dice.half(v)} · ${dice.fifth(v)}`;
+      if (frac) {
+        const h = frac.querySelector('.skill-frac-half');
+        const f = frac.querySelector('.skill-frac-fifth');
+        if (h && f) { h.textContent = dice.half(v); f.textContent = dice.fifth(v); }
+        else frac.textContent = `${dice.half(v)} · ${dice.fifth(v)}`;
+      }
       if (row) {
         const cap = validators.skillCapStatus(v, document.getElementById("btn-edit-mode")?.classList.contains("active") ?? false);
         row.classList.toggle("over-cap",      cap.level === "err");
@@ -314,6 +386,14 @@ window.CoC.views = window.CoC.views || {};
       if (occBtn) {
         e.preventDefault();
         cocExecutor.execute({ type: "TOGGLE_OCCUPATION_SKILL", payload: { skillName: occBtn.dataset.occToggle } });
+        return;
+      }
+      const markBtn = e.target.closest("[data-mark-skill]");
+      if (markBtn) {
+        const name    = markBtn.dataset.markSkill;
+        const current = !!(cocStore.getState().character?.skills?.[name]?.marked);
+        cocExecutor.execute({ type: "MARK_SKILL_IMPROVEMENT", payload: { name, marked: !current } });
+        bus.publish("skill:persist-requested", {});
       }
     });
 
@@ -442,12 +522,18 @@ window.CoC.views = window.CoC.views || {};
       };
     }
 
-    // Reactive re-render on occupation skill toggle (state changed → store fires bus)
+    // Reactive re-render on occupation/improvement/attribute changes
     bus.subscribe("store:dispatch", function (event) {
       if (!event.changed) return;
       const t = event.action.type;
-      if (t === "TOGGLE_OCCUPATION_SKILL" || t === "ADD_CUSTOM_SKILL") {
+      if (t === "TOGGLE_OCCUPATION_SKILL" || t === "ADD_CUSTOM_SKILL" ||
+          t === "MARK_SKILL_IMPROVEMENT"  || t === "SKILL_IMPROVED") {
         renderSkills();
+      }
+      // Quando EDU ou outros atributos que alimentam fórmulas de ocupação mudam,
+      // refrescar os badges (pontos de ocupação = EDU*4 etc.)
+      if (t === "SET_ATTRIBUTE" || t === "RECALC_DERIVED") {
+        refreshBadges();
       }
     });
   }
@@ -459,6 +545,7 @@ window.CoC.views = window.CoC.views || {};
     render:        renderSkills,
     updateSkillUI: updateSkillUI,
     refreshBadges: refreshBadges,
+    endOfSession:  _endOfSession,
   });
 
 })();

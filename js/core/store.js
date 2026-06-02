@@ -158,6 +158,18 @@ window.CoC = window.CoC || {};
       case "PUSH_ROLL":
         return state;
 
+      // ── Atributos primários ────────────────────────────────────────────────
+      case "SET_ATTRIBUTE": {
+        if (!c) return state;
+        const { code: attrCode, value: attrVal } = action.payload;
+        if (!attrCode || !c.attributes || !c.attributes[attrCode]) return state;
+        const nc = deepClone(c);
+        nc.attributes[attrCode] = Object.assign({}, nc.attributes[attrCode], {
+          value: Math.max(0, Math.min(99, Number(attrVal) || 0))
+        });
+        return Object.assign({}, state, { character: nc });
+      }
+
       // ── Perícias ──────────────────────────────────────────────────────────
       case "SET_SKILL": {
         if (!c) return state;
@@ -195,6 +207,66 @@ window.CoC = window.CoC || {};
         if (isOccupation) {
           nc.occupationSkills = Array.isArray(nc.occupationSkills) ? nc.occupationSkills.slice() : [];
           if (!nc.occupationSkills.includes(skillName)) nc.occupationSkills.push(skillName);
+        }
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // Marca a perícia para evolução ao fim da sessão (CoC 7e p.44)
+      case "MARK_SKILL_IMPROVEMENT": {
+        if (!c) return state;
+        const { name: markName, marked } = action.payload;
+        if (!markName) return state;
+        const nc = deepClone(c);
+        nc.skills = nc.skills || {};
+        nc.skills[markName] = Object.assign({}, nc.skills[markName] || {}, {
+          marked: !!marked
+        });
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // Aplica o ganho de evolução de perícia após rolagem de melhoria
+      case "SKILL_IMPROVED": {
+        if (!c) return state;
+        const { name: impName, gain } = action.payload;
+        if (!impName || !gain) return state;
+        const nc = deepClone(c);
+        nc.skills = nc.skills || {};
+        const cur = Number(nc.skills[impName]?.value) || 0;
+        nc.skills[impName] = Object.assign({}, nc.skills[impName] || {}, {
+          value: Math.min(99, cur + gain),
+          marked: false   // limpa a marcação após evolução
+        });
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // ── Slots corporais (#11) ─────────────────────────────────────────────
+      // payload: { slotId, item?, idx?, action: 'add'|'remove' }
+      // Slots com max=1: item = objeto | null
+      // Slot acessorios (max=3): item = array
+      case "SET_BODY_SLOT": {
+        if (!c) return state;
+        const { slotId, item, idx, action: slotAction } = action.payload;
+        if (!slotId) return state;
+        const nc = deepClone(c);
+        nc.bodySlots = nc.bodySlots || {};
+        const isMulti = slotId === 'acessorios';
+        if (slotAction === 'remove') {
+          if (isMulti) {
+            const arr = Array.isArray(nc.bodySlots[slotId]) ? nc.bodySlots[slotId].slice() : [];
+            arr.splice(typeof idx === 'number' ? idx : arr.length - 1, 1);
+            nc.bodySlots[slotId] = arr.length > 0 ? arr : [];
+          } else {
+            nc.bodySlots[slotId] = null;
+          }
+        } else {
+          // add / replace
+          if (isMulti) {
+            const arr = Array.isArray(nc.bodySlots[slotId]) ? nc.bodySlots[slotId].slice() : [];
+            if (arr.length < 3) arr.push(item);
+            nc.bodySlots[slotId] = arr;
+          } else {
+            nc.bodySlots[slotId] = item || null;
+          }
         }
         return Object.assign({}, state, { character: nc });
       }

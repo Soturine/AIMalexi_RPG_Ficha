@@ -12,7 +12,9 @@
 </head>
 <body data-theme="arkham">
 <script>
-  if ("serviceWorker" in navigator) {
+  // Registrar SW apenas quando aberto como página top-level (não dentro de iframe).
+  // Dentro do iframe do Guardião evita conflito de SW que causava duplicação de layout.
+  if ("serviceWorker" in navigator && window.parent === window) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").catch((err) => {
         console.warn("[PWA] SW:", err);

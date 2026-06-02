@@ -119,8 +119,19 @@ window.CoC = window.CoC || {};
       fail:    { bg: "#1a0d0d", border: "#6b3232", color: "#d8a8a8", icon: "✗" },
       fumble:  { bg: "#2a0606", border: "#8b1a1a", color: "#ffb4b4", icon: "💀" }
     };
-    const s = styleByLevel[entry.level] || styleByLevel.regular;
-    const label = labels[entry.level] || (entry.level || "ROLAGEM").toUpperCase();
+    // Se a dificuldade exigida não foi atingida, mostrar como falha visual
+    // mesmo que o tier natural seja Regular ou superior.
+    const displayLevel = (entry.met === false) ? "fail" : entry.level;
+    const s = styleByLevel[displayLevel] || styleByLevel.regular;
+    const tierLabel = labels[entry.level] || (entry.level || "ROLAGEM").toUpperCase();
+    // Nota de dificuldade: mostra o tier atingido vs. o exigido quando há mismatch
+    let label;
+    if (entry.met === false && entry.difficulty && entry.difficulty !== "regular") {
+      const diffLabel = entry.difficulty === "hard" ? "Difícil" : "Extremo";
+      label = `${tierLabel} — insuficiente p/ ${diffLabel}`;
+    } else {
+      label = tierLabel;
+    }
     const target = entry.target != null ? ` (alvo ${entry.target})` : "";
     const dmg = entry.dmg ? ` · ⚔ ${entry.dmg}` : "";
 
@@ -395,12 +406,21 @@ window.CoC = window.CoC || {};
     const e = entry || {};
     const ts = new Date(e.ts || Date.now()).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-    const node = el("li", { class: `roll-entry ${e.level || ""}` });
+    // Classe visual: se dificuldade não atingida, exibe como falha na cor
+    const displayLevel = (e.met === false) ? "fail" : (e.level || "");
+    const node = el("li", { class: `roll-entry ${displayLevel}` });
     let html = "";
     if (e.skill)  html += `<span class="skill">${escapeHtml(e.skill)}</span>`;
     if (e.target != null) html += ` <span style="color:var(--ink-faded);font-size:0.8em">(${e.target})</span>`;
     if (e.d100 != null) html += ` <span class="result">${e.d100}</span>`;
-    if (e.level)  html += `<span class="level">${labels[e.level] || e.level}</span>`;
+    if (e.level) {
+      let levelText = labels[e.level] || e.level;
+      if (e.met === false && e.difficulty && e.difficulty !== "regular") {
+        const diffLabel = e.difficulty === "hard" ? "Difícil" : "Extremo";
+        levelText += ` <span style="color:var(--err);font-size:0.8em">(insuf. ${diffLabel})</span>`;
+      }
+      html += `<span class="level">${levelText}</span>`;
+    }
     if (e.dmg)    html += `<br><span style="color:var(--brass-bright)">⚔ ${escapeHtml(String(e.dmg))}</span>`;
     if (e.note)   html += `<br><span style="color:var(--ink-dim);font-style:italic;font-size:0.85em">${escapeHtml(e.note)}</span>`;
     html += `<span class="ts">${ts}</span>`;

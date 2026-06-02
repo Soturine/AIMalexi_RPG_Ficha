@@ -175,14 +175,30 @@ window.CoC.core = window.CoC.core || {};
       effects: ['roll:logged', 'roll:badge-inc'],
       status: 'live',
       boundary_randomness: true,
-      resolved_fields: ['roll', 'skillValue', 'level'],
+      // difficulty e met são opcionais para compatibilidade com logs antigos
+      // (ausentes → difficulty="regular", met=true)
+      resolved_fields: ['roll', 'skillValue', 'level', 'difficulty', 'met'],
     },
     SKILL_IMPROVED: {
       aggregate: 'character', domain: 'skills',
       renders: ['skills'], persists: true, sacred: false,
+      effects: ['roll:logged'],
+      status: 'live',
+      resolved_fields: ['name', 'gain', 'before', 'after'],
+    },
+    SET_BODY_SLOT: {
+      aggregate: 'character', domain: 'equipment',
+      renders: ['bodySlots'], persists: true, sacred: false,
       effects: [],
-      status: 'gap',
-      note: 'Rolagem de melhoria de perícia pós-sessão (CoC 7e p.44); sem reducer',
+      status: 'live',
+      resolved_fields: ['slotId', 'item', 'action'],
+    },
+    MARK_SKILL_IMPROVEMENT: {
+      aggregate: 'character', domain: 'skills',
+      renders: ['skills'], persists: true, sacred: false,
+      effects: [],
+      status: 'live',
+      resolved_fields: ['name', 'marked'],
     },
 
     // ── Rolagens / sessão ─────────────────────────────────────────────────────
@@ -192,7 +208,7 @@ window.CoC.core = window.CoC.core || {};
       effects: ['roll:logged'],
       status: 'live',
       boundary_randomness: true,
-      resolved_fields: ['roll', 'attribute', 'result'],
+      resolved_fields: ['roll', 'attribute', 'result', 'difficulty', 'met'],
     },
     ROLL_DAMAGE: {
       aggregate: 'session', domain: 'rolls',
@@ -208,13 +224,22 @@ window.CoC.core = window.CoC.core || {};
       effects: ['roll:logged', 'roll:pushed'],
       status: 'live',
       boundary_randomness: true,
-      resolved_fields: ['roll', 'skillValue', 'level'],
+      resolved_fields: ['roll', 'skillValue', 'level', 'difficulty', 'met'],
     },
     REGISTER_FUMBLE: {
       aggregate: 'session', domain: 'rolls',
       renders: null, persists: false, sacred: false,
       effects: ['roll:logged', 'roll:fumble'],
       status: 'planned',
+    },
+
+    // ── Atributos primários ───────────────────────────────────────────────────
+    SET_ATTRIBUTE: {
+      aggregate: 'character', domain: 'attributes',
+      renders: ['attributes', 'vitals', 'skills'], persists: true, sacred: false,
+      effects: [],
+      status: 'live',
+      resolved_fields: ['code', 'value'],
     },
 
     // ── Identidade ─────────────────────────────────────────────────────────────

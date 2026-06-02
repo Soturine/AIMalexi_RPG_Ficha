@@ -152,20 +152,30 @@ window.CoC = window.CoC || {};
 
   /**
    * Ajustes de atributos primários por idade (CoC 7E p.35-36).
-   * Retorna o total de pontos a distribuir e quais atributos são afetados,
-   * ou null se a idade não requer redução.
+   *
+   * Retorno:
+   *   physical.points  — pontos a distribuir entre physical.attrs (mín 0 cada)
+   *   physical.attrs   — atributos físicos afetados pela distribuição
+   *   appReduction     — redução FIXA (não distribuída) em APA
+   *   eduReduction     — redução FIXA em EDU (só faixa 15–19)
+   *   eduImprovementChecks — nº de Verificações de Melhoria de EDU a realizar
+   *   luckRerolls      — nº de re-rolls de Sorte (faixa 15–19 = 1)
    *
    * @param {number} age
-   * @returns {{ totalReduction: number, attrs: string[] } | null}
+   * @returns {{ physical:{points:number,attrs:string[]}, appReduction:number,
+   *             eduReduction:number, eduImprovementChecks:number, luckRerolls:number } | null}
+   *   null se a faixa não gera nenhum ajuste (< 15 anos)
    */
   function calcAgeAdjustments(age) {
     age = num(age);
-    if (age >= 15 && age <= 19) return { totalReduction: 5,  attrs: ["FOR", "CON", "DES"] };
-    if (age >= 80)              return { totalReduction: 80, attrs: ["FOR", "CON", "DES", "APA"] };
-    if (age >= 70)              return { totalReduction: 40, attrs: ["FOR", "CON", "DES", "APA"] };
-    if (age >= 60)              return { totalReduction: 20, attrs: ["FOR", "CON", "DES", "APA"] };
-    if (age >= 50)              return { totalReduction: 10, attrs: ["FOR", "CON", "DES", "APA"] };
-    if (age >= 40)              return { totalReduction: 5,  attrs: ["FOR", "CON", "DES", "APA"] };
+    // Faixas etárias conforme CoC 7e p.35-36
+    if (age >= 15 && age <= 19) return { physical: { points: 5,  attrs: ["FOR", "TAM"] }, appReduction: 0,  eduReduction: 5,  eduImprovementChecks: 0, luckRerolls: 1 };
+    if (age >= 20 && age <= 39) return { physical: { points: 0,  attrs: []             }, appReduction: 0,  eduReduction: 0,  eduImprovementChecks: 1, luckRerolls: 0 };
+    if (age >= 40 && age <= 49) return { physical: { points: 5,  attrs: ["FOR","CON","DES"] }, appReduction: 5,  eduReduction: 0, eduImprovementChecks: 2, luckRerolls: 0 };
+    if (age >= 50 && age <= 59) return { physical: { points: 10, attrs: ["FOR","CON","DES"] }, appReduction: 10, eduReduction: 0, eduImprovementChecks: 3, luckRerolls: 0 };
+    if (age >= 60 && age <= 69) return { physical: { points: 20, attrs: ["FOR","CON","DES"] }, appReduction: 15, eduReduction: 0, eduImprovementChecks: 4, luckRerolls: 0 };
+    if (age >= 70 && age <= 79) return { physical: { points: 40, attrs: ["FOR","CON","DES"] }, appReduction: 20, eduReduction: 0, eduImprovementChecks: 4, luckRerolls: 0 };
+    if (age >= 80)              return { physical: { points: 80, attrs: ["FOR","CON","DES"] }, appReduction: 25, eduReduction: 0, eduImprovementChecks: 4, luckRerolls: 0 };
     return null;
   }
 
@@ -305,6 +315,53 @@ window.CoC = window.CoC || {};
       expression: bestExpr,
       breakdown: `${bestExpr} = ${bestVal}` + (alternatives.length > 1 ? ` (melhor de ${alternatives.length} opções)` : "")
     };
+  }
+
+  /**
+   * Verificação de Melhoria de Perícia (CoC 7E p.44).
+   * Mesma mecânica da melhoria de EDU, aplicada a qualquer valor de perícia.
+   *
+   * Fluxo: rola 1D100; se resultado > valor atual → ganha 1D10 (cap 99).
+   *
+   * @param {number} value - valor atual da perícia (0–99)
+   * @returns {{ rolled: number, gain: number, before: number, after: number, improved: boolean }}
+   */
+  function rollSkillImprovement(value) {
+    value = num(value);
+    const diceFns = window.CoC && window.CoC.dice;
+    const rollDie = diceFns ? diceFns.rollDie : (s) => Math.floor(Math.random() * s) + 1;
+    const rolled = rollDie(100) || 1;
+    if (rolled > value) {
+      const gain  = rollDie(10) || 1;
+      const after = Math.min(99, value + gain);
+      return { rolled, gain: after - value, before: value, after, improved: true };
+    }
+    return { rolled, gain: 0, before: value, after: value, improved: false };
+  }
+
+  /**
+   * Verificação de Melhoria de EDU (CoC 7E p.36).
+   * Função pura — sem UI/DOM. Depende de dice.rollDie via window.CoC.dice.
+   *
+   * Fluxo oficial:
+   *   1. Rola 1D100.
+   *   2. Se resultado > EDU atual → ganha 1D10 (cap 99).
+   *   3. Senão → sem ganho.
+   *
+   * @param {number} edu - valor atual de EDU (0–99)
+   * @returns {{ rolled: number, gain: number, before: number, after: number, improved: boolean }}
+   */
+  function rollEduImprovement(edu) {
+    edu = num(edu);
+    const dice = window.CoC && window.CoC.dice;
+    const rollDie = dice ? dice.rollDie : (s) => Math.floor(Math.random() * s) + 1;
+    const rolled = rollDie(100) || 1;  // d100 via engine
+    if (rolled > edu) {
+      const gain   = rollDie(10) || 1;
+      const after  = Math.min(99, edu + gain);
+      return { rolled, gain: after - edu, before: edu, after, improved: true };
+    }
+    return { rolled, gain: 0, before: edu, after: edu, improved: false };
   }
 
   /**
@@ -464,6 +521,8 @@ window.CoC = window.CoC || {};
     sumSkillPointsSpent,
     validateCharacter,
     calcAgeAdjustments,
+    rollEduImprovement,
+    rollSkillImprovement,
     isMajorWound
   };
 

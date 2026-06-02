@@ -47,10 +47,16 @@ window.CoC = window.CoC || {};
     REMOVE_STATUS:   "REMOVE_STATUS",
 
     // ── Ficha (edição do próprio investigador) ───────────────────────────
-    SET_ATTRIBUTE:          "SET_ATTRIBUTE",
-    SET_SKILL:              "SET_SKILL",
-    TOGGLE_OCCUPATION_SKILL:"TOGGLE_OCCUPATION_SKILL",
-    ADD_CUSTOM_SKILL:       "ADD_CUSTOM_SKILL",
+    // SET_ATTRIBUTE: edição manual pelo jogador em modo edição — vai pelo store completo
+    SET_ATTRIBUTE:             "SET_ATTRIBUTE",
+    SET_SKILL:                 "SET_SKILL",
+    TOGGLE_OCCUPATION_SKILL:   "TOGGLE_OCCUPATION_SKILL",
+    ADD_CUSTOM_SKILL:          "ADD_CUSTOM_SKILL",
+    // Evolução de perícias (CoC 7e p.44)
+    MARK_SKILL_IMPROVEMENT:    "MARK_SKILL_IMPROVEMENT",   // marca para evolução no fim da sessão
+    SKILL_IMPROVED:            "SKILL_IMPROVED",           // aplica ganho após rolagem de melhoria
+    // Slots corporais (#11)
+    SET_BODY_SLOT:             "SET_BODY_SLOT",            // equipa/remove item de slot corporal
     SET_IDENTITY:           "SET_IDENTITY",
     SET_IMAGE:              "SET_IMAGE",
     EQUIP_WEAPON:           "EQUIP_WEAPON",

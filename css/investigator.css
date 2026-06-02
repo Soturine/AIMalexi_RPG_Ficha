@@ -140,6 +140,55 @@
   white-space: nowrap;
 }
 
+/* ── Destaque visual de dificuldade (§9) ──
+   data-difficulty no body ativa o span correspondente em atributos e perícias.
+   Transição suave — sem re-render, apenas CSS. */
+.sattr-frac-half,
+.sattr-frac-fifth,
+.skill-frac-half,
+.skill-frac-fifth {
+  transition: color 0.15s, font-weight 0.15s;
+}
+
+/* Difícil: ½ ativo */
+body[data-difficulty="hard"] .sattr-frac-half,
+body[data-difficulty="hard"] .skill-frac-half {
+  color: var(--hard, #a89580);
+  font-weight: bold;
+}
+body[data-difficulty="hard"] .sattr-frac-fifth,
+body[data-difficulty="hard"] .skill-frac-fifth,
+body[data-difficulty="hard"] .sattr-frac-sep,
+body[data-difficulty="hard"] .skill-frac-sep {
+  opacity: 0.35;
+}
+
+/* Extremo: ⅕ ativo */
+body[data-difficulty="extreme"] .sattr-frac-fifth,
+body[data-difficulty="extreme"] .skill-frac-fifth {
+  color: var(--extreme, #c87a4f);
+  font-weight: bold;
+}
+body[data-difficulty="extreme"] .sattr-frac-half,
+body[data-difficulty="extreme"] .skill-frac-half,
+body[data-difficulty="extreme"] .sattr-frac-sep,
+body[data-difficulty="extreme"] .skill-frac-sep {
+  opacity: 0.35;
+}
+
+/* Skill row marcada para evolução */
+.skill-row.skill-marked .skill-frac-half,
+.skill-row.skill-marked .skill-frac-fifth {
+  /* não interferir com destaque de dificuldade */
+}
+.skill-row.skill-marked {
+  background: color-mix(in srgb, var(--brass) 6%, transparent);
+}
+.skill-mark.marked {
+  color: var(--ok, #6a9a6a);
+  font-weight: bold;
+}
+
 /* Utility */
 .btn-sm { font-size: 0.72rem !important; padding: 0.25rem 0.5rem !important; }
 
@@ -841,6 +890,76 @@
 .skill-row .skill-roll {
   padding: 0.25rem 0.45rem;
   font-size: 0.85rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SLOTS CORPORAIS (#11)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#body-slots-section { margin-bottom: 1.25rem; }
+
+.body-slots-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.body-slot-row {
+  display: grid;
+  grid-template-columns: 8rem 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid var(--line, #3a342a);
+}
+.body-slot-row:hover { border-color: var(--brass); }
+
+.body-slot-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-serif);
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+.body-slot-icon { font-size: 1rem; }
+
+.body-slot-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+.body-slot-empty { color: var(--ink-faded); font-size: 0.8rem; }
+
+.body-slot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--bg-card-hi);
+  border: 1px solid var(--brass);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+.body-slot-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--err);
+  font-size: 0.7rem;
+  padding: 0;
+  line-height: 1;
+}
+.body-slot-remove:hover { opacity: 0.75; }
+
+.body-slot-equip {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  white-space: nowrap;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -83,9 +83,15 @@ window.CoC.views = window.CoC.views || {};
       var half  = dice ? dice.half(v)  : Math.floor(v / 2);
       var fifth = dice ? dice.fifth(v) : Math.floor(v / 5);
 
+      var fracsEl = _mkEl('span', { class: 'sattr-fracs' }, [
+        _mkEl('span', { class: 'sattr-frac-half',  title: 'Difícil' },  ['½' + half]),
+        _mkEl('span', { class: 'sattr-frac-sep'                      },  [' · ']),
+        _mkEl('span', { class: 'sattr-frac-fifth', title: 'Extremo' }, ['⅕' + fifth]),
+      ]);
+
       row.appendChild(_mkEl('span', { class: 'sattr-label' }, [_escHtml(code)]));
       row.appendChild(valNode);
-      row.appendChild(_mkEl('span', { class: 'sattr-fracs' }, ['½' + half + ' · ⅕' + fifth]));
+      row.appendChild(fracsEl);
       grid.appendChild(row);
     });
 
@@ -115,10 +121,10 @@ window.CoC.views = window.CoC.views || {};
           var raw = String(node.textContent || '').replace(/[^0-9]/g, '');
           var v   = raw === '' ? prev : Math.max(0, Math.min(99, parseInt(raw, 10)));
           if (v === prev) { node.textContent = String(prev); return; }
-          // Mutação direta ainda necessária enquanto state.character não está 100% no store
-          char.attributes[code].value = v;
-          render();
+          // Despacha pelo store completo (event-log + persist + sync)
+          if (_store) _store.dispatch({ type: 'SET_ATTRIBUTE', payload: { code: code, value: v } });
           _recalc();
+          render();
           if (window.CoC.views.vitals && window.CoC.views.vitals.render) window.CoC.views.vitals.render();
           if (window.CoC.views.skills && window.CoC.views.skills.render) window.CoC.views.skills.render();
           _persist();

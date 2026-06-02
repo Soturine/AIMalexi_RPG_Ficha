@@ -66,7 +66,13 @@ window.CoC = window.CoC || {};
 
     if (bp === "bonus" || bp === "penalty") {
       const tensB = rollDie(10) - 1;
-      tens = bp === "bonus" ? Math.min(tensA, tensB) : Math.max(tensA, tensB);
+      // Calcular o valor final de cada dezena candidata antes de escolher,
+      // respeitando a regra 00+0=100 (dezena 0 com unidade 0 vale 100).
+      const valA = (tensA === 0 && units === 0) ? 100 : (tensA * 10 + units);
+      const valB = (tensB === 0 && units === 0) ? 100 : (tensB * 10 + units);
+      tens = bp === "bonus"
+        ? (valA <= valB ? tensA : tensB)   // menor valor final → dezena favorável
+        : (valA >= valB ? tensA : tensB);  // maior valor final → dezena desfavorável
       tensCandidates = [tensA, tensB];
     } else {
       tens = tensA;
@@ -102,6 +108,28 @@ window.CoC = window.CoC || {};
     if (d100 <= half(skill))  return "hard";
     if (d100 <= skill)        return "regular";
     return "fail";
+  }
+
+  /**
+   * Avalia uma rolagem de d100 considerando a dificuldade escolhida.
+   * Ponto de entrada único para toda avaliação de sucesso/falha — as views
+   * não devem calcular target ou chamar classifyRoll diretamente.
+   *
+   * @param {number} d100       - 1..100
+   * @param {number} value      - valor da perícia/atributo
+   * @param {string} difficulty - "regular" | "hard" | "extreme"
+   * @returns {{ level: string, target: number, met: boolean }}
+   *   level  = tier natural (crit/extreme/hard/regular/fail/fumble)
+   *   target = alvo numérico ajustado pela dificuldade
+   *   met    = true se o tier natural satisfaz a dificuldade exigida
+   */
+  function gradeRoll(d100, value, difficulty) {
+    if (difficulty == null) difficulty = "regular";
+    const target = difficulty === "hard"    ? half(value)  :
+                   difficulty === "extreme" ? fifth(value) : value;
+    const level = classifyRoll(d100, value);
+    const met   = meetsDifficulty(difficulty, level);
+    return { level, target, met };
   }
 
   /**
@@ -235,6 +263,7 @@ window.CoC = window.CoC || {};
     rollD100,
     classifyRoll,
     meetsDifficulty,
+    gradeRoll,
     rollNotation,
     rollDamage,
     rollAttribute,

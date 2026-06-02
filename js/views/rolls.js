@@ -81,24 +81,24 @@ window.CoC.views = window.CoC.views || {};
     const v          = _getSkillValue(c, name);
     const difficulty = opts.difficulty || _mods.difficulty || "regular";
     const bp         = opts.bp != null ? opts.bp : (_mods.bp || null);
-    const target     = difficulty === "hard"    ? dice.half(v)  :
-                       difficulty === "extreme" ? dice.fifth(v) : v;
     const result     = dice.rollD100(bp || null);
-    const level      = dice.classifyRoll(result.value, v);
+    const { level, target, met } = dice.gradeRoll(result.value, v, difficulty);
 
     // luckCost snapshot em roll-time — evita temporal coupling no click-handler
     const luckCost = Math.max(0, result.value - target);
 
     const entry = {
-      kind:     "skill",
-      skill:    name + (opts.pushed ? "  ⚠ PUSHED" : ""),
-      skillRaw: name,
+      kind:       "skill",
+      skill:      name + (opts.pushed ? "  ⚠ PUSHED" : ""),
+      skillRaw:   name,
       target,
-      targetRaw: v,
-      d100:     result.value,
+      targetRaw:  v,
+      d100:       result.value,
       level,
-      note:     bp ? `[${bp}]` : "",
-      pushed:   !!opts.pushed,
+      met,
+      difficulty,
+      note:       bp ? `[${bp}]` : "",
+      pushed:     !!opts.pushed,
       luckCost,
     };
 
@@ -111,6 +111,7 @@ window.CoC.views = window.CoC.views || {};
         skillValue:    v,
         roll:          result.value,
         level,
+        met,
         difficulty,
         bp:            bp || null,
         pushed:        !!opts.pushed,
@@ -120,6 +121,7 @@ window.CoC.views = window.CoC.views || {};
     });
 
     registerRoll(entry);
+    return entry;  // permite ao chamador auto-marcar perícia ou registrar efeitos
   }
 
   // ── Rolagem de atributo ────────────────────────────────────────────────────
@@ -129,21 +131,21 @@ window.CoC.views = window.CoC.views || {};
     const v          = Number(c?.attributes?.[code]?.value) || 0;
     const difficulty = opts.difficulty || _mods.difficulty || "regular";
     const bp         = opts.bp != null ? opts.bp : (_mods.bp || null);
-    const target     = difficulty === "hard"    ? dice.half(v)  :
-                       difficulty === "extreme" ? dice.fifth(v) : v;
     const result     = dice.rollD100(bp || null);
-    const level      = dice.classifyRoll(result.value, v);
+    const { level, target, met } = dice.gradeRoll(result.value, v, difficulty);
 
     const entry = {
-      kind:     "attribute",
-      skill:    code,
-      skillRaw: code,
+      kind:      "attribute",
+      skill:     code,
+      skillRaw:  code,
       target,
       targetRaw: v,
-      label:    difficulty === "regular" ? v : `${v} → ${difficulty === "hard" ? "Difícil" : "Extremo"} ${target}`,
-      d100:     result.value,
+      label:     difficulty === "regular" ? v : `${v} → ${difficulty === "hard" ? "Difícil" : "Extremo"} ${target}`,
+      d100:      result.value,
       level,
-      pushed:   false
+      met,
+      difficulty,
+      pushed:    false
     };
 
     cocExecutor.execute({
@@ -153,6 +155,7 @@ window.CoC.views = window.CoC.views || {};
         result:    v,
         roll:      result.value,
         level,
+        met,
         difficulty,
         bp:        bp || null,
       },
@@ -175,17 +178,24 @@ window.CoC.views = window.CoC.views || {};
       ? entry.luckCost
       : Math.max(0, entry.d100 - (Number(entry.target) || 0));
 
+    // met=false significa que a dificuldade exigida não foi atingida (inclui
+    // Regular que falha num teste Difícil). Fumble nunca permite gastar/forçar.
+    const failed = entry.met === false || entry.met == null
+      ? true
+      : (entry.level === "fail" || entry.level === "fumble");
+
     const canSpendLuck =
       !entry.pushed
-      && (entry.level === "fail" || entry.level === "fumble" || entry.level === "regular")
+      && failed
+      && entry.level !== "fumble"
       && luckCost > 0
-      && luck >= luckCost
-      && entry.level !== "fumble";
+      && luck >= luckCost;
 
     const canPush =
       !entry.pushed
       && entry.kind === "skill"
-      && (entry.level === "fail" || entry.level === "regular" || entry.level === "hard");
+      && failed
+      && entry.level !== "fumble";
 
     if (!canSpendLuck && !canPush) return;
 

@@ -94,14 +94,24 @@ window.CoC.views = window.CoC.views || {};
           if (window.CoC.views.vitals && window.CoC.views.vitals.render) window.CoC.views.vitals.render();
           var newAge = Number(node.value) || 25;
           var rules  = window.CoC && window.CoC.rules;
-          if (rules && rules.calcAgeAdjustments) {
+          var ui     = window.CoC && window.CoC.ui;
+          if (rules && rules.calcAgeAdjustments && ui && ui.toast) {
             var adj = rules.calcAgeAdjustments(newAge);
-            if (adj && adj.totalReduction > 0) {
-              var ui = window.CoC.ui || {};
-              if (ui.toast) {
+            if (adj) {
+              var msgs = [];
+              if (adj.physical && adj.physical.points > 0)
+                msgs.push('-' + adj.physical.points + ' pts em ' + adj.physical.attrs.join('/'));
+              if (adj.appReduction > 0)
+                msgs.push('APA -' + adj.appReduction);
+              if (adj.eduReduction > 0)
+                msgs.push('EDU -' + adj.eduReduction);
+              if (adj.eduImprovementChecks > 0)
+                msgs.push(adj.eduImprovementChecks + '× Verificação de EDU');
+              if (adj.luckRerolls > 0)
+                msgs.push('Sorte dupla');
+              if (msgs.length > 0) {
                 ui.toast(
-                  'Idade ' + newAge + ' anos: redistribua -' + adj.totalReduction +
-                  ' pts entre ' + adj.attrs.join('/') + ' manualmente ou clique "Rolar Tudo".',
+                  'Idade ' + newAge + ' anos: ' + msgs.join(' · ') + '. Clique "Rolar Tudo" para aplicar.',
                   { type: 'info', duration: 8000 }
                 );
               }

@@ -119,6 +119,57 @@
   resize: vertical;
 }
 
+/* T7 — Diário avançado (tópicos estruturados, #14) */
+.journal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+  flex-wrap: wrap;
+}
+.journal-filter {
+  background: var(--bg-card);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius);
+  color: var(--ink);
+  padding: 0.3rem 0.5rem;
+}
+.journal-topics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.8rem;
+}
+.journal-empty { color: var(--ink-faded); font-style: italic; grid-column: 1/-1; }
+.journal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--ink-faded);
+  border-left: 3px solid var(--keeper-accent, var(--brass));
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem;
+}
+.journal-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.journal-cat-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--keeper-accent, var(--brass));
+}
+.journal-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-faded); }
+.journal-card-actions { margin-left: auto; display: flex; gap: 0.2rem; }
+.journal-title {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  color: var(--ink);
+  margin: 0 0 0.35rem;
+}
+.journal-content { font-size: 0.88rem; line-height: 1.5; color: var(--ink-dim); word-break: break-word; }
+
 /* Correção: nome do item de encontro não quebra/“vira vertical” em coluna estreita */
 .encounter-item .ei-name {
   min-width: 0;

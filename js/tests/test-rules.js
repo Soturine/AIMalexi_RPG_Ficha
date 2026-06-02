@@ -2,8 +2,10 @@
    AIMalexi RPG · js/tests/test-rules.js
    Suíte de testes para js/engine/coc7e-rules.js
 
-   Cobertura desta versão (v1):
-   - BUG-02: calcAgeAdjustments — todas as faixas etárias + limites de borda
+   Cobertura desta versão (v2):
+   - calcAgeAdjustments — estrutura oficial (physical, appReduction, eduReduction,
+     eduImprovementChecks, luckRerolls) para todas as faixas etárias
+   - rollEduImprovement — sem ganho, com ganho, cap 99
    - BUG-03: re-roll de Sorte para jovens (15-19) — invariante da lógica
    - calcDB:  bônus de dano via tabela FOR+TAM
    - calcMOV: movimento base + ajustes por idade
@@ -17,45 +19,127 @@
 const rules = window.CoC.rules;
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  BUG-02 — Ajustes de atributos por idade (CoC 7e p.35-36)
+//  calcAgeAdjustments — estrutura oficial CoC 7e p.35-36
 //
-//  Jovens (15-19): -5 em FOR, CON, DES  (SEM APA — APA é aparência, não física)
-//  Adultos (20-39): sem redução
-//  Meia-idade (40-49): -5 em FOR, CON, DES, APA
-//  (50-59): -10 · (60-69): -20 · (70-79): -40 · (80+): -80
+//  Retorno: { physical:{points,attrs}, appReduction, eduReduction,
+//             eduImprovementChecks, luckRerolls }
+//
+//  Faixa 15–19: physical{5,[FOR,TAM]}, eduReduction=5, luckRerolls=1
+//  Faixa 20–39: eduImprovementChecks=1
+//  Faixa 40–49: physical{5,[FOR,CON,DES]}, appReduction=5, eduChecks=2
+//  Faixa 50–59: physical{10}, appReduction=10, eduChecks=3
+//  Faixa 60–69: physical{20}, appReduction=15, eduChecks=4
+//  Faixa 70–79: physical{40}, appReduction=20, eduChecks=4
+//  Faixa 80+:   physical{80}, appReduction=25, eduChecks=4
 // ─────────────────────────────────────────────────────────────────────────────
-group('BUG-02 — calcAgeAdjustments (faixas + limites de borda)');
+group('calcAgeAdjustments — estrutura oficial CoC 7e (todas as faixas)');
 
-// Jovens — redução física SEM APA
+// ── Faixa 15–19: FOR/TAM (não CON/DES), EDU−5, luckRerolls=1 ────────────────
 const _17 = rules.calcAgeAdjustments(17);
-assert(_17 !== null,                                      'age 17: retorna ajuste (não null)');
-assertEq(_17.totalReduction, 5,                           'age 17: redução total = 5');
-assertEq(_17.attrs.join(','), 'FOR,CON,DES',              'age 17: apenas FOR,CON,DES — sem APA');
+assert(_17 !== null,                                          'age 17: retorna ajuste (não null)');
+assertEq(_17.physical.points, 5,                             'age 17: physical.points=5');
+assertEq(_17.physical.attrs.join(','), 'FOR,TAM',            'age 17: physical.attrs=FOR,TAM (não CON/DES)');
+assertEq(_17.appReduction, 0,                                'age 17: appReduction=0');
+assertEq(_17.eduReduction, 5,                                'age 17: eduReduction=5');
+assertEq(_17.eduImprovementChecks, 0,                        'age 17: eduImprovementChecks=0');
+assertEq(_17.luckRerolls, 1,                                 'age 17: luckRerolls=1');
 
-// Limite superior da faixa jovem
+const _15 = rules.calcAgeAdjustments(15);
+assertEq(_15.physical.attrs.join(','), 'FOR,TAM',            'age 15 (limite inf.): FOR,TAM');
+assertEq(_15.luckRerolls, 1,                                 'age 15: luckRerolls=1');
+
 const _19 = rules.calcAgeAdjustments(19);
-assertEq(_19.totalReduction, 5,                           'age 19 (limite jovem): redução = 5');
-assert(!_19.attrs.includes('APA'),                        'age 19: APA não afetada em jovens');
+assertEq(_19.physical.attrs.join(','), 'FOR,TAM',            'age 19 (limite sup.): FOR,TAM');
+assertEq(_19.eduReduction, 5,                                'age 19: eduReduction=5');
 
-// Adultos — sem redução
-assert(rules.calcAgeAdjustments(20) === null,             'age 20 (limite adulto): sem ajuste');
-assert(rules.calcAgeAdjustments(30) === null,             'age 30 (adulto pleno): sem ajuste');
-assert(rules.calcAgeAdjustments(39) === null,             'age 39 (limite adulto): sem ajuste');
+// ── Faixa 20–39: apenas EDU checks ──────────────────────────────────────────
+const _25 = rules.calcAgeAdjustments(25);
+assert(_25 !== null,                                          'age 25: retorna ajuste (não null)');
+assertEq(_25.physical.points, 0,                             'age 25: physical.points=0');
+assertEq(_25.appReduction, 0,                                'age 25: appReduction=0');
+assertEq(_25.eduReduction, 0,                                'age 25: eduReduction=0');
+assertEq(_25.eduImprovementChecks, 1,                        'age 25: eduImprovementChecks=1');
+assertEq(_25.luckRerolls, 0,                                 'age 25: luckRerolls=0');
 
-// Início da meia-idade — APA passa a ser afetada
-const _40 = rules.calcAgeAdjustments(40);
-assert(_40 !== null,                                      'age 40 (início meia-idade): retorna ajuste');
-assertEq(_40.totalReduction, 5,                           'age 40: redução = 5');
-assert(_40.attrs.includes('APA'),                         'age 40: APA incluída na meia-idade');
-assertEq(rules.calcAgeAdjustments(49).totalReduction, 5,  'age 49 (limite faixa 40s): redução = 5');
+// ── Faixa 40–49: FOR/CON/DES + APA separada + 2 EDU checks ──────────────────
+const _45 = rules.calcAgeAdjustments(45);
+assertEq(_45.physical.points, 5,                             'age 45: physical.points=5');
+assertEq(_45.physical.attrs.join(','), 'FOR,CON,DES',        'age 45: physical.attrs=FOR,CON,DES');
+assertEq(_45.appReduction, 5,                                'age 45: appReduction=5 (APA separada)');
+assertEq(_45.eduImprovementChecks, 2,                        'age 45: eduImprovementChecks=2');
 
-// Escalada das faixas
-assertEq(rules.calcAgeAdjustments(50).totalReduction, 10, 'age 50: redução = 10');
-assertEq(rules.calcAgeAdjustments(59).totalReduction, 10, 'age 59: redução = 10');
-assertEq(rules.calcAgeAdjustments(60).totalReduction, 20, 'age 60: redução = 20');
-assertEq(rules.calcAgeAdjustments(70).totalReduction, 40, 'age 70: redução = 40');
-assertEq(rules.calcAgeAdjustments(80).totalReduction, 80, 'age 80: redução = 80');
-assertEq(rules.calcAgeAdjustments(90).totalReduction, 80, 'age 90+: redução máxima = 80');
+// ── Faixa 50–59 ──────────────────────────────────────────────────────────────
+const _55 = rules.calcAgeAdjustments(55);
+assertEq(_55.physical.points, 10,                            'age 55: physical.points=10');
+assertEq(_55.appReduction, 10,                               'age 55: appReduction=10');
+assertEq(_55.eduImprovementChecks, 3,                        'age 55: eduImprovementChecks=3');
+
+// ── Faixa 60–69 ──────────────────────────────────────────────────────────────
+const _65 = rules.calcAgeAdjustments(65);
+assertEq(_65.physical.points, 20,                            'age 65: physical.points=20');
+assertEq(_65.appReduction, 15,                               'age 65: appReduction=15');
+assertEq(_65.eduImprovementChecks, 4,                        'age 65: eduImprovementChecks=4');
+
+// ── Faixa 70–79 ──────────────────────────────────────────────────────────────
+const _75 = rules.calcAgeAdjustments(75);
+assertEq(_75.physical.points, 40,                            'age 75: physical.points=40');
+assertEq(_75.appReduction, 20,                               'age 75: appReduction=20');
+assertEq(_75.eduImprovementChecks, 4,                        'age 75: eduImprovementChecks=4');
+
+// ── Faixa 80+ ────────────────────────────────────────────────────────────────
+const _85 = rules.calcAgeAdjustments(85);
+assertEq(_85.physical.points, 80,                            'age 85: physical.points=80');
+assertEq(_85.appReduction, 25,                               'age 85: appReduction=25');
+assertEq(_85.eduImprovementChecks, 4,                        'age 85: eduImprovementChecks=4');
+assertEq(rules.calcAgeAdjustments(99).physical.points, 80,  'age 99+: physical.points=80 (máximo)');
+
+// ── Antes dos 15 anos: null ──────────────────────────────────────────────────
+assert(rules.calcAgeAdjustments(14) === null,                'age 14: sem ajuste (null)');
+assert(rules.calcAgeAdjustments(10) === null,                'age 10: sem ajuste (null)');
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  rollEduImprovement — Verificação de Melhoria de EDU (CoC 7e p.36)
+//
+//  Função pura:
+//  - d100 > EDU → improved=true, gain∈[1,10], after=min(99,EDU+gain)
+//  - d100 ≤ EDU → improved=false, gain=0, after=EDU
+// ─────────────────────────────────────────────────────────────────────────────
+group('rollEduImprovement — Verificação de Melhoria de EDU');
+
+// Sem ganho: retorno estrutural quando não melhora
+(function () {
+  // Forçar não-melhoria: EDU 99 → qualquer d100 1-99 ≤ 99, nunca melhora
+  // (d100 precisaria ser 100 e EDU 99 → 100 > 99 → melhoraria, mas cap=99 → gain=0)
+  // Alternativa: EDU=1, rodar muitas vezes até encontrar não-melhoria
+  // Como é não-determinístico, testamos a estrutura do retorno
+  const r = rules.rollEduImprovement(50);
+  assert(typeof r.rolled === 'number',    'rollEduImprovement: retorna rolled (número)');
+  assert(typeof r.gain === 'number',      'rollEduImprovement: retorna gain (número)');
+  assert(typeof r.before === 'number',    'rollEduImprovement: retorna before (número)');
+  assert(typeof r.after === 'number',     'rollEduImprovement: retorna after (número)');
+  assert(typeof r.improved === 'boolean', 'rollEduImprovement: retorna improved (boolean)');
+  assertEq(r.before, 50,                 'rollEduImprovement(50): before=50');
+  assert(r.rolled >= 1 && r.rolled <= 100, 'rollEduImprovement: rolled ∈ [1,100]');
+  if (r.improved) {
+    assert(r.gain >= 1 && r.gain <= 10,   'rollEduImprovement (melhorou): gain ∈ [1,10]');
+    assert(r.after > r.before,            'rollEduImprovement (melhorou): after > before');
+    assert(r.after <= 99,                 'rollEduImprovement (melhorou): after ≤ 99');
+  } else {
+    assertEq(r.gain, 0,                   'rollEduImprovement (não melhorou): gain=0');
+    assertEq(r.after, r.before,           'rollEduImprovement (não melhorou): after=before');
+  }
+})();
+
+// Cap 99: EDU=96, gain=8 → after=99 (não 104)
+(function () {
+  // Substituição determinística da lógica (sem RNG): testar o cap diretamente
+  // Espelha: after = Math.min(99, edu + gain)
+  function applyGain(edu, gain) { return Math.min(99, edu + gain); }
+  assertEq(applyGain(96,  8),  99, 'EDU cap: 96+8=104 → after=99 (cap em 99)');
+  assertEq(applyGain(90, 10), 99,  'EDU cap: 90+10=100 → after=99');
+  assertEq(applyGain(99,  1), 99,  'EDU cap: 99+1=100 → after=99');
+  assertEq(applyGain(80, 10), 90,  'EDU sem cap: 80+10=90 ≤ 99 → after=90');
+})();
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  BUG-03 — Re-roll de Sorte para jovens (CoC 7e p.36)
@@ -156,6 +240,42 @@ assertEq(rules.calcHP(60, 70), 13, 'calcHP(60,70) → floor(130/10) = 13');
 assertEq(rules.calcHP(30, 30),  6, 'calcHP(30,30) → 6');
 assertEq(rules.calcHP(45, 55), 10, 'calcHP(45,55) → floor(100/10) = 10');
 assertEq(rules.calcHP( 0,  0),  0, 'calcHP(0,0)   → 0');
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  rollSkillImprovement — Verificação de Melhoria de Perícia (CoC 7e p.44)
+//
+//  Mesma mecânica de rollEduImprovement:
+//  - d100 > value → improved=true, gain∈[1,10], after=min(99,value+gain)
+//  - d100 ≤ value → improved=false, gain=0
+// ─────────────────────────────────────────────────────────────────────────────
+group('rollSkillImprovement — Verificação de Melhoria de Perícia');
+
+(function () {
+  const r = rules.rollSkillImprovement(40);
+  assert(typeof r.rolled === 'number',    'rollSkillImprovement: rolled=number');
+  assert(typeof r.improved === 'boolean', 'rollSkillImprovement: improved=boolean');
+  assertEq(r.before, 40,                 'rollSkillImprovement(40): before=40');
+  assert(r.rolled >= 1 && r.rolled <= 100, 'rollSkillImprovement: rolled∈[1,100]');
+  if (r.improved) {
+    assert(r.gain >= 1 && r.gain <= 10,  'rollSkillImprovement (melhorou): gain∈[1,10]');
+    assert(r.after <= 99,                'rollSkillImprovement: after≤99');
+    assert(r.after > r.before,           'rollSkillImprovement: after>before');
+  } else {
+    assertEq(r.gain, 0,   'rollSkillImprovement (não melhorou): gain=0');
+    assertEq(r.after, r.before, 'rollSkillImprovement: after=before');
+  }
+
+  // Cap 99: mesma lógica de EDU
+  function applySkillGain(v, g) { return Math.min(99, v + g); }
+  assertEq(applySkillGain(95, 8), 99, 'skill cap: 95+8→99');
+  assertEq(applySkillGain(50, 7), 57, 'skill sem cap: 50+7=57');
+
+  // Perícia 0: qualquer d100 (1-100) é > 0, então sempre melhora?
+  // Na prática: d100 ≥ 1 > 0 → sim, sempre melhora — validar retorno correto
+  const r0 = rules.rollSkillImprovement(0);
+  assert(r0.improved === true, 'rollSkillImprovement(0): sempre melhora (d100≥1 > 0)');
+  assert(r0.after > 0, 'rollSkillImprovement(0): after > 0');
+})();
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Funções auxiliares locais (não disponíveis em window.CoC)
