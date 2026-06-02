@@ -158,6 +158,18 @@ window.CoC = window.CoC || {};
       case "PUSH_ROLL":
         return state;
 
+      // ── Atributos primários ────────────────────────────────────────────────
+      case "SET_ATTRIBUTE": {
+        if (!c) return state;
+        const { code: attrCode, value: attrVal } = action.payload;
+        if (!attrCode || !c.attributes || !c.attributes[attrCode]) return state;
+        const nc = deepClone(c);
+        nc.attributes[attrCode] = Object.assign({}, nc.attributes[attrCode], {
+          value: Math.max(0, Math.min(99, Number(attrVal) || 0))
+        });
+        return Object.assign({}, state, { character: nc });
+      }
+
       // ── Perícias ──────────────────────────────────────────────────────────
       case "SET_SKILL": {
         if (!c) return state;

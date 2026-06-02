@@ -724,7 +724,15 @@
   // MODIFICADORES DE ROLAGEM
   // ═════════════════════════════════════════════════════════════════════
 
+  function _applyDifficultyHighlight(diff) {
+    // CSS em body[data-difficulty="hard|extreme"] cuida do highlight via .sattr-frac-half/fifth
+    document.body.dataset.difficulty = diff || "regular";
+  }
+
   function bindModifiers() {
+    // Aplicar highlight inicial ao carregar
+    _applyDifficultyHighlight(state.rollMods.difficulty || "regular");
+
     $$("#modifier-difficulty button").forEach(b => {
       b.onclick = () => {
         $$("#modifier-difficulty button").forEach(x => x.classList.remove("active"));
@@ -732,6 +740,7 @@
         state.rollMods.difficulty = b.dataset.difficulty;
         window.CoC.views.rolls.setRollMods(state.rollMods);
         window.CoC.views.combat.setRollMods(state.rollMods);
+        _applyDifficultyHighlight(state.rollMods.difficulty);
       };
     });
     $$("#modifier-bonus button").forEach(b => {
@@ -794,6 +803,7 @@
             b.classList.add("active");
             state.rollMods.difficulty = b.dataset.difficulty;
             window.CoC.views.rolls.setRollMods(state.rollMods);
+            _applyDifficultyHighlight(state.rollMods.difficulty);
             // Espelha no painel desktop
             $$("#modifier-difficulty button").forEach(x => {
               x.classList.toggle("active", x.dataset.difficulty === state.rollMods.difficulty);

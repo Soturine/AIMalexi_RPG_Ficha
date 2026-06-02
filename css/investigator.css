@@ -140,6 +140,55 @@
   white-space: nowrap;
 }
 
+/* ── Destaque visual de dificuldade (§9) ──
+   data-difficulty no body ativa o span correspondente em atributos e perícias.
+   Transição suave — sem re-render, apenas CSS. */
+.sattr-frac-half,
+.sattr-frac-fifth,
+.skill-frac-half,
+.skill-frac-fifth {
+  transition: color 0.15s, font-weight 0.15s;
+}
+
+/* Difícil: ½ ativo */
+body[data-difficulty="hard"] .sattr-frac-half,
+body[data-difficulty="hard"] .skill-frac-half {
+  color: var(--hard, #a89580);
+  font-weight: bold;
+}
+body[data-difficulty="hard"] .sattr-frac-fifth,
+body[data-difficulty="hard"] .skill-frac-fifth,
+body[data-difficulty="hard"] .sattr-frac-sep,
+body[data-difficulty="hard"] .skill-frac-sep {
+  opacity: 0.35;
+}
+
+/* Extremo: ⅕ ativo */
+body[data-difficulty="extreme"] .sattr-frac-fifth,
+body[data-difficulty="extreme"] .skill-frac-fifth {
+  color: var(--extreme, #c87a4f);
+  font-weight: bold;
+}
+body[data-difficulty="extreme"] .sattr-frac-half,
+body[data-difficulty="extreme"] .skill-frac-half,
+body[data-difficulty="extreme"] .sattr-frac-sep,
+body[data-difficulty="extreme"] .skill-frac-sep {
+  opacity: 0.35;
+}
+
+/* Skill row marcada para evolução */
+.skill-row.skill-marked .skill-frac-half,
+.skill-row.skill-marked .skill-frac-fifth {
+  /* não interferir com destaque de dificuldade */
+}
+.skill-row.skill-marked {
+  background: color-mix(in srgb, var(--brass) 6%, transparent);
+}
+.skill-mark.marked {
+  color: var(--ok, #6a9a6a);
+  font-weight: bold;
+}
+
 /* Utility */
 .btn-sm { font-size: 0.72rem !important; padding: 0.25rem 0.5rem !important; }
 

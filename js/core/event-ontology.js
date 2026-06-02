@@ -226,6 +226,15 @@ window.CoC.core = window.CoC.core || {};
       status: 'planned',
     },
 
+    // ── Atributos primários ───────────────────────────────────────────────────
+    SET_ATTRIBUTE: {
+      aggregate: 'character', domain: 'attributes',
+      renders: ['attributes', 'vitals', 'skills'], persists: true, sacred: false,
+      effects: [],
+      status: 'live',
+      resolved_fields: ['code', 'value'],
+    },
+
     // ── Identidade ─────────────────────────────────────────────────────────────
     SET_IDENTITY: {
       aggregate: 'character', domain: 'identity',

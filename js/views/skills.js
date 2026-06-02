@@ -218,7 +218,7 @@ window.CoC.views = window.CoC.views || {};
           <input class="skill-input" type="number" min="0" max="99" value="${value}"
             data-skill="${escapeHtml(s.name)}"
             title="Total da perícia (Base ${base} + alocados)" />
-          <div class="skill-frac" title="Difícil · Extremo">${dice.half(value)} · ${dice.fifth(value)}</div>
+          <div class="skill-frac"><span class="skill-frac-half" title="Difícil">${dice.half(value)}</span><span class="skill-frac-sep"> · </span><span class="skill-frac-fifth" title="Extremo">${dice.fifth(value)}</span></div>
           ${markBtn}
           <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(s.name)}" title="Rolar perícia">🎲</button>
         `;
@@ -265,7 +265,7 @@ window.CoC.views = window.CoC.views || {};
           row.innerHTML = `
             <div class="skill-name">${occMark}${escapeHtml(name)}${parentTag}</div>
             <input class="skill-input" type="number" min="0" max="99" value="${value}" data-skill="${escapeHtml(name)}" />
-            <div class="skill-frac" title="Difícil · Extremo">${dice.half(value)} · ${dice.fifth(value)}</div>
+            <div class="skill-frac"><span class="skill-frac-half" title="Difícil">${dice.half(value)}</span><span class="skill-frac-sep"> · </span><span class="skill-frac-fifth" title="Extremo">${dice.fifth(value)}</span></div>
             ${markBtnC}
             <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(name)}" title="Rolar perícia">🎲</button>
           `;
@@ -353,7 +353,12 @@ window.CoC.views = window.CoC.views || {};
       const v   = Number(input.value) || 0;
       const row = input.closest(".skill-row");
       const frac = row?.querySelector(".skill-frac");
-      if (frac) frac.textContent = `${dice.half(v)} · ${dice.fifth(v)}`;
+      if (frac) {
+        const h = frac.querySelector('.skill-frac-half');
+        const f = frac.querySelector('.skill-frac-fifth');
+        if (h && f) { h.textContent = dice.half(v); f.textContent = dice.fifth(v); }
+        else frac.textContent = `${dice.half(v)} · ${dice.fifth(v)}`;
+      }
       if (row) {
         const cap = validators.skillCapStatus(v, document.getElementById("btn-edit-mode")?.classList.contains("active") ?? false);
         row.classList.toggle("over-cap",      cap.level === "err");
@@ -517,13 +522,18 @@ window.CoC.views = window.CoC.views || {};
       };
     }
 
-    // Reactive re-render on occupation/improvement changes
+    // Reactive re-render on occupation/improvement/attribute changes
     bus.subscribe("store:dispatch", function (event) {
       if (!event.changed) return;
       const t = event.action.type;
       if (t === "TOGGLE_OCCUPATION_SKILL" || t === "ADD_CUSTOM_SKILL" ||
           t === "MARK_SKILL_IMPROVEMENT"  || t === "SKILL_IMPROVED") {
         renderSkills();
+      }
+      // Quando EDU ou outros atributos que alimentam fórmulas de ocupação mudam,
+      // refrescar os badges (pontos de ocupação = EDU*4 etc.)
+      if (t === "SET_ATTRIBUTE" || t === "RECALC_DERIVED") {
+        refreshBadges();
       }
     });
   }

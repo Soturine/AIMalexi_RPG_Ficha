@@ -47,6 +47,7 @@ window.CoC = window.CoC || {};
     REMOVE_STATUS:   "REMOVE_STATUS",
 
     // ── Ficha (edição do próprio investigador) ───────────────────────────
+    // SET_ATTRIBUTE: edição manual pelo jogador em modo edição — vai pelo store completo
     SET_ATTRIBUTE:             "SET_ATTRIBUTE",
     SET_SKILL:                 "SET_SKILL",
     TOGGLE_OCCUPATION_SKILL:   "TOGGLE_OCCUPATION_SKILL",
