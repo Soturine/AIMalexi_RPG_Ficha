@@ -53,7 +53,7 @@
 | 2.11 | Forçar rolagem (Push): disponível em falha | ✅ | **CORRIGIDO ETAPA 2.1** — `canPush` usa `met` | `js/views/rolls.js` | — | — |
 | 2.12 | Testes opostos | 🔴 | Não implementado | — | P2 | Média |
 | 2.13 | Testes combinados de atributos | 🔴 | Não implementado | — | P2 | Média |
-| 2.14 | Destaque visual do alvo por dificuldade | 🔴 | UX: usuário não vê 70→35→14 ao selecionar Difícil/Extremo | — | P2 (ETAPA 4) | Baixa |
+| 2.14 | Destaque visual do alvo por dificuldade | ✅ | **CORRIGIDO ETAPA 4 (#9)** — spans separados + CSS body[data-difficulty] | `css/investigator.css`, `js/views/attributes.js`, `js/views/skills.js` | — | — |
 | 2.15 | Notação `difficulty`+`met` persistidos no log | ✅ | **CORRIGIDO ETAPA 2.5** — campos aditivos em ROLL_SKILL/ROLL_ATTRIBUTE/PUSH_ROLL; fallback compat | `js/core/event-ontology.js` | — | — |
 
 ---
@@ -211,14 +211,14 @@
 |-----------|--------|--------|--------|--------|-------|
 | **P1 — Bugs críticos (ETAPA 2)** | 9 | 0 | 0 | 0 | **9 ✅ CONCLUÍDO** |
 | **P1A — Criação completa (ETAPA 3)** | 3 | 0 | 0 | 0 | **3 ✅ CONCLUÍDO** |
-| **P2 — Médio prazo (ETAPAs 4–6)** | 0 | 6 | 10 | 2 | **18** |
+| **P2 — Médio prazo (ETAPAs 4–6)** | 3 | 6 | 7 | 2 | **18** |
 | **P3 — Longo prazo (ETAPAs 7–9)** | 0 | 2 | 12 | 2 | **16** |
 | **P4 — Arquitetural (ETAPAs 10–11)** | 0 | 0 | 4 | 1 | **5** |
 | **Já corretos** | 30 | — | — | — | **30** |
-| **TOTAL** | **42** | **9** | **25** | **5** | **81** |
+| **TOTAL** | **45** | **9** | **22** | **5** | **81** |
 
-> **Última atualização:** pós-ETAPA 3 — 3 itens P1A resolvidos + fix regressão identity.js.
-> Próxima prioridade: ETAPA 4 (Personagem & Perícias: #6, #7, #8, #9).
+> **Última atualização:** pós-ETAPA 4 — #6, #7, #9 resolvidos; #8 confirmado funcional.
+> Próxima prioridade: ETAPA 5 (Arsenal & Equipamentos: #10 dropdown + #11 slots corporais).
 
 ---
 
