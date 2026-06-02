@@ -100,6 +100,8 @@
     window.CoC.bus.subscribe("finances:persist-requested",    function () { persistCurrent(); });
     // M4.1 — Inventory slice init
     window.CoC.views.inventory.init();
+    // ETAPA 5 — Body slots init
+    if (window.CoC.views.bodySlots) window.CoC.views.bodySlots.init();
     // M4.2 — Journal slice init
     window.CoC.views.journal.init();
     // M4.3 — Spells slice init
@@ -151,6 +153,7 @@
     _pipeline.register('finances',   function () { window.CoC.views.finances.render(); });
     _pipeline.register('background', function () { window.CoC.views.background.render(); });
     _pipeline.register('inventory',  function () { window.CoC.views.inventory.render(); });
+    _pipeline.register('bodySlots',  function () { if (window.CoC.views.bodySlots) window.CoC.views.bodySlots.render(); });
     _pipeline.register('journal',    function () { window.CoC.views.journal.render(); });
     _pipeline.register('spells',     function () { window.CoC.views.spells.render(); });
     _pipeline.register('tomes',      function () { window.CoC.views.tomes.render(); });

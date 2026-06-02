@@ -186,6 +186,13 @@ window.CoC.core = window.CoC.core || {};
       status: 'live',
       resolved_fields: ['name', 'gain', 'before', 'after'],
     },
+    SET_BODY_SLOT: {
+      aggregate: 'character', domain: 'equipment',
+      renders: ['bodySlots'], persists: true, sacred: false,
+      effects: [],
+      status: 'live',
+      resolved_fields: ['slotId', 'item', 'action'],
+    },
     MARK_SKILL_IMPROVEMENT: {
       aggregate: 'character', domain: 'skills',
       renders: ['skills'], persists: true, sacred: false,

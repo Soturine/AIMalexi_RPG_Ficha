@@ -55,6 +55,8 @@ window.CoC = window.CoC || {};
     // Evolução de perícias (CoC 7e p.44)
     MARK_SKILL_IMPROVEMENT:    "MARK_SKILL_IMPROVEMENT",   // marca para evolução no fim da sessão
     SKILL_IMPROVED:            "SKILL_IMPROVED",           // aplica ganho após rolagem de melhoria
+    // Slots corporais (#11)
+    SET_BODY_SLOT:             "SET_BODY_SLOT",            // equipa/remove item de slot corporal
     SET_IDENTITY:           "SET_IDENTITY",
     SET_IMAGE:              "SET_IMAGE",
     EQUIP_WEAPON:           "EQUIP_WEAPON",

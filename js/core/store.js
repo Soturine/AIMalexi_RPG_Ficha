@@ -239,6 +239,38 @@ window.CoC = window.CoC || {};
         return Object.assign({}, state, { character: nc });
       }
 
+      // ── Slots corporais (#11) ─────────────────────────────────────────────
+      // payload: { slotId, item?, idx?, action: 'add'|'remove' }
+      // Slots com max=1: item = objeto | null
+      // Slot acessorios (max=3): item = array
+      case "SET_BODY_SLOT": {
+        if (!c) return state;
+        const { slotId, item, idx, action: slotAction } = action.payload;
+        if (!slotId) return state;
+        const nc = deepClone(c);
+        nc.bodySlots = nc.bodySlots || {};
+        const isMulti = slotId === 'acessorios';
+        if (slotAction === 'remove') {
+          if (isMulti) {
+            const arr = Array.isArray(nc.bodySlots[slotId]) ? nc.bodySlots[slotId].slice() : [];
+            arr.splice(typeof idx === 'number' ? idx : arr.length - 1, 1);
+            nc.bodySlots[slotId] = arr.length > 0 ? arr : [];
+          } else {
+            nc.bodySlots[slotId] = null;
+          }
+        } else {
+          // add / replace
+          if (isMulti) {
+            const arr = Array.isArray(nc.bodySlots[slotId]) ? nc.bodySlots[slotId].slice() : [];
+            if (arr.length < 3) arr.push(item);
+            nc.bodySlots[slotId] = arr;
+          } else {
+            nc.bodySlots[slotId] = item || null;
+          }
+        }
+        return Object.assign({}, state, { character: nc });
+      }
+
       // ── Inventário (M4.1) ─────────────────────────────────────────────────
       // INVARIANTE: inventory[] e weapons[] são domínios distintos sem sync.
       // weapons[] = recursos mecânicos. inventory[] = posses narrativas.

@@ -135,6 +135,17 @@ window.CoC = window.CoC || {};
       }
     }
 
+    // ── bodySlots (#11) — slots corporais do investigador ────────────────────
+    // Estrutura: { slotId: item | item[] | null }
+    // Não está em OBJECT_SECTIONS para evitar reset total; defaults pontuais apenas.
+    if (!c.bodySlots || typeof c.bodySlots !== 'object' || Array.isArray(c.bodySlots)) {
+      c.bodySlots = {};
+    }
+    // Garantir que acessorios seja sempre array
+    if (c.bodySlots.acessorios != null && !Array.isArray(c.bodySlots.acessorios)) {
+      c.bodySlots.acessorios = [c.bodySlots.acessorios];
+    }
+
     // ── attach warnings (sempre sobrescreve — lista fresca a cada normalização) ─
     c._meta.schemaWarnings = warnings;
 

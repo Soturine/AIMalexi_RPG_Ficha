@@ -105,11 +105,34 @@ window.CoC.views  = window.CoC.views  || {};
     var w = weapon || {};
     var isNew = !w.id;
 
+    // Montar opções do dropdown de perícias
+    var c2 = _store ? _store.getState().character : null;
+    var skillOptions = '';
+    if (window.CoCData && window.CoCData.skills) {
+      // Perícias de combate primeiro
+      var combat = window.CoCData.skills.filter(function(s) { return s.category === 'combat'; });
+      var others = window.CoCData.skills.filter(function(s) { return s.category !== 'combat'; });
+      var makeOpts = function(list) {
+        return list.map(function(s) {
+          var val = c2 && c2.skills && c2.skills[s.name] ? Number(c2.skills[s.name].value) || 0 : (Number(s.base) || 0);
+          var sel = (w.skill === s.name) ? ' selected' : '';
+          return '<option value="' + escHtml(s.name) + '"' + sel + '>' + escHtml(s.name) + ' (' + val + '%)</option>';
+        }).join('');
+      };
+      skillOptions = '<option value="">— Escolha a perícia —</option>' +
+        '<optgroup label="⚔️ Combate">' + makeOpts(combat) + '</optgroup>' +
+        '<optgroup label="Outras">' + makeOpts(others) + '</optgroup>';
+      // Perícia atual não no catálogo (customizada)
+      if (w.skill && !window.CoCData.findSkill(w.skill)) {
+        skillOptions += '<option value="' + escHtml(w.skill) + '" selected>' + escHtml(w.skill) + '</option>';
+      }
+    }
+
     var formBody = mkEl('div', { class: 'background-grid' });
     formBody.innerHTML = (
       '<div><label>Nome</label><input id="w-name" value="' + escHtml(w.name || '') + '" /></div>' +
       '<div><label>Ícone (emoji)</label><input id="w-icon" value="' + escHtml(w.icon || '') + '" placeholder="🔫" /></div>' +
-      '<div><label>Perícia</label><input id="w-skill" value="' + escHtml(w.skill || '') + '" placeholder="Ex: Lutar" /></div>' +
+      '<div><label>Perícia</label><select id="w-skill">' + skillOptions + '</select></div>' +
       '<div><label>Dano</label><input id="w-damage" value="' + escHtml(w.damage || '') + '" placeholder="1D8+DB" /></div>' +
       '<div><label>Alcance</label><input id="w-range" value="' + escHtml(w.range || '') + '" placeholder="Toque, 15m, DES m" /></div>' +
       '<div><label>Munição</label><input id="w-ammo" type="number" value="' + (w.ammo != null ? w.ammo : '') + '" /></div>' +
@@ -171,8 +194,9 @@ window.CoC.views  = window.CoC.views  || {};
                                            skillVal;
 
     var result = dice.rollD100((_rollMods && _rollMods.bp) || null);
-    var level  = dice.classifyRoll(result.value, skillVal);
-    var ok     = dice.meetsDifficulty(difficulty, level);
+    var graded = dice.gradeRoll(result.value, skillVal, difficulty);
+    var level  = graded.level;
+    var ok     = graded.met;
 
     var dmgStr = '—';
     var isFired = w.ammo != null;  // arma de fogo se tiver campo ammo
