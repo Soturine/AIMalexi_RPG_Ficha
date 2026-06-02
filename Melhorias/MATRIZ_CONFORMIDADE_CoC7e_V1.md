@@ -186,7 +186,7 @@
 | 11.5 | Chat integrado na aba Log | ✅ | **CORRIGIDO ETAPA 7 (#18)** — js/views/chat.js sobre transport | `js/views/chat.js` | — | — |
 | 11.6 | Finanças dentro de Inventário | ✅ | **CORRIGIDO ETAPA 7 (#19)** — realocada com subtítulos | `investigator.html` | — | — |
 | 11.10 | Tipografia melhorada (§21) | ✅ | **CORRIGIDO ETAPA 7 (#21)** — Spectral no corpo + legibilidade | `css/theme.css` | — | — |
-| 11.7 | Central de Configurações (tema/i18n/efeitos) | 🔴 | Só 5 swatches de tema; sem i18n | `investigator.html:85` | P4 (ETAPA 8) | Alta |
+| 11.7 | Central de Configurações (tema/i18n/efeitos) | ✅ | **CORRIGIDO ETAPA 8 (#23)** — modal ⚙️: tema, cor, idioma PT/EN, escala, densidade, contraste, reduce-motion | `js/settings.js`, `js/i18n.js` | — | — |
 | 11.8 | Enciclopédia de perícias integrada | 🔴 | Só nome + valor | `js/views/skills.js` | P4 (ETAPA 9) | Alta |
 | 11.9 | Botão "Atributo" sem função | ⚫ | Botão morto na UI | — | P2 (ETAPA 4) | Baixa |
 
@@ -214,12 +214,12 @@
 | **P1A — Criação completa (ETAPA 3)** | 3 | 0 | 0 | 0 | **3 ✅ CONCLUÍDO** |
 | **P2 — Médio prazo (ETAPAs 4–6)** | 7 | 4 | 5 | 2 | **18** |
 | **P3 — Longo prazo (ETAPAs 7–9)** | 7 | 0 | 7 | 0 | **16** |
-| **P4 — Arquitetural (ETAPAs 10–11)** | 0 | 0 | 4 | 1 | **5** |
+| **P4 — Configurações & Arquitetural (ETAPAs 8,10–11)** | 1 | 0 | 4 | 1 | **6** |
 | **Já corretos** | 30 | — | — | — | **30** |
-| **TOTAL** | **58** | **5** | **13** | **5** | **81** |
+| **TOTAL** | **59** | **5** | **12** | **5** | **81** |
 
-> **Última atualização:** pós-ETAPA 7 — #16–#22 (UX/Interface) resolvidos.
-> Próxima prioridade: ETAPA 8 (Central de Configurações: #23 — temas, cores, i18n, efeitos, acessibilidade).
+> **Última atualização:** pós-ETAPA 8 — #23 (Central de Configurações) resolvido.
+> Próxima prioridade: ETAPA 9 (Enciclopédia de Perícias #30) e ETAPAs 10–12 (Dependências, Proveniência, completude de regra).
 
 ---
 
