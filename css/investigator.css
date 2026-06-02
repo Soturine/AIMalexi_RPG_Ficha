@@ -901,6 +901,51 @@ body[data-difficulty="extreme"] .skill-frac-sep {
   font-size: 0.85rem;
 }
 
+/* ── Enciclopédia de perícias (#30) ── */
+.skill-info-toggle {
+  background: none;
+  border: none;
+  color: var(--ink-faded);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 0.2rem;
+  transition: color 0.15s;
+}
+.skill-info-toggle:hover,
+.skill-info-toggle.open { color: var(--brass); }
+.skill-enc-panel {
+  grid-column: 1 / -1;
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--bg-card);
+  border-left: 3px solid var(--brass);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+}
+.skill-enc-panel .enc-desc { color: var(--ink); line-height: 1.5; margin-bottom: 0.4rem; }
+.skill-enc-panel .enc-empty { color: var(--ink-faded); font-style: italic; }
+.skill-enc-panel .enc-block { margin-bottom: 0.4rem; }
+.skill-enc-panel .enc-block h5 {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--brass);
+  margin-bottom: 0.15rem;
+}
+.skill-enc-panel .enc-block ul { margin: 0; padding-left: 1.1rem; color: var(--ink-dim); line-height: 1.45; }
+.skill-enc-panel .enc-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.skill-enc-panel .enc-tag {
+  font-size: 0.75rem;
+  background: var(--bg-card-hi);
+  border: 1px solid var(--ink-faded);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  color: var(--ink-dim);
+}
+.skill-enc-panel .enc-note { color: var(--blood, #c0392b); font-size: 0.8rem; margin-top: 0.3rem; }
+.skill-enc-panel .enc-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    CHAT DE CAMPANHA (#18)
    ═══════════════════════════════════════════════════════════════════════════ */
