@@ -96,6 +96,7 @@ window.CoC.views = window.CoC.views || {};
       if (tome.author)    meta.appendChild(el("span", { class: "tome-meta-item" }, [escapeHtml(tome.author)]));
       if (tome.studyTime) meta.appendChild(el("span", { class: "tome-meta-item" }, [`⏱ ${escapeHtml(tome.studyTime)}`]));
       if (tome.sanLoss)   meta.appendChild(el("span", { class: "tome-meta-item tome-san" }, [`SAN: ${escapeHtml(tome.sanLoss)}`]));
+      if (tome.mythosGain) meta.appendChild(el("span", { class: "tome-meta-item tome-mythos", title: "Ganho de Mythos ao concluir" }, [`Mythos: +${Number(tome.mythosGain)}`]));
       if (meta.children.length) card.appendChild(meta);
 
       // Study progress bar (when studyRequired > 0)
@@ -177,17 +178,26 @@ window.CoC.views = window.CoC.views || {};
       tome: Object.assign({}, tome, { studyProgress: newProg })
     }});
 
-    if (isNowComplete && tome.sanLoss) {
-      const san = _evalSanLoss(tome.sanLoss);
-      if (san.total > 0) {
-        cocExecutor.execute({ type: "LOSE_SANITY", payload: { amount: san.total } });
-        toast(
-          `📖 "${escapeHtml(tome.name)}" — estudo concluído! −${san.label} SAN`,
-          { type: "warn", duration: 7000 }
-        );
-      } else {
-        toast(`📖 "${escapeHtml(tome.name)}" — estudo concluído!`, { type: "success", duration: 4000 });
+    if (isNowComplete) {
+      const parts = [];
+      // Perda de SAN
+      if (tome.sanLoss) {
+        const san = _evalSanLoss(tome.sanLoss);
+        if (san.total > 0) {
+          cocExecutor.execute({ type: "LOSE_SANITY", payload: { amount: san.total } });
+          parts.push(`−${san.label} SAN`);
+        }
       }
+      // Ganho de Mythos (#8.4) — rebaixa a SAN máxima via RECALC no reducer ADD_MYTHOS
+      const mythos = Math.max(0, parseInt(tome.mythosGain, 10) || 0);
+      if (mythos > 0) {
+        cocExecutor.execute({ type: "ADD_MYTHOS", payload: { delta: mythos } });
+        parts.push(`+${mythos} Mythos`);
+      }
+      const detail = parts.length ? ` — ${parts.join(" · ")}` : "";
+      toast(`📖 "${escapeHtml(tome.name)}" — estudo concluído!${detail}`, {
+        type: parts.length ? "warn" : "success", duration: 7000
+      });
     }
 
     bus.publish("tomes:persist-requested", {});
@@ -224,6 +234,13 @@ window.CoC.views = window.CoC.views || {};
         type: "text", value: existing?.sanLoss || "",
         placeholder: "Ex: 1D10 ou 5", maxlength: "20",
         style: { width: "8rem" }
+      });
+
+      const mythosInput = el("input", {
+        type: "number", min: "0", max: "99",
+        value: String(existing?.mythosGain || 0),
+        title: "Pontos de Mythos de Cthulhu ganhos ao concluir o estudo",
+        style: { width: "6rem", textAlign: "center" }
       });
 
       const notesArea = el("textarea", {
@@ -264,11 +281,15 @@ window.CoC.views = window.CoC.views || {};
       costsRow.appendChild(mk("Semanas necessárias", studyReqInput));
       costsRow.appendChild(mk("Perda de SAN (conclusão)", sanInput));
 
+      const mythosRow = el("div", { class: "form-row-2col" });
+      mythosRow.appendChild(mk("Ganho de Mythos (conclusão)", mythosInput));
+
       const form = el("div", { class: "tome-form" });
       form.appendChild(mk("Nome *", nameInput));
       form.appendChild(mk("Autor", authorInput));
       form.appendChild(mk("Tempo de estudo", studyTimeInput));
       form.appendChild(costsRow);
+      form.appendChild(mythosRow);
       form.appendChild(mk("Notas", notesArea));
       form.appendChild(mk("Magias vinculadas", checksContainer));
 
@@ -299,6 +320,7 @@ window.CoC.views = window.CoC.views || {};
                 studyTime:     studyTimeInput.value.trim(),
                 studyRequired: Math.max(0, parseInt(studyReqInput.value, 10) || 0),
                 sanLoss:       sanInput.value.trim(),
+                mythosGain:    Math.max(0, parseInt(mythosInput.value, 10) || 0),
                 notes:         notesArea.value.trim(),
                 spellIds:      Array.from(checksContainer.querySelectorAll("input[type=checkbox]:checked"))
                                  .map(cb => cb.value),
