@@ -187,7 +187,7 @@
 | 11.6 | Finanças dentro de Inventário | ✅ | **CORRIGIDO ETAPA 7 (#19)** — realocada com subtítulos | `investigator.html` | — | — |
 | 11.10 | Tipografia melhorada (§21) | ✅ | **CORRIGIDO ETAPA 7 (#21)** — Spectral no corpo + legibilidade | `css/theme.css` | — | — |
 | 11.7 | Central de Configurações (tema/i18n/efeitos) | ✅ | **CORRIGIDO ETAPA 8 (#23)** — modal ⚙️: tema, cor, idioma PT/EN, escala, densidade, contraste, reduce-motion | `js/settings.js`, `js/i18n.js` | — | — |
-| 11.8 | Enciclopédia de perícias integrada | 🔴 | Só nome + valor | `js/views/skills.js` | P4 (ETAPA 9) | Alta |
+| 11.8 | Enciclopédia de perícias integrada | ✅ | **CORRIGIDO ETAPA 9 (#30)** — painel retrátil ⓘ: descrição, usos, limitações, interações, ações rápidas | `data/skills-encyclopedia.js`, `js/views/skills.js` | — | — |
 | 11.9 | Botão "Atributo" sem função | ⚫ | Botão morto na UI | — | P2 (ETAPA 4) | Baixa |
 
 ---
@@ -213,13 +213,13 @@
 | **P1 — Bugs críticos (ETAPA 2)** | 9 | 0 | 0 | 0 | **9 ✅ CONCLUÍDO** |
 | **P1A — Criação completa (ETAPA 3)** | 3 | 0 | 0 | 0 | **3 ✅ CONCLUÍDO** |
 | **P2 — Médio prazo (ETAPAs 4–6)** | 7 | 4 | 5 | 2 | **18** |
-| **P3 — Longo prazo (ETAPAs 7–9)** | 7 | 0 | 7 | 0 | **16** |
+| **P3 — Longo prazo (ETAPAs 7–9)** | 8 | 0 | 6 | 0 | **16** |
 | **P4 — Configurações & Arquitetural (ETAPAs 8,10–11)** | 1 | 0 | 4 | 1 | **6** |
 | **Já corretos** | 30 | — | — | — | **30** |
-| **TOTAL** | **59** | **5** | **12** | **5** | **81** |
+| **TOTAL** | **60** | **5** | **11** | **5** | **81** |
 
-> **Última atualização:** pós-ETAPA 8 — #23 (Central de Configurações) resolvido.
-> Próxima prioridade: ETAPA 9 (Enciclopédia de Perícias #30) e ETAPAs 10–12 (Dependências, Proveniência, completude de regra).
+> **Última atualização:** pós-ETAPA 9 — #30 (Enciclopédia de Perícias) resolvido.
+> Próxima prioridade: ETAPAs 10–12 (Motor de Dependências #31, Proveniência/limites #32, completude de regra: Sanidade/Mythos/Combate/Magia/Tomos/Condições).
 
 ---
 

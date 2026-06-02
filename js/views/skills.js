@@ -95,6 +95,59 @@ window.CoC.views = window.CoC.views || {};
     return String(s).replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, "\\$1");
   }
 
+  // ── Enciclopédia de perícias (#30) ─────────────────────────────────────────
+  // Constrói o HTML do painel retrátil. Usa a base de conhecimento quando existe;
+  // caso contrário, cai no note/examples da definição base (fallback gracioso).
+  function _buildEncPanel(name, def) {
+    const enc = window.CoCData.findSkillEncyclopedia
+      ? window.CoCData.findSkillEncyclopedia(name) : null;
+    const parts = [];
+
+    const list = (title, arr) => {
+      if (!arr || !arr.length) return "";
+      return `<div class="enc-block"><h5>${title}</h5><ul>${
+        arr.map(x => `<li>${escapeHtml(x)}</li>`).join("")
+      }</ul></div>`;
+    };
+
+    if (enc) {
+      if (enc.descricao) parts.push(`<p class="enc-desc">${escapeHtml(enc.descricao)}</p>`);
+      parts.push(list("Pode fazer", enc.podeFazer));
+      parts.push(list("Não pode fazer", enc.naoPodeFazer));
+      parts.push(list("Exemplos", enc.exemplos));
+      if (enc.interacoes && enc.interacoes.length) {
+        parts.push(`<div class="enc-block"><h5>Interações</h5><div class="enc-tags">${
+          enc.interacoes.map(x => `<span class="enc-tag">${escapeHtml(x)}</span>`).join("")
+        }</div></div>`);
+      }
+      if (enc.nota) parts.push(`<p class="enc-note">⚠ ${escapeHtml(enc.nota)}</p>`);
+    } else {
+      // Fallback: usa metadados da definição base
+      if (def && def.note) parts.push(`<p class="enc-desc">${escapeHtml(def.note)}</p>`);
+      if (def && def.examples && def.examples.length) {
+        parts.push(list("Especializações / exemplos", def.examples));
+      }
+      if (parts.length === 0) {
+        parts.push(`<p class="enc-desc enc-empty">Sem descrição detalhada para esta perícia ainda.</p>`);
+      }
+    }
+
+    // Ações rápidas de rolagem por dificuldade + ações contextuais
+    const quick = [
+      `<button class="btn-ghost btn-sm enc-roll" data-enc-roll="${escapeHtml(name)}" data-enc-diff="regular">Regular</button>`,
+      `<button class="btn-ghost btn-sm enc-roll" data-enc-roll="${escapeHtml(name)}" data-enc-diff="hard">Difícil</button>`,
+      `<button class="btn-ghost btn-sm enc-roll" data-enc-roll="${escapeHtml(name)}" data-enc-diff="extreme">Extremo</button>`,
+    ];
+    if (enc && enc.acoes && enc.acoes.length) {
+      enc.acoes.forEach(a => {
+        quick.push(`<button class="btn-primary btn-sm enc-roll" data-enc-roll="${escapeHtml(name)}" data-enc-diff="${a.difficulty || "regular"}" title="Ação contextual">${escapeHtml(a.label)}</button>`);
+      });
+    }
+    parts.push(`<div class="enc-actions">${quick.join("")}</div>`);
+
+    return parts.join("");
+  }
+
   // ── Badge state ───────────────────────────────────────────────────────────
 
   function _computeBadgeState(c) {
@@ -213,14 +266,16 @@ window.CoC.views = window.CoC.views || {};
         const baseFormula = s.baseFormula    ? ` <span class="skill-tag" title="Base derivada">${escapeHtml(s.baseFormula)}=${base}</span>` : "";
         const occMark     = _occToggleHTML(s.name, ctx.mandatory.has(s.name), ctx.chosen.has(s.name));
         const markBtn     = `<button class="skill-mark btn-ghost${isMarked ? " marked" : ""}" data-mark-skill="${escapeHtml(s.name)}" title="${isMarked ? "Marcada para evolução (clique para desmarcar)" : "Marcar para evolução ao fim da sessão"}" aria-pressed="${isMarked}">${isMarked ? "✓" : "○"}</button>`;
+        const infoBtn     = `<button class="skill-info-toggle" data-info-skill="${escapeHtml(s.name)}" title="Ver descrição da perícia" aria-expanded="false">ⓘ</button>`;
         row.innerHTML = `
-          <div class="skill-name">${occMark}${escapeHtml(s.name)}${specTag}${baseFormula}</div>
+          <div class="skill-name">${occMark}${escapeHtml(s.name)}${specTag}${baseFormula} ${infoBtn}</div>
           <input class="skill-input" type="number" min="0" max="99" value="${value}"
             data-skill="${escapeHtml(s.name)}"
             title="Total da perícia (Base ${base} + alocados)" />
           <div class="skill-frac"><span class="skill-frac-half" title="Difícil">${dice.half(value)}</span><span class="skill-frac-sep"> · </span><span class="skill-frac-fifth" title="Extremo">${dice.fifth(value)}</span></div>
           ${markBtn}
           <button class="skill-roll btn-ghost" data-roll-skill="${escapeHtml(s.name)}" title="Rolar perícia">🎲</button>
+          <div class="skill-enc-panel" data-enc-for="${escapeHtml(s.name)}" hidden></div>
         `;
         inner.appendChild(row);
       }
@@ -394,6 +449,40 @@ window.CoC.views = window.CoC.views || {};
         const current = !!(cocStore.getState().character?.skills?.[name]?.marked);
         cocExecutor.execute({ type: "MARK_SKILL_IMPROVEMENT", payload: { name, marked: !current } });
         bus.publish("skill:persist-requested", {});
+        return;
+      }
+      // Enciclopédia: toggle do painel retrátil (#30)
+      const infoBtn = e.target.closest("[data-info-skill]");
+      if (infoBtn) {
+        const name  = infoBtn.dataset.infoSkill;
+        const row   = infoBtn.closest(".skill-row");
+        const panel = row && row.querySelector(`.skill-enc-panel[data-enc-for="${_cssEscape(name)}"]`);
+        if (!panel) return;
+        const opening = panel.hasAttribute("hidden");
+        if (opening) {
+          if (!panel.dataset.built) {
+            const def = window.CoCData.findSkill(name) ||
+                        window.CoCData.findSkill(name.replace(/\s*\(.+\)$/, ""));
+            panel.innerHTML = _buildEncPanel(name, def);
+            panel.dataset.built = "1";
+          }
+          panel.removeAttribute("hidden");
+        } else {
+          panel.setAttribute("hidden", "");
+        }
+        infoBtn.setAttribute("aria-expanded", String(opening));
+        infoBtn.classList.toggle("open", opening);
+        return;
+      }
+      // Enciclopédia: ações rápidas de rolagem por dificuldade
+      const encRoll = e.target.closest("[data-enc-roll]");
+      if (encRoll) {
+        const name = encRoll.dataset.encRoll;
+        const diff = encRoll.dataset.encDiff || "regular";
+        if (window.CoC.views.rolls && window.CoC.views.rolls.rollSkill) {
+          window.CoC.views.rolls.rollSkill(name, { difficulty: diff });
+        }
+        return;
       }
     });
 
