@@ -13,7 +13,7 @@
    Para forçar atualização imediata: incremente CACHE_VERSION abaixo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_VERSION = "v32";
+const CACHE_VERSION = "v33";
 const CACHE_NAME = "aimalexi-rpg-" + CACHE_VERSION;
 
 // Assets que devem estar disponíveis offline imediatamente após instalação.
@@ -69,6 +69,7 @@ const PRECACHE_URLS = [
   "./js/keeper.js",
   "./js/keeper-tabs.js",
   "./js/keeper-notes.js",
+  "./js/keeper-journal.js",
   "./js/keeper-dashboard-summary.js",
   "./js/guia.js",
   "./data/skills.js",

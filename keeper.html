@@ -147,7 +147,9 @@
   <!-- ═══ T2 · COMPÊNDIO ═══ -->
   <section class="ktab-panel" data-ktab="compendio">
     <p class="ktab-hint">Regras, perícias, ocupações, combate, sanidade e Mythos. <a href="compendium.html" target="_blank" rel="noopener">Abrir em nova aba ↗</a></p>
-    <iframe class="compendio-frame" src="compendium.html" title="Compêndio de Regras" loading="lazy"></iframe>
+    <!-- sandbox isola o compêndio: bloqueia SW, popups e navegação fora do frame -->
+    <iframe class="compendio-frame" src="compendium.html" title="Compêndio de Regras"
+            loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe>
   </section>
 
   <!-- ═══ T3 · NPCs (biblioteca + workspace) ═══ -->
@@ -243,10 +245,24 @@
     </div>
   </section>
 
-  <!-- ═══ T7 · DIÁRIO DO MESTRE ═══ -->
+  <!-- ═══ T7 · DIÁRIO DO MESTRE (avançado — tópicos estruturados) ═══ -->
   <section class="ktab-panel" data-ktab="diario">
-    <p class="ktab-hint">Anotações livres — planejamento, ideias, preparação. Salvo localmente.</p>
-    <textarea id="keeper-journal" class="keeper-journal" placeholder="Anotações da sessão, ganchos, lembretes..."></textarea>
+    <div class="journal-toolbar">
+      <p class="ktab-hint" style="margin:0;flex:1 1 auto;">Diário estruturado — tópicos por categoria. Salvo localmente.</p>
+      <select id="journal-filter" class="journal-filter" aria-label="Filtrar por categoria">
+        <option value="all">Todas as categorias</option>
+        <option value="sessao">Sessão</option>
+        <option value="npc">NPCs</option>
+        <option value="local">Locais</option>
+        <option value="misterio">Mistérios</option>
+        <option value="pista">Pistas</option>
+        <option value="evento">Eventos</option>
+        <option value="cronologia">Cronologia</option>
+        <option value="observacao">Observações</option>
+      </select>
+      <button id="btn-add-journal-topic" class="btn-primary btn-sm" type="button">+ Novo Tópico</button>
+    </div>
+    <div id="journal-topics" class="journal-topics"></div>
   </section>
 
   <!-- Modal: Gerenciar Campanha -->
@@ -312,6 +328,7 @@
 <script src="js/campaign/keeper-dashboard.js"></script>
 <script src="js/keeper-tabs.js"></script>
 <script src="js/keeper-notes.js"></script>
+<script src="js/keeper-journal.js"></script>
 <script src="js/keeper-dashboard-summary.js"></script>
 
 </body>

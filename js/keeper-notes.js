@@ -35,10 +35,9 @@
         function (v) { lore[f] = v; _set('keeper-lore', lore); });
     });
 
-    // T7 — Diário do Mestre (texto livre)
-    _bind(document.getElementById('keeper-journal'),
-      function () { return _get('keeper-journal', ''); },
-      function (v) { _set('keeper-journal', v); });
+    // T7 — Diário do Mestre: agora gerenciado por keeper-journal.js (tópicos
+    // estruturados). O bind antigo de textarea foi removido — a migração do
+    // texto livre acontece dentro de keeper-journal.js.
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
