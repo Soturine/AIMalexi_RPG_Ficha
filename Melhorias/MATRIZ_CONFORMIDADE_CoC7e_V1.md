@@ -201,7 +201,7 @@
 | 12.3 | RECALC_DERIVED ao alterar idade | 🟡 | Notifica usuário; não auto-aplica redução de atributos | `js/views/identity.js:92` | P1A (ETAPA 3) | Média |
 | 12.4 | Recalc de ocupação ao mudar EDU | ✅ | — | `js/views/identity.js:63` | — | — |
 | 12.5 | Recalc de interesse pessoal ao mudar INT | 🟡 | Budgets atualizados; sem redistribuição automática | `js/views/skills.js` | P2 | Baixa |
-| 12.6 | Motor de dependências completo (#31) | 🔴 | Valores derivados editáveis manualmente; sem grafo | — | P4 (ETAPA 10) | Alta |
+| 12.6 | Motor de dependências completo (#31) | ✅ | **CORRIGIDO ETAPA 10 (#31)** — recálculo automático (RECALC_DERIVED) + painel "Ver Dependências" com grafo ao vivo | `js/views/dependencies.js`, `js/core/store.js` | — | — |
 | 12.7 | Sistema de proveniência / rastreabilidade (#32) | 🔴 | Sem histórico de origem dos valores | — | P4 (ETAPA 11) | Alta |
 
 ---
@@ -214,12 +214,12 @@
 | **P1A — Criação completa (ETAPA 3)** | 3 | 0 | 0 | 0 | **3 ✅ CONCLUÍDO** |
 | **P2 — Médio prazo (ETAPAs 4–6)** | 7 | 4 | 5 | 2 | **18** |
 | **P3 — Longo prazo (ETAPAs 7–9)** | 8 | 0 | 6 | 0 | **16** |
-| **P4 — Configurações & Arquitetural (ETAPAs 8,10–11)** | 1 | 0 | 4 | 1 | **6** |
+| **P4 — Configurações & Arquitetural (ETAPAs 8,10–11)** | 2 | 0 | 3 | 1 | **6** |
 | **Já corretos** | 30 | — | — | — | **30** |
-| **TOTAL** | **60** | **5** | **11** | **5** | **81** |
+| **TOTAL** | **61** | **5** | **10** | **5** | **81** |
 
-> **Última atualização:** pós-ETAPA 9 — #30 (Enciclopédia de Perícias) resolvido.
-> Próxima prioridade: ETAPAs 10–12 (Motor de Dependências #31, Proveniência/limites #32, completude de regra: Sanidade/Mythos/Combate/Magia/Tomos/Condições).
+> **Última atualização:** pós-ETAPA 10 — #31 (Motor de Dependências + painel) resolvido.
+> Próxima prioridade: ETAPA 11 (Proveniência/limites #32) e ETAPA 12 (completude de regra: Sanidade/Mythos/Combate/Magia/Tomos/Condições).
 
 ---
 

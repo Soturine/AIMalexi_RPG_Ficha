@@ -499,6 +499,9 @@
 
     $("#btn-print").onclick = () => window.print();
 
+    const btnDeps = $("#btn-deps");
+    if (btnDeps) btnDeps.onclick = () => window.CoC.views.dependencies && window.CoC.views.dependencies.open();
+
     const btnSanFx = $("#btn-sanity-fx");
     if (btnSanFx) btnSanFx.onclick = () => window.CoC.sanityFx && window.CoC.sanityFx.openSettings();
 
