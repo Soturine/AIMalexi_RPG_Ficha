@@ -491,8 +491,9 @@ body[data-difficulty="extreme"] .skill-frac-sep {
    Mantém paleta, fontes, componentes, store e regras — muda só layout/escala.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Largura: 95% da tela até 1800px (antes: 1400px fixo → desperdício em Full HD) */
-.app { max-width: min(95vw, 1800px); }
+/* Largura total (§16/§17): aproveita a tela em desktop, até 2100px.
+   Antes 1800px deixava ~120px de margem de cada lado em 1920px+. */
+.app { max-width: min(98vw, 2100px); }
 
 /* Coluna fixa do personagem mais larga (spec: 300px) */
 .character-sidebar { width: 300px; }
@@ -508,6 +509,14 @@ body[data-difficulty="extreme"] .skill-frac-sep {
 .sheet-card select,
 .sheet-card textarea { font-size: 16px; }
 .app-shell .section-title { font-size: 1.9rem; }
+
+/* §17 — em telas muito amplas, a coluna do Log/Chat cresce para ocupar o espaço */
+@media (min-width: 1600px) {
+  .main-panel { grid-template-columns: 1fr 400px; }
+}
+@media (min-width: 1900px) {
+  .main-panel { grid-template-columns: 1fr 460px; }
+}
 
 /* A seção de identidade vira contêiner transparente de cards (sem card duplo) */
 .identity-section { background: transparent; border: none; box-shadow: none; padding: 0; }
@@ -889,6 +898,77 @@ body[data-difficulty="extreme"] .skill-frac-sep {
 
 .skill-row .skill-roll {
   padding: 0.25rem 0.45rem;
+  font-size: 0.85rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHAT DE CAMPANHA (#18)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.chat-panel {
+  margin-top: 0.85rem;
+  background: var(--bg-card);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chat-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--ink-faded);
+}
+.chat-hint { font-size: 0.68rem; color: var(--ink-faded); font-style: italic; }
+.chat-list {
+  max-height: 38vh;
+  min-height: 8rem;
+  overflow-y: auto;
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.chat-msg {
+  border-radius: var(--radius);
+  padding: 0.3rem 0.5rem;
+  background: var(--bg-card-hi);
+  border-left: 3px solid var(--mist, #7a8590);
+}
+.chat-msg.keeper { border-left-color: var(--brass); }
+.chat-msg-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.1rem;
+}
+.chat-author {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--brass);
+}
+.chat-msg.player .chat-author { color: var(--mist, #9aa6b0); }
+.chat-time { font-family: var(--font-mono); font-size: 0.65rem; color: var(--ink-faded); }
+.chat-text { font-size: 0.85rem; line-height: 1.4; word-break: break-word; }
+.chat-compose {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-top: 1px solid var(--ink-faded);
+}
+.chat-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--bg-deep);
+  border: 1px solid var(--ink-faded);
+  border-radius: var(--radius);
+  color: var(--ink);
+  padding: 0.35rem 0.5rem;
   font-size: 0.85rem;
 }
 
@@ -1337,6 +1417,17 @@ body[data-difficulty="extreme"] .skill-frac-sep {
   gap: 0.75rem;
   margin-bottom: 0.85rem;
 }
+
+/* §19 — subtítulos das seções de Inventário (Equipamentos / Itens / Finanças) */
+.inv-subhead {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--brass-bright);
+  margin: 1.25rem 0 0.6rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--ink-faded);
+}
+.inv-subhead:first-of-type { margin-top: 0.5rem; }
 
 #inventory-capacity {
   font-family: var(--font-mono);

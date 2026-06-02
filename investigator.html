@@ -36,7 +36,7 @@
 <div class="app">
 
   <header class="app-header">
-    <h1 class="app-title">Ficha do Investigador</h1>
+    <h1 class="app-title"><a href="index.html" class="app-title-link" title="Voltar à página inicial">Ficha do Investigador</a></h1>
     <p class="app-subtitle">Chamado de Cthulhu · 7ª Edição</p>
   </header>
 
@@ -423,32 +423,27 @@
         <div id="tomes-list"></div>
       </section>
 
-      <!-- FINANÇAS -->
-      <section class="section" data-tab="personagem">
-
-        <h2 class="section-title">
-          Finanças
-          <span class="meta">Crédito · dinheiro à mão · patrimônio</span>
-        </h2>
-
-        <div id="finances-card" class="finances-card"></div>
-
-      </section>
-
-      <!-- DIÁRIO -->
-
-      <!-- INVENTÁRIO — M4.1 -->
+      <!-- INVENTÁRIO — M4.1 (Finanças realocada para cá · §19) -->
       <section class="section" data-tab="inventario">
         <h2 class="section-title">
           Inventário
           <span class="meta" id="inventory-capacity"></span>
         </h2>
-        <!-- Slots corporais (#11) -->
+
+        <!-- Equipamentos por Slot (#11) -->
+        <h3 class="inv-subhead">Equipamentos</h3>
         <div id="body-slots-section"></div>
+
+        <!-- Itens -->
+        <h3 class="inv-subhead">Itens &amp; Recursos</h3>
         <div class="inv-toolbar no-print">
           <button id="btn-add-item" class="btn-primary btn-sm">+ Adicionar Item</button>
         </div>
         <div id="inventory-list"></div>
+
+        <!-- Finanças (§19 — realocada de Personagem para Inventário) -->
+        <h3 class="inv-subhead">Finanças</h3>
+        <div id="finances-card" class="finances-card"></div>
       </section>
 
       <!-- DIÁRIO — M4.2 -->
@@ -543,6 +538,19 @@
 
       </div>
 
+      <!-- CHAT DE CAMPANHA (#18) -->
+      <div class="chat-panel no-print" id="chat-panel">
+        <div class="chat-header">
+          <strong style="font-family: var(--font-serif); color: var(--brass);">💬 Chat da Campanha</strong>
+          <span class="chat-hint" id="chat-hint"></span>
+        </div>
+        <div class="chat-list" id="chat-list" aria-live="polite"></div>
+        <div class="chat-compose">
+          <input type="text" id="chat-input" class="chat-input" placeholder="Mensagem..." maxlength="500" aria-label="Mensagem do chat" />
+          <button id="chat-send" class="btn-primary btn-sm" type="button">Enviar</button>
+        </div>
+      </div>
+
     </aside>
 
     </div>
@@ -635,6 +643,7 @@
 <script src="js/views/rolls.js"></script>
 <script src="js/views/inventory.js"></script>
 <script src="js/views/body-slots.js"></script>
+<script src="js/views/chat.js"></script>
 <script src="js/views/journal.js"></script>
 <script src="js/views/spells.js"></script>
 <script src="js/views/tomes.js"></script>

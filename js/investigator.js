@@ -136,6 +136,7 @@
     populateOccupationDropdown();
     bindToolbar();
     bindModifiers();
+    bindChat();
     bindMobileTabs();
     bindRollLog();
     bindDirtyTracking();
@@ -754,6 +755,24 @@
         window.CoC.views.rolls.setRollMods(state.rollMods);
         window.CoC.views.combat.setRollMods(state.rollMods);
       };
+    });
+  }
+
+  // ── Chat de campanha (#18) ────────────────────────────────────────────────
+  function bindChat() {
+    const chat = window.CoC.views && window.CoC.views.chat;
+    if (!chat || !chat.mount) return;
+    chat.mount({
+      listEl:    $("#chat-list"),
+      inputEl:   $("#chat-input"),
+      sendBtnEl: $("#chat-send"),
+      hintEl:    $("#chat-hint"),
+      // Investigador: autor = nome do personagem (ou jogador), papel = player
+      getAuthor: function () {
+        const c = state.character;
+        return (c && c.investigator && (c.investigator.name || c.investigator.playerName)) || "Investigador";
+      },
+      getRole: function () { return "player"; }
     });
   }
 

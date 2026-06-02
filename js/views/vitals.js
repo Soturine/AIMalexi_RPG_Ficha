@@ -90,10 +90,11 @@ window.CoC.views = window.CoC.views || {};
     const c = cocStore.getState().character;
     if (!c) return;
 
+    // §20 — nomes completos (com abreviação como dica/aria para densidade)
     const trackers = [
-      { key: "PV",  label: "PV"  },
-      { key: "SAN", label: "SAN" },
-      { key: "PM",  label: "PM"  },
+      { key: "PV",  label: "Pontos de Vida"  },
+      { key: "SAN", label: "Sanidade"        },
+      { key: "PM",  label: "Pontos de Magia" },
     ];
     for (const { key, label } of trackers) {
       const d = c.derived?.[key];
