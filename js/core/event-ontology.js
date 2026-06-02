@@ -175,7 +175,9 @@ window.CoC.core = window.CoC.core || {};
       effects: ['roll:logged', 'roll:badge-inc'],
       status: 'live',
       boundary_randomness: true,
-      resolved_fields: ['roll', 'skillValue', 'level'],
+      // difficulty e met são opcionais para compatibilidade com logs antigos
+      // (ausentes → difficulty="regular", met=true)
+      resolved_fields: ['roll', 'skillValue', 'level', 'difficulty', 'met'],
     },
     SKILL_IMPROVED: {
       aggregate: 'character', domain: 'skills',
@@ -192,7 +194,7 @@ window.CoC.core = window.CoC.core || {};
       effects: ['roll:logged'],
       status: 'live',
       boundary_randomness: true,
-      resolved_fields: ['roll', 'attribute', 'result'],
+      resolved_fields: ['roll', 'attribute', 'result', 'difficulty', 'met'],
     },
     ROLL_DAMAGE: {
       aggregate: 'session', domain: 'rolls',
@@ -208,7 +210,7 @@ window.CoC.core = window.CoC.core || {};
       effects: ['roll:logged', 'roll:pushed'],
       status: 'live',
       boundary_randomness: true,
-      resolved_fields: ['roll', 'skillValue', 'level'],
+      resolved_fields: ['roll', 'skillValue', 'level', 'difficulty', 'met'],
     },
     REGISTER_FUMBLE: {
       aggregate: 'session', domain: 'rolls',

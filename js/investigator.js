@@ -567,29 +567,40 @@
       c.attributes[code].rolled = `${formula} → ${r.raw.join("+")}=${r.rawSum}, ×5 = ${r.total}`;
     }
 
-    // BUG-03 fix: Luck re-roll for young investigators (age 15-19)
-    // PDF p.36: roll Luck twice, use the higher value
     const age = Number(c.investigator?.age) || 25;
-    if (age >= 15 && age <= 19) {
+    const adj = rules.calcAgeAdjustments(age);
+    const toastLines = [];
+
+    // ── 1. Re-roll de Sorte para jovens (15–19): usar o melhor resultado ──
+    if (adj && adj.luckRerolls > 0) {
       const reroll = dice.rollAttribute("3d6x5");
-      const first = c.attributes.Sorte.value;
+      const first  = c.attributes.Sorte.value;
       if (reroll.total > first) {
         c.attributes.Sorte.value = reroll.total;
         c.attributes.Sorte.rolled += ` | re-roll: ${reroll.raw.join("+")}=${reroll.rawSum}, ×5 = ${reroll.total} ✓ (usado)`;
+        toastLines.push(`Sorte ${first}→${reroll.total} (re-roll favorável)`);
       } else {
         c.attributes.Sorte.rolled += ` | re-roll: ${reroll.raw.join("+")}=${reroll.rawSum}, ×5 = ${reroll.total} (descartado)`;
       }
     }
 
-    // BUG-02 fix: apply age adjustments to primary attributes
-    // Distribution: highest-value affected attr absorbs each point (never below 0)
-    const adj = rules.calcAgeAdjustments(age);
-    if (adj) {
+    // ── 2. EDU −5 para faixa 15–19 ────────────────────────────────────────
+    if (adj && adj.eduReduction > 0) {
+      const attr = c.attributes.EDU;
+      if (attr) {
+        const before = attr.value;
+        attr.value = Math.max(0, attr.value - adj.eduReduction);
+        if (attr.value !== before) toastLines.push(`EDU ${before}→${attr.value} (−${adj.eduReduction})`);
+      }
+    }
+
+    // ── 3. Redução física distribuída (FOR/TAM ou FOR/CON/DES) ────────────
+    if (adj && adj.physical.points > 0 && adj.physical.attrs.length > 0) {
       const before = {};
-      adj.attrs.forEach(k => { before[k] = c.attributes[k]?.value || 0; });
-      let remaining = adj.totalReduction;
+      adj.physical.attrs.forEach(k => { before[k] = c.attributes[k]?.value || 0; });
+      let remaining = adj.physical.points;
       while (remaining > 0) {
-        const eligible = adj.attrs.filter(k => (c.attributes[k]?.value || 0) > 0);
+        const eligible = adj.physical.attrs.filter(k => (c.attributes[k]?.value || 0) > 0);
         if (!eligible.length) break;
         const highest = eligible.reduce((a, b) =>
           (c.attributes[a]?.value || 0) >= (c.attributes[b]?.value || 0) ? a : b
@@ -598,11 +609,40 @@
         c.attributes[highest].value -= cut;
         remaining -= cut;
       }
-      const detail = adj.attrs
+      const detail = adj.physical.attrs
         .filter(k => before[k] !== (c.attributes[k]?.value || 0))
         .map(k => `${codeToLabel(k)} ${before[k]}→${c.attributes[k].value}`)
         .join(", ");
-      toast(`Atributos rolados — ajuste de idade (${age} anos): -${adj.totalReduction} pts em ${adj.attrs.join("/")} · ${detail}`, { type: "success", duration: 7000 });
+      if (detail) toastLines.push(`Físico −${adj.physical.points}: ${detail}`);
+    }
+
+    // ── 4. Redução fixa de APA (faixas 40+) ──────────────────────────────
+    if (adj && adj.appReduction > 0) {
+      const attr = c.attributes.APA;
+      if (attr) {
+        const before = attr.value;
+        attr.value = Math.max(0, attr.value - adj.appReduction);
+        if (attr.value !== before) toastLines.push(`APA ${before}→${attr.value} (−${adj.appReduction})`);
+      }
+    }
+
+    // ── 5. Verificações de Melhoria de EDU ───────────────────────────────
+    if (adj && adj.eduImprovementChecks > 0) {
+      const eduAttr = c.attributes.EDU;
+      const checkResults = [];
+      for (let i = 0; i < adj.eduImprovementChecks; i++) {
+        const res = rules.rollEduImprovement(eduAttr ? eduAttr.value : 0);
+        if (eduAttr) eduAttr.value = res.after;
+        checkResults.push(res.improved
+          ? `check ${i + 1}: d100=${res.rolled} > ${res.before} → +${res.gain} (EDU ${res.before}→${res.after})`
+          : `check ${i + 1}: d100=${res.rolled} ≤ ${res.before} → sem ganho`
+        );
+      }
+      toastLines.push(`EDU checks (${adj.eduImprovementChecks}×): ${checkResults.join(" | ")}`);
+    }
+
+    if (toastLines.length > 0) {
+      toast(`Atributos rolados — ajuste de idade (${age} anos): ${toastLines.join(" · ")}`, { type: "success", duration: 9000 });
     } else {
       toast("Atributos rolados! PV, MP, SAN, MOV, DB recalculados.", { type: "success" });
     }

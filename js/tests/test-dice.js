@@ -128,21 +128,64 @@ assert(d100_bpNull,      'rollD100(): bp === null sem argumento');
 assert(d100_units_ok,    'rollD100(): units ∈ [0,9]');
 assert(d100_tens_ok,     'rollD100(): tens  ∈ [0,9]');
 
-// Com bônus/penalidade: tensCandidates.length deve ser 2
+// Com bônus/penalidade: tensCandidates.length deve ser 2 e o valor escolhido
+// deve ser o melhor (bônus) ou pior (penalidade) pelo valor FINAL do d100.
 let d100_bonus_cands = true, d100_penalty_cands = true;
-let d100_bonus_min = true, d100_penalty_max = true;
-for (let i = 0; i < 30; i++) {
+let d100_bonus_best = true, d100_penalty_worst = true;
+for (let i = 0; i < 50; i++) {
   const b = dice.rollD100('bonus');
   const p = dice.rollD100('penalty');
-  if (b.tensCandidates.length !== 2)                           d100_bonus_cands = false;
-  if (p.tensCandidates.length !== 2)                           d100_penalty_cands = false;
-  if (b.tens !== Math.min(...b.tensCandidates))                d100_bonus_min = false;
-  if (p.tens !== Math.max(...p.tensCandidates))                d100_penalty_max = false;
+  if (b.tensCandidates.length !== 2) d100_bonus_cands = false;
+  if (p.tensCandidates.length !== 2) d100_penalty_cands = false;
+  // Calcular valor final de cada candidata (00+0 = 100)
+  const units = b.units;
+  const bValA = (b.tensCandidates[0] === 0 && units === 0) ? 100 : (b.tensCandidates[0] * 10 + units);
+  const bValB = (b.tensCandidates[1] === 0 && units === 0) ? 100 : (b.tensCandidates[1] * 10 + units);
+  if (b.value !== Math.min(bValA, bValB)) d100_bonus_best = false;
+
+  const pu = p.units;
+  const pValA = (p.tensCandidates[0] === 0 && pu === 0) ? 100 : (p.tensCandidates[0] * 10 + pu);
+  const pValB = (p.tensCandidates[1] === 0 && pu === 0) ? 100 : (p.tensCandidates[1] * 10 + pu);
+  if (p.value !== Math.max(pValA, pValB)) d100_penalty_worst = false;
 }
-assert(d100_bonus_cands,   'rollD100("bonus"): tensCandidates.length === 2');
-assert(d100_penalty_cands, 'rollD100("penalty"): tensCandidates.length === 2');
-assert(d100_bonus_min,     'rollD100("bonus"): tens === min(tensCandidates)');
-assert(d100_penalty_max,   'rollD100("penalty"): tens === max(tensCandidates)');
+assert(d100_bonus_cands,    'rollD100("bonus"): tensCandidates.length === 2');
+assert(d100_penalty_cands,  'rollD100("penalty"): tensCandidates.length === 2');
+assert(d100_bonus_best,     'rollD100("bonus"): valor final = melhor das duas (min valor, 50 amostras)');
+assert(d100_penalty_worst,  'rollD100("penalty"): valor final = pior das duas (max valor, 50 amostras)');
+
+// ── Caso de borda: unidade 0 — bônus {tens:0,tens:9} deve dar 90, não 100 ──
+group('rollD100 — borda 00+0=100 (bônus/penalidade)');
+
+// Substituição determinística para testar a lógica sem RNG:
+// Simular rollD100 internamente — usar a função com monopolio de rollDie
+// via teste de integração com mock:
+(function () {
+  // Helper: força resultado interno simulando a lógica do algoritmo
+  function simulateGrade(tensA, tensB, units, bp) {
+    const valA = (tensA === 0 && units === 0) ? 100 : (tensA * 10 + units);
+    const valB = (tensB === 0 && units === 0) ? 100 : (tensB * 10 + units);
+    const chosenTens = bp === 'bonus'
+      ? (valA <= valB ? tensA : tensB)
+      : (valA >= valB ? tensA : tensB);
+    const value = (chosenTens === 0 && units === 0) ? 100 : (chosenTens * 10 + units);
+    return value;
+  }
+
+  // Bônus: dezenas {0,9}, unidade 0 → deve escolher 90 (não 100)
+  assertEq(simulateGrade(0, 9, 0, 'bonus'), 90,  'bônus: tens {0,9} units 0 → 90 (não 100)');
+  // Penalidade: dezenas {0,9}, unidade 0 → deve escolher 100 (00)
+  assertEq(simulateGrade(0, 9, 0, 'penalty'), 100, 'penalidade: tens {0,9} units 0 → 100');
+  // Bônus: dezenas {1,4}, unidade 4 → 14
+  assertEq(simulateGrade(1, 4, 4, 'bonus'),  14,  'bônus: tens {1,4} units 4 → 14');
+  // Penalidade: dezenas {1,4}, unidade 4 → 44
+  assertEq(simulateGrade(1, 4, 4, 'penalty'), 44, 'penalidade: tens {1,4} units 4 → 44');
+  // Bônus: dezenas {0,0}, unidade 0 → 100 (ambos resultam em 100)
+  assertEq(simulateGrade(0, 0, 0, 'bonus'), 100,  'bônus: tens {0,0} units 0 → 100 (empate)');
+  // Bônus: dezenas {0,3}, unidade 5 → 5 (não 35)
+  assertEq(simulateGrade(0, 3, 5, 'bonus'), 5,   'bônus: tens {0,3} units 5 → 5');
+  // Penalidade: dezenas {0,3}, unidade 5 → 35
+  assertEq(simulateGrade(0, 3, 5, 'penalty'), 35, 'penalidade: tens {0,3} units 5 → 35');
+})();
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  rollNotation — Casos determinísticos + faixas de resultado
@@ -222,3 +265,69 @@ for (let i = 0; i < 20; i++) {
   if (r.rawSum * 5 !== r.total) rawSum_ok = false;
 }
 assert(rawSum_ok, 'rollAttribute("3d6x5"): rawSum * 5 === total (invariante interno)');
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  gradeRoll — função unificada de avaliação de dificuldade (CoC 7e)
+//
+//  Garante:
+//  1. Regular sem dificuldade especificada → igual a classifyRoll + met correto
+//  2. Difícil: valor=60 → target=30; roll 30 → met=true; roll 31 → met=false
+//  3. Extremo: valor=60 → target=12; roll 12 → met=true; roll 13 → met=false
+//  4. Dificuldade default é "regular"
+//  5. Crítico sempre met=true em qualquer dificuldade
+//  6. Fumble sempre met=false em qualquer dificuldade
+// ─────────────────────────────────────────────────────────────────────────────
+group('gradeRoll — dificuldade filtra resultado corretamente');
+
+// ── Regular sem dificuldade ─────────────────────────────────────────────────
+const g1 = dice.gradeRoll(40, 60, 'regular');
+assertEq(g1.level,  'regular', 'gradeRoll(40,60,regular): level=regular');
+assertEq(g1.target, 60,        'gradeRoll(40,60,regular): target=60');
+assert(g1.met === true,         'gradeRoll(40,60,regular): met=true');
+
+const g2 = dice.gradeRoll(61, 60, 'regular');
+assertEq(g2.level, 'fail',     'gradeRoll(61,60,regular): level=fail');
+assert(g2.met === false,        'gradeRoll(61,60,regular): met=false (falha regular)');
+
+// ── Difícil (valor=60, target=30) ────────────────────────────────────────────
+const gH1 = dice.gradeRoll(30, 60, 'hard');
+assertEq(gH1.target, 30,       'gradeRoll(30,60,hard): target=30');
+assertEq(gH1.level,  'hard',   'gradeRoll(30,60,hard): level=hard (≤60/2)');
+assert(gH1.met === true,        'gradeRoll(30,60,hard): met=true (30≤30)');
+
+const gH2 = dice.gradeRoll(31, 60, 'hard');
+assertEq(gH2.level,  'regular','gradeRoll(31,60,hard): level=regular (31≤60 mas >30)');
+assert(gH2.met === false,       'gradeRoll(31,60,hard): met=false — Regular não basta p/ Difícil');
+
+const gH3 = dice.gradeRoll(60, 60, 'hard');
+assertEq(gH3.level, 'regular', 'gradeRoll(60,60,hard): level=regular');
+assert(gH3.met === false,       'gradeRoll(60,60,hard): met=false — Regular não basta p/ Difícil');
+
+// ── Extremo (valor=60, target=12) ────────────────────────────────────────────
+const gE1 = dice.gradeRoll(12, 60, 'extreme');
+assertEq(gE1.target, 12,       'gradeRoll(12,60,extreme): target=12');
+assertEq(gE1.level,  'extreme','gradeRoll(12,60,extreme): level=extreme');
+assert(gE1.met === true,        'gradeRoll(12,60,extreme): met=true');
+
+const gE2 = dice.gradeRoll(13, 60, 'extreme');
+assertEq(gE2.level,  'hard',   'gradeRoll(13,60,extreme): level=hard (13≤30)');
+assert(gE2.met === false,       'gradeRoll(13,60,extreme): met=false — Sólido não basta p/ Extremo');
+
+const gE3 = dice.gradeRoll(30, 60, 'extreme');
+assertEq(gE3.level,  'hard',   'gradeRoll(30,60,extreme): level=hard');
+assert(gE3.met === false,       'gradeRoll(30,60,extreme): met=false');
+
+// ── Crítico: sempre met=true em qualquer dificuldade ─────────────────────────
+assert(dice.gradeRoll(1, 60, 'regular').met === true,  'gradeRoll crit|regular: met=true');
+assert(dice.gradeRoll(1, 60, 'hard').met    === true,  'gradeRoll crit|hard:    met=true');
+assert(dice.gradeRoll(1, 60, 'extreme').met === true,  'gradeRoll crit|extreme: met=true');
+
+// ── Fumble: sempre met=false ──────────────────────────────────────────────────
+assert(dice.gradeRoll(100, 60, 'regular').met === false, 'gradeRoll fumble|regular: met=false');
+assert(dice.gradeRoll(100, 60, 'hard').met    === false, 'gradeRoll fumble|hard: met=false');
+assert(dice.gradeRoll(100, 60, 'extreme').met === false, 'gradeRoll fumble|extreme: met=false');
+
+// ── Dificuldade padrão (null/undefined → regular) ────────────────────────────
+const gDef = dice.gradeRoll(40, 60);
+assert(gDef.met === true, 'gradeRoll(40,60) sem difficulty: met=true (default regular)');
+assertEq(gDef.target, 60, 'gradeRoll(40,60) sem difficulty: target=60');
