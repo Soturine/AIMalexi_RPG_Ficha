@@ -24,7 +24,7 @@ python -m http.server 8765
 # then open http://localhost:8765/
 ```
 
-Automated tests: `node js/tests/runner.js` — zero-dep Node runner + 16 suites (now also `test-occupation.js`), gated in CI via `.github/workflows/ci.yml`. Manual browser tests also exist (`test-engine.html`, `test-hotfix.html`, `test-fase*.html`).
+Automated tests: `node js/tests/runner.js` — zero-dep Node runner + 16 suites (now also `test-occupation.js`), gated in CI via `.github/workflows/ci.yml`. Manual browser test: `test-engine.html`.
 
 ## Deployment
 
