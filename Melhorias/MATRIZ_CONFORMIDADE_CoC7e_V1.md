@@ -168,10 +168,10 @@
 
 | # | Regra | Estado | Impacto | Arquivos | Prioridade | Complexidade |
 |---|-------|--------|---------|----------|------------|--------------|
-| 10.1 | Dashboard com KPIs de investigadores | 🟡 | KPIs existem (vivos, SAN média) mas faltam: enlouquecidos, mortes, sessões, tempo | `js/keeper-dashboard-summary.js` | P2 (ETAPA 6) | Baixa |
-| 10.2 | Diário avançado por tópicos | 🔴 | Só textarea livre | `js/keeper-notes.js` | P2 (ETAPA 6) | Média |
-| 10.3 | Compêndio isolado | 🟡 | Iframe em keeper.html; CSS/layout vaza | `keeper.html:148`, `compendium.html` | P2 (ETAPA 6) | Média |
-| 10.4 | Duplicação de layout no compêndio | ⚫ | Bug confirmado pelo usuário | `keeper.html` | P2 (ETAPA 6) | Baixa |
+| 10.1 | Dashboard com KPIs de investigadores | ✅ | **CORRIGIDO ETAPA 6 (#15)** — vivos/enlouquecidos/mortos/sessões/NPCs/pistas | `js/keeper-dashboard-summary.js` | — | — |
+| 10.2 | Diário avançado por tópicos | ✅ | **CORRIGIDO ETAPA 6 (#14)** — 8 categorias, CRUD, filtro | `js/keeper-journal.js` | — | — |
+| 10.3 | Compêndio isolado | ✅ | **CORRIGIDO ETAPA 6 (#13)** — iframe sandbox | `keeper.html`, `compendium.html` | — | — |
+| 10.4 | Duplicação de layout no compêndio | ✅ | **CORRIGIDO ETAPA 6 (#12)** — SW só registra top-level | `compendium.html` | — | — |
 
 ---
 
@@ -211,14 +211,14 @@
 |-----------|--------|--------|--------|--------|-------|
 | **P1 — Bugs críticos (ETAPA 2)** | 9 | 0 | 0 | 0 | **9 ✅ CONCLUÍDO** |
 | **P1A — Criação completa (ETAPA 3)** | 3 | 0 | 0 | 0 | **3 ✅ CONCLUÍDO** |
-| **P2 — Médio prazo (ETAPAs 4–6)** | 3 | 6 | 7 | 2 | **18** |
+| **P2 — Médio prazo (ETAPAs 4–6)** | 7 | 4 | 5 | 2 | **18** |
 | **P3 — Longo prazo (ETAPAs 7–9)** | 0 | 2 | 12 | 2 | **16** |
 | **P4 — Arquitetural (ETAPAs 10–11)** | 0 | 0 | 4 | 1 | **5** |
 | **Já corretos** | 30 | — | — | — | **30** |
-| **TOTAL** | **47** | **9** | **20** | **5** | **81** |
+| **TOTAL** | **51** | **5** | **20** | **5** | **81** |
 
-> **Última atualização:** pós-ETAPA 5 — #10, #11 implementados + gradeRoll em combat fix.
-> Próxima prioridade: ETAPA 6 (Guardião: #12 fix duplicação, #13 compêndio, #14 diário, #15 dashboard).
+> **Última atualização:** pós-ETAPA 6 — #12, #13, #14, #15 (Guardião) resolvidos.
+> Próxima prioridade: ETAPA 7 (Interface & UX: #16–#22 — largura, chat, finanças→inventário, nomes, tipografia, link Home).
 
 ---
 
