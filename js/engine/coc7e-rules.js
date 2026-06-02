@@ -318,6 +318,28 @@ window.CoC = window.CoC || {};
   }
 
   /**
+   * Verificação de Melhoria de Perícia (CoC 7E p.44).
+   * Mesma mecânica da melhoria de EDU, aplicada a qualquer valor de perícia.
+   *
+   * Fluxo: rola 1D100; se resultado > valor atual → ganha 1D10 (cap 99).
+   *
+   * @param {number} value - valor atual da perícia (0–99)
+   * @returns {{ rolled: number, gain: number, before: number, after: number, improved: boolean }}
+   */
+  function rollSkillImprovement(value) {
+    value = num(value);
+    const diceFns = window.CoC && window.CoC.dice;
+    const rollDie = diceFns ? diceFns.rollDie : (s) => Math.floor(Math.random() * s) + 1;
+    const rolled = rollDie(100) || 1;
+    if (rolled > value) {
+      const gain  = rollDie(10) || 1;
+      const after = Math.min(99, value + gain);
+      return { rolled, gain: after - value, before: value, after, improved: true };
+    }
+    return { rolled, gain: 0, before: value, after: value, improved: false };
+  }
+
+  /**
    * Verificação de Melhoria de EDU (CoC 7E p.36).
    * Função pura — sem UI/DOM. Depende de dice.rollDie via window.CoC.dice.
    *
@@ -500,6 +522,7 @@ window.CoC = window.CoC || {};
     validateCharacter,
     calcAgeAdjustments,
     rollEduImprovement,
+    rollSkillImprovement,
     isMajorWound
   };
 

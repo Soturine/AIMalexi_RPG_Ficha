@@ -115,10 +115,15 @@
     window.CoC.views.rolls.init();       // wires roll:logged → logAndToast
     window.CoC.views.rolls.setRollMods(state.rollMods);  // sync inicial
     window.CoC.bus.subscribe("skill:roll-requested", function (data) {
-      window.CoC.views.rolls.rollSkill(data.name, {
+      const entry = window.CoC.views.rolls.rollSkill(data.name, {
         difficulty: state.rollMods.difficulty,
         bp: state.rollMods.bp
       });
+      // Auto-marcar perícia para evolução quando há sucesso natural (CoC 7e p.44)
+      // Qualquer nível de sucesso (regular, hard, extreme, crit) — não apenas "met"
+      if (entry && entry.level && entry.level !== 'fail' && entry.level !== 'fumble') {
+        cocStore.dispatch({ type: 'MARK_SKILL_IMPROVEMENT', payload: { name: data.name, marked: true } });
+      }
     });
     window.CoC.bus.subscribe("roll:badge-inc", function () {
       state.rollCount = (state.rollCount || 0) + 1;
@@ -637,6 +642,19 @@
           ? `check ${i + 1}: d100=${res.rolled} > ${res.before} → +${res.gain} (EDU ${res.before}→${res.after})`
           : `check ${i + 1}: d100=${res.rolled} ≤ ${res.before} → sem ganho`
         );
+        // Registrar cada verificação no log de rolagens
+        if (window.CoC.views.rolls && window.CoC.views.rolls.registerRoll) {
+          window.CoC.views.rolls.registerRoll({
+            kind:     "edu-improvement",
+            skill:    `Melhoria de EDU (verificação ${i + 1}/${adj.eduImprovementChecks})`,
+            target:   res.before,
+            d100:     res.rolled,
+            level:    res.improved ? "regular" : "fail",
+            met:      res.improved,
+            note:     res.improved ? `+${res.gain} EDU (${res.before}→${res.after})` : "sem ganho",
+            luckCost: 0,
+          });
+        }
       }
       toastLines.push(`EDU checks (${adj.eduImprovementChecks}×): ${checkResults.join(" | ")}`);
     }

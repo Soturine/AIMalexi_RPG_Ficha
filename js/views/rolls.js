@@ -121,6 +121,7 @@ window.CoC.views = window.CoC.views || {};
     });
 
     registerRoll(entry);
+    return entry;  // permite ao chamador auto-marcar perícia ou registrar efeitos
   }
 
   // ── Rolagem de atributo ────────────────────────────────────────────────────

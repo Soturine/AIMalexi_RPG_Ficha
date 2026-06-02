@@ -182,9 +182,16 @@ window.CoC.core = window.CoC.core || {};
     SKILL_IMPROVED: {
       aggregate: 'character', domain: 'skills',
       renders: ['skills'], persists: true, sacred: false,
+      effects: ['roll:logged'],
+      status: 'live',
+      resolved_fields: ['name', 'gain', 'before', 'after'],
+    },
+    MARK_SKILL_IMPROVEMENT: {
+      aggregate: 'character', domain: 'skills',
+      renders: ['skills'], persists: true, sacred: false,
       effects: [],
-      status: 'gap',
-      note: 'Rolagem de melhoria de perícia pós-sessão (CoC 7e p.44); sem reducer',
+      status: 'live',
+      resolved_fields: ['name', 'marked'],
     },
 
     // ── Rolagens / sessão ─────────────────────────────────────────────────────

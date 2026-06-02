@@ -242,6 +242,42 @@ assertEq(rules.calcHP(45, 55), 10, 'calcHP(45,55) → floor(100/10) = 10');
 assertEq(rules.calcHP( 0,  0),  0, 'calcHP(0,0)   → 0');
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  rollSkillImprovement — Verificação de Melhoria de Perícia (CoC 7e p.44)
+//
+//  Mesma mecânica de rollEduImprovement:
+//  - d100 > value → improved=true, gain∈[1,10], after=min(99,value+gain)
+//  - d100 ≤ value → improved=false, gain=0
+// ─────────────────────────────────────────────────────────────────────────────
+group('rollSkillImprovement — Verificação de Melhoria de Perícia');
+
+(function () {
+  const r = rules.rollSkillImprovement(40);
+  assert(typeof r.rolled === 'number',    'rollSkillImprovement: rolled=number');
+  assert(typeof r.improved === 'boolean', 'rollSkillImprovement: improved=boolean');
+  assertEq(r.before, 40,                 'rollSkillImprovement(40): before=40');
+  assert(r.rolled >= 1 && r.rolled <= 100, 'rollSkillImprovement: rolled∈[1,100]');
+  if (r.improved) {
+    assert(r.gain >= 1 && r.gain <= 10,  'rollSkillImprovement (melhorou): gain∈[1,10]');
+    assert(r.after <= 99,                'rollSkillImprovement: after≤99');
+    assert(r.after > r.before,           'rollSkillImprovement: after>before');
+  } else {
+    assertEq(r.gain, 0,   'rollSkillImprovement (não melhorou): gain=0');
+    assertEq(r.after, r.before, 'rollSkillImprovement: after=before');
+  }
+
+  // Cap 99: mesma lógica de EDU
+  function applySkillGain(v, g) { return Math.min(99, v + g); }
+  assertEq(applySkillGain(95, 8), 99, 'skill cap: 95+8→99');
+  assertEq(applySkillGain(50, 7), 57, 'skill sem cap: 50+7=57');
+
+  // Perícia 0: qualquer d100 (1-100) é > 0, então sempre melhora?
+  // Na prática: d100 ≥ 1 > 0 → sim, sempre melhora — validar retorno correto
+  const r0 = rules.rollSkillImprovement(0);
+  assert(r0.improved === true, 'rollSkillImprovement(0): sempre melhora (d100≥1 > 0)');
+  assert(r0.after > 0, 'rollSkillImprovement(0): after > 0');
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Funções auxiliares locais (não disponíveis em window.CoC)
 // ─────────────────────────────────────────────────────────────────────────────
 

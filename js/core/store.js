@@ -199,6 +199,34 @@ window.CoC = window.CoC || {};
         return Object.assign({}, state, { character: nc });
       }
 
+      // Marca a perícia para evolução ao fim da sessão (CoC 7e p.44)
+      case "MARK_SKILL_IMPROVEMENT": {
+        if (!c) return state;
+        const { name: markName, marked } = action.payload;
+        if (!markName) return state;
+        const nc = deepClone(c);
+        nc.skills = nc.skills || {};
+        nc.skills[markName] = Object.assign({}, nc.skills[markName] || {}, {
+          marked: !!marked
+        });
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // Aplica o ganho de evolução de perícia após rolagem de melhoria
+      case "SKILL_IMPROVED": {
+        if (!c) return state;
+        const { name: impName, gain } = action.payload;
+        if (!impName || !gain) return state;
+        const nc = deepClone(c);
+        nc.skills = nc.skills || {};
+        const cur = Number(nc.skills[impName]?.value) || 0;
+        nc.skills[impName] = Object.assign({}, nc.skills[impName] || {}, {
+          value: Math.min(99, cur + gain),
+          marked: false   // limpa a marcação após evolução
+        });
+        return Object.assign({}, state, { character: nc });
+      }
+
       // ── Inventário (M4.1) ─────────────────────────────────────────────────
       // INVARIANTE: inventory[] e weapons[] são domínios distintos sem sync.
       // weapons[] = recursos mecânicos. inventory[] = posses narrativas.
