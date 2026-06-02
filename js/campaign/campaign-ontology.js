@@ -31,6 +31,9 @@ window.CoC.campaign = window.CoC.campaign || {};
     // ── Status do investigador ────────────────────────────────────────────────
     INVESTIGATOR_STATUS: { domain: 'status',  requiredFields: ['playerName', 'characterName', 'status'] },
 
+    // ── Chat de campanha (#18) ────────────────────────────────────────────────
+    CHAT_MESSAGE:        { domain: 'chat',    requiredFields: ['author', 'role', 'text', 'msgId'] },
+
     // ── Rastro de execução ────────────────────────────────────────────────────
     // seqNo:   monotonic counter per investigator session — enables loss detection
     // eventId: peerId + ':' + seqNo — deduplication key for Supabase at-least-once delivery

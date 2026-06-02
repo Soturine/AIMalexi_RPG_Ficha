@@ -3,7 +3,7 @@
    theme.css — variáveis, tipografia, reset e componentes compartilhados
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
   /* === Cores base === */
@@ -42,8 +42,10 @@
   --err:            #8b1a1a;
 
   /* === Tipografia === */
+  /* §21 — tipografia: Cormorant para títulos (display atmosférico),
+     Spectral para corpo (serif literária otimizada p/ leitura em tela). */
   --font-serif:     'Cormorant Garamond', 'Times New Roman', serif;
-  --font-body:      'Crimson Text', Georgia, serif;
+  --font-body:      'Spectral', 'Crimson Text', Georgia, serif;
   --font-mono:      'JetBrains Mono', 'Courier New', monospace;
 
   /* === Escala tipográfica === */
@@ -80,8 +82,10 @@ html, body {
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.6;                 /* §21 — respiro maior p/ leitura prolongada */
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   min-height: 100vh;
 }
 
@@ -152,6 +156,17 @@ body::after {
   letter-spacing: 0.08em;
   color: var(--brass-bright);
   text-shadow: 0 0 18px var(--brass-glow), 0 2px 0 rgba(0,0,0,0.8);
+}
+/* §22 — título principal é link para a Home (herda o estilo do h1) */
+.app-title-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s, text-shadow 0.15s;
+}
+.app-title-link:hover,
+.app-title-link:focus-visible {
+  color: var(--brass);
+  text-shadow: 0 0 26px var(--brass-glow), 0 2px 0 rgba(0,0,0,0.8);
 }
 
 .app-subtitle {
