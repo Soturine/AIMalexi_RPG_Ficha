@@ -132,6 +132,18 @@ window.CoC.views = window.CoC.views || {};
       }
     }
 
+    // Proveniência do valor (#32) — origem rastreável: base + alocado + total
+    const prov = window.CoC.rules && window.CoC.rules.computeSkillProvenance
+      ? window.CoC.rules.computeSkillProvenance(cocStore.getState().character, name) : null;
+    if (prov) {
+      const lines = [`<span class="prov-line"><span>Base</span><span>${prov.base}</span></span>`];
+      if (prov.occupation > 0) lines.push(`<span class="prov-line"><span>Ocupação</span><span>+${prov.occupation}</span></span>`);
+      if (prov.interest > 0)   lines.push(`<span class="prov-line"><span>Interesse Pessoal</span><span>+${prov.interest}</span></span>`);
+      lines.push(`<span class="prov-line prov-total"><span>Total</span><span>${prov.total}</span></span>`);
+      const capWarn = prov.withinLimit ? "" : `<span class="prov-cap-warn">⚠ Acima do limite recomendado (${prov.cap}%) — requer Modo Guardião</span>`;
+      parts.push(`<div class="enc-block prov-block"><h5>Origem do valor (Ver Histórico)</h5><div class="prov-rows">${lines.join("")}</div>${capWarn}</div>`);
+    }
+
     // Ações rápidas de rolagem por dificuldade + ações contextuais
     const quick = [
       `<button class="btn-ghost btn-sm enc-roll" data-enc-roll="${escapeHtml(name)}" data-enc-diff="regular">Regular</button>`,

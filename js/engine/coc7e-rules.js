@@ -372,6 +372,58 @@ window.CoC = window.CoC || {};
   }
 
   /**
+   * Proveniência de uma perícia (#32) — decompõe o valor em suas fontes.
+   * Função PURA. Determina a categoria do gasto (ocupação vs interesse) pela
+   * pertença da perícia ao conjunto efetivo da ocupação.
+   *
+   * @param {Object} character
+   * @param {string} skillName
+   * @returns {{
+   *   base:number, total:number, allocated:number,
+   *   occupation:number, interest:number,
+   *   source:string,           // 'occupation' | 'interest' | 'base'
+   *   cap:number,              // limite recomendado (90% na criação)
+   *   withinLimit:boolean
+   * }}
+   */
+  function computeSkillProvenance(character, skillName) {
+    character = character || {};
+    const skills = character.skills || {};
+    const sk = skills[skillName] || {};
+    const total = num(sk.value);
+
+    // Base: da definição (fixa, DES/2, EDU) — usa CoCData se disponível
+    let base = 0;
+    const def = (window.CoCData && window.CoCData.findSkill)
+      ? (window.CoCData.findSkill(skillName) || window.CoCData.findSkill(skillName.replace(/\s*\(.+\)$/, "")))
+      : null;
+    if (def) {
+      if (def.baseFormula === "DES/2") base = floor(num(character.attributes && character.attributes.DES && character.attributes.DES.value) / 2);
+      else if (def.baseFormula === "EDU") base = num(character.attributes && character.attributes.EDU && character.attributes.EDU.value);
+      else base = num(def.base);
+    }
+
+    const allocated = Math.max(0, total - base);
+
+    // Categoria: pertence ao conjunto efetivo da ocupação?
+    const occName = character.investigator && character.investigator.occupation;
+    const occ = (occName && window.CoCData && window.CoCData.findOccupation)
+      ? window.CoCData.findOccupation(occName) : null;
+    const ctx = buildOccupationContext(occ, character);
+    const isOcc = ctx.effective.has(skillName);
+
+    const occupation = isOcc ? allocated : 0;
+    const interest   = isOcc ? 0 : allocated;
+
+    const cap = 90;  // limite recomendado de criação (CoC 7e)
+    return {
+      base, total, allocated, occupation, interest,
+      source: allocated === 0 ? "base" : (isOcc ? "occupation" : "interest"),
+      cap, withinLimit: total <= cap
+    };
+  }
+
+  /**
    * Resolve o conjunto EFETIVO de perícias da ocupação para um personagem.
    *
    * Em CoC 7E uma ocupação tem perícias obrigatórias (fixas na lista) MAIS um
@@ -517,6 +569,7 @@ window.CoC = window.CoC || {};
     calcFinances,
     calcOccupationPoints,
     calcPersonalInterestPoints,
+    computeSkillProvenance,
     buildOccupationContext,
     sumSkillPointsSpent,
     validateCharacter,
