@@ -179,12 +179,13 @@
 
 | # | Regra | Estado | Impacto | Arquivos | Prioridade | Complexidade |
 |---|-------|--------|---------|----------|------------|--------------|
-| 11.1 | Largura total 1920px (sem margens laterais) | 🟡 | `max-width: 1800px` deixa 24px de cada lado | `css/investigator.css:446` | P3 (ETAPA 7) | Baixa |
-| 11.2 | Abas expandidas até o limite | 🟡 | Abas existem; espaço vazio em resoluções amplas | — | P3 (ETAPA 7) | Baixa |
-| 11.3 | Nomes completos (PV/SAN/PM) | ⚫ | Abreviações usadas em toda UI | `js/views/vitals.js` | P3 (ETAPA 7) | Baixa |
-| 11.4 | Link para Home no título | 🔴 | Sem link | `investigator.html`, `keeper.html` | P3 (ETAPA 7) | Baixa |
-| 11.5 | Chat integrado na aba Log | 🔴 | Não implementado | — | P3 (ETAPA 7) | Alta |
-| 11.6 | Finanças dentro de Inventário | ⚫ | Finanças em aba separada (Personagem) | `js/views/finances.js` | P3 (ETAPA 7) | Baixa |
+| 11.1 | Largura total 1920px (sem margens laterais) | ✅ | **CORRIGIDO ETAPA 7 (#16)** — min(98vw, 2100px) | `css/investigator.css` | — | — |
+| 11.2 | Abas expandidas até o limite | ✅ | **CORRIGIDO ETAPA 7 (#17)** — coluna Log cresce em telas amplas | `css/investigator.css` | — | — |
+| 11.3 | Nomes completos (PV/SAN/PM) | ✅ | **CORRIGIDO ETAPA 7 (#20)** — Pontos de Vida/Sanidade/Pontos de Magia | `js/views/vitals.js` | — | — |
+| 11.4 | Link para Home no título | ✅ | **CORRIGIDO ETAPA 7 (#22)** — `<h1>` é link p/ index.html | `investigator.html`, `keeper.html` | — | — |
+| 11.5 | Chat integrado na aba Log | ✅ | **CORRIGIDO ETAPA 7 (#18)** — js/views/chat.js sobre transport | `js/views/chat.js` | — | — |
+| 11.6 | Finanças dentro de Inventário | ✅ | **CORRIGIDO ETAPA 7 (#19)** — realocada com subtítulos | `investigator.html` | — | — |
+| 11.10 | Tipografia melhorada (§21) | ✅ | **CORRIGIDO ETAPA 7 (#21)** — Spectral no corpo + legibilidade | `css/theme.css` | — | — |
 | 11.7 | Central de Configurações (tema/i18n/efeitos) | 🔴 | Só 5 swatches de tema; sem i18n | `investigator.html:85` | P4 (ETAPA 8) | Alta |
 | 11.8 | Enciclopédia de perícias integrada | 🔴 | Só nome + valor | `js/views/skills.js` | P4 (ETAPA 9) | Alta |
 | 11.9 | Botão "Atributo" sem função | ⚫ | Botão morto na UI | — | P2 (ETAPA 4) | Baixa |
@@ -212,13 +213,13 @@
 | **P1 — Bugs críticos (ETAPA 2)** | 9 | 0 | 0 | 0 | **9 ✅ CONCLUÍDO** |
 | **P1A — Criação completa (ETAPA 3)** | 3 | 0 | 0 | 0 | **3 ✅ CONCLUÍDO** |
 | **P2 — Médio prazo (ETAPAs 4–6)** | 7 | 4 | 5 | 2 | **18** |
-| **P3 — Longo prazo (ETAPAs 7–9)** | 0 | 2 | 12 | 2 | **16** |
+| **P3 — Longo prazo (ETAPAs 7–9)** | 7 | 0 | 7 | 0 | **16** |
 | **P4 — Arquitetural (ETAPAs 10–11)** | 0 | 0 | 4 | 1 | **5** |
 | **Já corretos** | 30 | — | — | — | **30** |
-| **TOTAL** | **51** | **5** | **20** | **5** | **81** |
+| **TOTAL** | **58** | **5** | **13** | **5** | **81** |
 
-> **Última atualização:** pós-ETAPA 6 — #12, #13, #14, #15 (Guardião) resolvidos.
-> Próxima prioridade: ETAPA 7 (Interface & UX: #16–#22 — largura, chat, finanças→inventário, nomes, tipografia, link Home).
+> **Última atualização:** pós-ETAPA 7 — #16–#22 (UX/Interface) resolvidos.
+> Próxima prioridade: ETAPA 8 (Central de Configurações: #23 — temas, cores, i18n, efeitos, acessibilidade).
 
 ---
 
