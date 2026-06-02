@@ -716,6 +716,42 @@ body[data-difficulty="extreme"] .skill-frac-sep {
   gap: 0.6rem;
 }
 
+/* Condições (§9) — chips toggle, ocupam a linha inteira do grid */
+.conditions-row {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--ink-faded);
+}
+.conditions-title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faded);
+  margin-right: 0.2rem;
+}
+.condition-chip {
+  font-size: 0.78rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--ink-faded);
+  background: var(--bg-card);
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.condition-chip:hover { border-color: var(--brass); }
+.condition-chip.active {
+  background: var(--blood, #6b2020);
+  border-color: var(--blood, #c0392b);
+  color: #ffd8d8;
+  font-weight: bold;
+}
+
 .derived-card {
   background: var(--bg-card-hi);
   border: 1px solid var(--ink-faded);

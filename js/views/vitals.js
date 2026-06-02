@@ -91,6 +91,7 @@ window.CoC.views = window.CoC.views || {};
     `;
     bar.appendChild(armorCard);
 
+    _renderConditions(bar, c);
     _bindButtons();
     _sanityAtmosphere();
     renderSidebarVitals();
@@ -135,6 +136,35 @@ window.CoC.views = window.CoC.views || {};
         </div>`;
       bar.appendChild(row);
     }
+  }
+
+  // §9 — Condições/Status como chips toggle (usa ADD_STATUS/REMOVE_STATUS).
+  // As loucuras (tempInsane/indefInsane) também são marcadas auto pela
+  // state-machine; aqui o Guardião pode marcá-las/limpá-las manualmente.
+  const CONDITIONS = [
+    { key: "sangrando",   icon: "🩸", label: "Sangrando" },
+    { key: "envenenado",  icon: "☠",  label: "Envenenado" },
+    { key: "atordoado",   icon: "💫", label: "Atordoado" },
+    { key: "exausto",     icon: "😵", label: "Exausto" },
+    { key: "tempInsane",  icon: "🌀", label: "Loucura Temp." },
+    { key: "indefInsane", icon: "🌑", label: "Loucura Indef." },
+  ];
+
+  function _renderConditions(bar, c) {
+    const status = (c && c.status) || {};
+    const row = el("div", { class: "conditions-row no-print" });
+    row.appendChild(el("span", { class: "conditions-title" }, ["Condições:"]));
+    for (const cond of CONDITIONS) {
+      const on = !!status[cond.key];
+      const chip = el("button", {
+        class: "condition-chip" + (on ? " active" : ""),
+        "data-condition": cond.key,
+        title: (on ? "Remover" : "Aplicar") + " — " + cond.label,
+        "aria-pressed": String(on)
+      }, [cond.icon + " " + cond.label]);
+      row.appendChild(chip);
+    }
+    bar.appendChild(row);
   }
 
   function _flashCard(key, sign) {
@@ -223,6 +253,16 @@ window.CoC.views = window.CoC.views || {};
         const cur = Number(c?.status?.armor) || 0;
         const next = Math.max(0, cur + (btn.dataset.armorOp === "+1" ? 1 : -1));
         cocExecutor.execute({ type: "SET_ARMOR", payload: { armor: next } });
+      };
+    });
+    // Condições (§9) — toggle
+    $$("[data-condition]").forEach(btn => {
+      btn.onclick = () => {
+        const c = cocStore.getState().character;
+        const key = btn.dataset.condition;
+        const on = !!(c?.status?.[key]);
+        cocExecutor.execute({ type: on ? "REMOVE_STATUS" : "ADD_STATUS", payload: { status: key } });
+        renderVitals();
       };
     });
   }
