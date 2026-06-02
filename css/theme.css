@@ -177,6 +177,77 @@ body::after {
   margin-top: 0.25rem;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   CENTRAL DE CONFIGURAÇÕES (#23)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.settings-form { display: flex; flex-direction: column; gap: 0.75rem; min-width: min(90vw, 360px); }
+.settings-row { display: flex; flex-direction: column; gap: 0.3rem; }
+.settings-row.toggle { flex-direction: row; align-items: center; }
+.settings-row > label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent, var(--brass));
+}
+.settings-row.toggle > label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.9rem;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.settings-row select,
+.settings-row input[type="range"] { width: 100%; }
+.settings-row input[type="color"] {
+  width: 48px; height: 32px; padding: 0; border: 1px solid var(--ink-faded);
+  border-radius: var(--radius); background: none; cursor: pointer; vertical-align: middle;
+}
+
+/* Densidade compacta — reduz paddings/gaps globais */
+body.density-compact { --gap-lg: 0.75rem; }
+body.density-compact .section { padding: 0.6rem 0.75rem; }
+body.density-compact .derived-card,
+body.density-compact .skill-row,
+body.density-compact .weapon-card { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+
+/* Alto contraste — reforça texto e bordas (acessibilidade) */
+body.high-contrast {
+  --ink:       #ffffff;
+  --ink-dim:   #e8e8e8;
+  --ink-faded: #b8b8b8;
+}
+body.high-contrast .section,
+body.high-contrast .derived-card,
+body.high-contrast .skill-row,
+body.high-contrast .weapon-card,
+body.high-contrast .chat-msg { border-color: var(--ink-faded) !important; }
+
+/* Reduzir animações — acessibilidade / preferência do usuário */
+body.reduce-motion *,
+body.reduce-motion *::before,
+body.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+/* Respeita também a preferência do SO */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Desativar efeitos de rolagem (toasts/flash) sem afetar o resto da UI */
+body.no-roll-fx .roll-toast { animation: none !important; }
+body.no-roll-fx .derived-card.flash-loss,
+body.no-roll-fx .derived-card.flash-gain { animation: none !important; }
+
 h1, h2, h3, h4 {
   font-family: var(--font-serif);
   font-weight: 600;
