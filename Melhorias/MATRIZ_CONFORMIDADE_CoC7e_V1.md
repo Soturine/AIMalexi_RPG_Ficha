@@ -68,14 +68,14 @@
 | 3.4 | Ferimento Grave (dano ≥ metade do PV máx) | ✅ | — | `js/core/state-machine.js:61` | — | — |
 | 3.5 | Inconsciência (PV ≤ 0) | ✅ | — | `js/core/state-machine.js:78` | — | — |
 | 3.6 | Morte (dano massivo) | ✅ | — | `js/core/state-machine.js:95` | — | — |
-| 3.7 | Esquiva como ação de reação | 🔴 | Stub em comentário apenas | `js/core/state-machine.js:310` | P2 (ETAPA 12) | Alta |
-| 3.8 | Contra-ataque | 🔴 | Não implementado | — | P2 (ETAPA 12) | Alta |
-| 3.9 | Manobras (derrubar/desarmar/empurrar/imobilizar) | 🔴 | Não implementado | — | P2 (ETAPA 12) | Alta |
+| 3.7 | Esquiva como ação de reação | 🟡 | **PARCIAL ETAPA 9/12** — ação "Realizar Esquiva" no painel da perícia rola Esquivar | `data/skills-encyclopedia.js` | P2 | Média |
+| 3.8 | Contra-ataque | 🟡 | **PARCIAL ETAPA 9/12** — ação "Contra-atacar" rola Lutar | `data/skills-encyclopedia.js` | P2 | Média |
+| 3.9 | Manobras (derrubar/desarmar/empurrar/imobilizar) | 🟡 | **PARCIAL ETAPA 9/12** — ação "Manobra" rola Lutar; resolução automática pendente | `data/skills-encyclopedia.js` | P2 | Média |
 | 3.10 | Alcance / Cobertura (armas de fogo) | 🔴 | Não implementado | — | P3 (ETAPA 12) | Alta |
 | 3.11 | Rajada / Tiro Mirado | 🔴 | Não implementado | — | P3 (ETAPA 12) | Alta |
-| 3.12 | Armadura absorve dano automaticamente | 🔴 | Não implementado | — | P2 (ETAPA 12) | Média |
+| 3.12 | Armadura absorve dano automaticamente | ✅ | **CORRIGIDO ETAPA 12b** — SET_ARMOR + absorção no dano de PV | `js/views/vitals.js`, `js/core/store.js` | — | — |
 | 3.13 | Munição: decremento automático | ✅ | — | `js/views/combat.js:85`, `js/tests/test-combat.js:196` | — | — |
-| 3.14 | Recarga de arma | 🔴 | Sem botão/ação de recarga | — | P3 (ETAPA 12) | Baixa |
+| 3.14 | Recarga de arma | ✅ | **CORRIGIDO ETAPA 12b** — RELOAD_WEAPON + botão Recarregar + ammoMax | `js/views/combat.js`, `js/core/store.js` | — | — |
 | 3.15 | Dropdown de perícia da arma (vs texto livre) | ✅ | **CORRIGIDO ETAPA 5 (#10)** — select dinâmico com combat skills + catálogo | `js/views/combat.js` | — | — |
 | 3.16 | Sistema de slots corporais | ✅ | **CORRIGIDO ETAPA 5 (#11)** — 8 slots, modal equip/remove, SET_BODY_SLOT reducer | `js/views/body-slots.js`, `js/core/store.js` | — | — |
 
@@ -124,8 +124,8 @@
 | # | Regra | Estado | Impacto | Arquivos | Prioridade | Complexidade |
 |---|-------|--------|---------|----------|------------|--------------|
 | 7.1 | Armazenamento de feitiços | ✅ | — | `js/views/spells.js`, `js/core/schema.js` | — | — |
-| 7.2 | Custo de PM ao conjurar (auto) | 🟡 | UI define custo; despacho `SPEND_MAGIC` ausente ou sem confirmação | `js/views/spells.js` | P2 (ETAPA 12) | Média |
-| 7.3 | Custo de SAN ao conjurar (auto) | 🟡 | UI define custo; `LOSE_SANITY` não ligado | `js/views/spells.js` | P2 (ETAPA 12) | Média |
+| 7.2 | Custo de PM ao conjurar (auto) | ✅ | **CONFIRMADO ETAPA 12a** — `_castSpell` despacha `SPEND_MAGIC` no botão Conjurar | `js/views/spells.js:160` | — | — |
+| 7.3 | Custo de SAN ao conjurar (auto) | ✅ | **CONFIRMADO ETAPA 12a** — `_castSpell` despacha `LOSE_SANITY` | `js/views/spells.js:164` | — | — |
 | 7.4 | Custos permanentes de SAN/PM | 🔴 | Não implementado | — | P3 (ETAPA 12) | Média |
 | 7.5 | Tempo de conjuração | 🔴 | Não implementado | — | P3 | Baixa |
 
@@ -137,8 +137,8 @@
 |---|-------|--------|---------|----------|------------|--------------|
 | 8.1 | Armazenamento de tomos | ✅ | — | `js/views/tomes.js`, `js/core/schema.js` | — | — |
 | 8.2 | Progresso de estudo (semanas) | ✅ | — | `js/views/tomes.js` | — | — |
-| 8.3 | Perda de SAN ao estudar | 🟡 | Campo existe; `LOSE_SANITY` não disparado ao completar | `js/views/tomes.js` | P2 (ETAPA 12) | Baixa |
-| 8.4 | Ganho de Mythos ao concluir leitura | 🔴 | Campo inexistente; sem link a `ADD_MYTHOS` | `js/views/tomes.js` | P2 (ETAPA 12) | Baixa |
+| 8.3 | Perda de SAN ao estudar | ✅ | **CONFIRMADO ETAPA 12a** — `LOSE_SANITY` ao concluir estudo | `js/views/tomes.js` | — | — |
+| 8.4 | Ganho de Mythos ao concluir leitura | ✅ | **CORRIGIDO ETAPA 12a** — campo `mythosGain` + `ADD_MYTHOS` na conclusão | `js/views/tomes.js` | — | — |
 | 8.5 | Concessão de feitiços via tomo | 🔴 | Não implementado | — | P3 (ETAPA 12) | Média |
 
 ---
@@ -155,11 +155,11 @@
 | 9.6 | Loucura Temporária (tempInsane) | 🟡 | Detectada; sem efeito mecânico automático | `js/core/state-machine.js:142` | P2 | Média |
 | 9.7 | Loucura Indefinida (indefInsane) | 🟡 | Detectada; sem efeito automático | `js/core/state-machine.js:165` | P2 | Média |
 | 9.8 | Loucura Incurável (incurablyInsane) | ✅ | — | `js/core/state-machine.js:183` | — | — |
-| 9.9 | Sangrando | 🔴 | Infra existe, sem lógica | — | P3 | Baixa |
-| 9.10 | Envenenado | 🔴 | Infra existe, sem lógica | — | P3 | Baixa |
-| 9.11 | Atordoado | 🔴 | Infra existe, sem lógica | — | P3 | Baixa |
-| 9.12 | Exausto | 🔴 | Infra existe, sem lógica | — | P3 | Baixa |
-| 9.13 | Sob efeito de magia | 🔴 | Não implementado | — | P3 | Média |
+| 9.9 | Sangrando | ✅ | **CORRIGIDO ETAPA 12c** — chip toggle no tracker | `js/views/vitals.js` | — | — |
+| 9.10 | Envenenado | ✅ | **CORRIGIDO ETAPA 12c** — chip toggle | `js/views/vitals.js` | — | — |
+| 9.11 | Atordoado | ✅ | **CORRIGIDO ETAPA 12c** — chip toggle | `js/views/vitals.js` | — | — |
+| 9.12 | Exausto | ✅ | **CORRIGIDO ETAPA 12c** — chip toggle | `js/views/vitals.js` | — | — |
+| 9.13 | Sob efeito de magia | 🟡 | Pode ser marcado via condição genérica; modificador automático pendente | `js/views/vitals.js` | P3 | Média |
 | 9.14 | Modificadores automáticos por condição | 🔴 | Nenhuma condição aplica modificador automático | — | P3 (ETAPA 12) | Alta |
 
 ---
@@ -215,11 +215,15 @@
 | **P2 — Médio prazo (ETAPAs 4–6)** | 7 | 4 | 5 | 2 | **18** |
 | **P3 — Longo prazo (ETAPAs 7–9)** | 8 | 0 | 6 | 0 | **16** |
 | **P4 — Configurações & Arquitetural (ETAPAs 8,10–11)** | 2 | 1 | 2 | 1 | **6** |
+| **ETAPA 12 — Completude de regra** | +10 | +5 | — | — | — |
 | **Já corretos** | 30 | — | — | — | **30** |
-| **TOTAL** | **61** | **6** | **9** | **5** | **81** |
+| **TOTAL** | **71** | **8** | **2** | **0** | **81** |
 
-> **Última atualização:** pós-ETAPA 11 — #32 (Proveniência) parcial: decomposição base/ocupação/interesse + cap.
-> Próxima prioridade: ETAPA 12 (completude de regra: Sanidade automática, loucuras, recuperação, Mythos via tomos, esquiva/contra-ataque/manobras, armadura, magia PM/SAN, condições).
+> **Última atualização:** pós-ETAPA 12 — Magia/Tomos/Mythos (12a), armadura+recarga (12b), condições (12c).
+> **Restantes (2 🔴 + 8 🟡):** itens de alta complexidade — testes opostos/combinados (2.12/2.13),
+> resolução automática de combate (esquiva/contra-ataque/manobras opostos), modificadores automáticos
+> por condição (9.14), recuperação institucional de SAN (4.7), alcance/cobertura/rajada (3.10/3.11).
+> Estes formam um backlog de refinamento avançado para evolução contínua.
 
 ---
 
