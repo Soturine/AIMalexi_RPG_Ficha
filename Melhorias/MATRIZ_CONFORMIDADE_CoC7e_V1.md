@@ -16,11 +16,11 @@
 | 1.1 | Rolagem de atributos (3d6×5 / 2d6+6×5) | ✅ | — | `js/engine/dice.js:219`, `js/investigator.js:558` | — | — |
 | 1.2 | Sorte: 3d6×5 | ✅ | — | `js/investigator.js:560` | — | — |
 | 1.3 | Sorte dupla para 15–19 anos (melhor) | ✅ | — | `js/investigator.js:573` | — | — |
-| 1.4 | Redução FOR/TAM para 15–19 anos (−5 total) | ⚫ | Investigadores jovens com FOR/CON/DES incorretos | `js/engine/coc7e-rules.js:163`, `js/investigator.js:586` | **P1** | Baixa |
-| 1.5 | Redução EDU −5 para 15–19 anos | 🔴 | EDU inflado em jovens | `js/investigator.js:584–608` | **P1** | Baixa |
+| 1.4 | Redução FOR/TAM para 15–19 anos (−5 total) | ✅ | **CORRIGIDO ETAPA 2.3** — `calcAgeAdjustments` retorna `physical:{points:5,attrs:[FOR,TAM]}` | `js/engine/coc7e-rules.js`, `js/investigator.js` | — | — |
+| 1.5 | Redução EDU −5 para 15–19 anos | ✅ | **CORRIGIDO ETAPA 2.3** — `eduReduction:5` aplicado separadamente | `js/investigator.js` | — | — |
 | 1.6 | Redução FOR/CON/DES para 40+ | ✅ | — | `js/investigator.js:586–608` | — | — |
-| 1.7 | Redução APA **separada** (fixa) para 40+ | ⚫ | APA jogada no mesmo bolo distribuído; valor incorreto | `js/engine/coc7e-rules.js:164–169`, `js/investigator.js:586` | **P1** | Baixa |
-| 1.8 | Verificações de Melhoria de EDU (por faixa etária) | 🔴 | Personagens mais velhos não ganham EDU | `js/engine/coc7e-rules.js:161` | **P1** | Média |
+| 1.7 | Redução APA **separada** (fixa) para 40+ | ✅ | **CORRIGIDO ETAPA 2.3** — `appReduction` é campo separado, não distribuído | `js/engine/coc7e-rules.js`, `js/investigator.js` | — | — |
+| 1.8 | Verificações de Melhoria de EDU (por faixa etária) | ✅ | **CORRIGIDO ETAPA 2.4** — `rollEduImprovement()` pura + aplicação em `rollAllAttributes` | `js/engine/coc7e-rules.js`, `js/investigator.js` | — | — |
 | 1.9 | Derivados: PV = ⌊(CON+TAM)/10⌋ | ✅ | — | `js/engine/coc7e-rules.js:125` | — | — |
 | 1.10 | Derivados: PM = ⌊POD/5⌋ | ✅ | — | `js/engine/coc7e-rules.js:133` | — | — |
 | 1.11 | Derivados: SAN inicial = POD | ✅ | — | `js/engine/coc7e-rules.js:141` | — | — |
@@ -45,16 +45,16 @@
 | 2.3 | Sólido/Difícil = d100 ≤ valor/2 | ✅ (engine) | — | `js/engine/dice.js:102` | — | — |
 | 2.4 | Regular = d100 ≤ valor | ✅ | — | `js/engine/dice.js:103` | — | — |
 | 2.5 | Fumble ≥96 (skill<50) / =100 (skill≥50) | ✅ | — | `js/engine/dice.js:99` | — | — |
-| 2.6 | Seleção de dificuldade (Regular/Difícil/Extremo) filtra o resultado | ⚫ | **Bug crítico:** dificuldade não afeta sucesso/falha — só o custo de Sorte | `js/views/rolls.js:84–87`, `js/engine/dice.js:114` | **P1** | Média |
-| 2.7 | Bônus: escolher a dezena mais **favorável** (menor valor) | ⚫ | **Bug borda:** com unidade 0, dezena crua 0 vira 100 (pior) | `js/engine/dice.js:69` | **P1** | Baixa |
-| 2.8 | Penalidade: escolher dezena **desfavorável** (maior valor) | ⚫ | Mesma borda do 2.7, invertida | `js/engine/dice.js:69` | **P1** | Baixa |
+| 2.6 | Seleção de dificuldade (Regular/Difícil/Extremo) filtra o resultado | ✅ | **CORRIGIDO ETAPA 2.1** — `gradeRoll()` centraliza; `met=false` quando tier não atinge dificuldade | `js/engine/dice.js:126`, `js/views/rolls.js` | — | — |
+| 2.7 | Bônus: escolher a dezena mais **favorável** (menor valor) | ✅ | **CORRIGIDO ETAPA 2.2** — escolha pelo valor final; borda 00+0=100 corrigida | `js/engine/dice.js:69` | — | — |
+| 2.8 | Penalidade: escolher dezena **desfavorável** (maior valor) | ✅ | **CORRIGIDO ETAPA 2.2** — mesma correção | `js/engine/dice.js:69` | — | — |
 | 2.9 | `meetsDifficulty()` corretamente definida | ✅ | — | `js/engine/dice.js:114` | — | — |
-| 2.10 | Gastar Sorte para converter falha em Regular | 🟡 | UI existe; mas condição `canSpendLuck` usa nível sem considerar dificuldade | `js/views/rolls.js:178–183` | **P1** (corrige com 2.6) | Baixa |
-| 2.11 | Forçar rolagem (Push): disponível em falha | 🟡 | `canPush` não considera dificuldade; disponível mesmo quando a dificuldade não era atingível | `js/views/rolls.js:185–188` | **P1** (corrige com 2.6) | Baixa |
+| 2.10 | Gastar Sorte para converter falha em Regular | ✅ | **CORRIGIDO ETAPA 2.1** — `canSpendLuck` usa `met` | `js/views/rolls.js` | — | — |
+| 2.11 | Forçar rolagem (Push): disponível em falha | ✅ | **CORRIGIDO ETAPA 2.1** — `canPush` usa `met` | `js/views/rolls.js` | — | — |
 | 2.12 | Testes opostos | 🔴 | Não implementado | — | P2 | Média |
 | 2.13 | Testes combinados de atributos | 🔴 | Não implementado | — | P2 | Média |
 | 2.14 | Destaque visual do alvo por dificuldade | 🔴 | UX: usuário não vê 70→35→14 ao selecionar Difícil/Extremo | — | P2 (ETAPA 4) | Baixa |
-| 2.15 | Notação `difficulty`+`met` persistidos no log | 🔴 | Log não reflete dificuldade real da rolagem | `js/core/event-ontology.js:172`, `js/core/store.js:156` | **P1** | Baixa |
+| 2.15 | Notação `difficulty`+`met` persistidos no log | ✅ | **CORRIGIDO ETAPA 2.5** — campos aditivos em ROLL_SKILL/ROLL_ATTRIBUTE/PUSH_ROLL; fallback compat | `js/core/event-ontology.js` | — | — |
 
 ---
 
@@ -113,8 +113,8 @@
 |---|-------|--------|---------|----------|------------|--------------|
 | 6.1 | Marcar perícia para evolução (sucesso na sessão) | 🔴 | Não implementado | — | P1A (ETAPA 3) | Baixa |
 | 6.2 | Evolução de perícia (d100 > valor → +d10) | 🔴 | Não implementado | — | P1A (ETAPA 3) | Média |
-| 6.3 | Verificação de Melhoria de EDU (d100 > EDU → +d10) | 🔴 | Não implementado | — | **P1** (ETAPA 2.4) | Baixa |
-| 6.4 | EDU cap = 99 | 🔴 | (junto com 6.3) | — | **P1** | Baixa |
+| 6.3 | Verificação de Melhoria de EDU (d100 > EDU → +d10) | ✅ | **CORRIGIDO ETAPA 2.4** — `rollEduImprovement()` implementada e chamada na criação | `js/engine/coc7e-rules.js` | — | — |
+| 6.4 | EDU cap = 99 | ✅ | **CORRIGIDO ETAPA 2.4** — `Math.min(99, edu+gain)` aplicado | `js/engine/coc7e-rules.js` | — | — |
 | 6.5 | Recompensa narrativa de Guardião | 🔴 | Não implementado | — | P3 | Baixa |
 
 ---
@@ -209,13 +209,15 @@
 
 | Prioridade | Qtd ✅ | Qtd 🟡 | Qtd 🔴 | Qtd ⚫ | Total |
 |-----------|--------|--------|--------|--------|-------|
-| **P1 — Bugs críticos (ETAPA 2)** | 0 | 2 | 3 | 4 | **9** |
+| **P1 — Bugs críticos (ETAPA 2)** | 9 | 0 | 0 | 0 | **9 ✅ CONCLUÍDO** |
 | **P1A — Criação completa (ETAPA 3)** | 0 | 1 | 2 | 0 | **3** |
 | **P2 — Médio prazo (ETAPAs 4–6)** | 0 | 6 | 10 | 2 | **18** |
 | **P3 — Longo prazo (ETAPAs 7–9)** | 0 | 2 | 12 | 2 | **16** |
 | **P4 — Arquitetural (ETAPAs 10–11)** | 0 | 0 | 4 | 1 | **5** |
 | **Já corretos** | 30 | — | — | — | **30** |
-| **TOTAL** | **30** | **11** | **31** | **9** | **81** |
+| **TOTAL** | **39** | **9** | **28** | **5** | **81** |
+
+> **Última atualização:** pós-ETAPA 2 — 9 itens P1 resolvidos (corrigidos). Próxima atualização: pós-ETAPA 3.
 
 ---
 
