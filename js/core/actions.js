@@ -45,6 +45,8 @@ window.CoC = window.CoC || {};
     RESOLVE_COMBAT:  "RESOLVE_COMBAT",
     ADD_STATUS:      "ADD_STATUS",
     REMOVE_STATUS:   "REMOVE_STATUS",
+    SET_ARMOR:       "SET_ARMOR",      // valor de armadura (absorção de dano)
+    RELOAD_WEAPON:   "RELOAD_WEAPON",  // restaura munição ao máximo
 
     // ── Ficha (edição do próprio investigador) ───────────────────────────
     // SET_ATTRIBUTE: edição manual pelo jogador em modo edição — vai pelo store completo

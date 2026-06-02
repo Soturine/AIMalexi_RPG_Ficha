@@ -78,6 +78,19 @@ window.CoC.views = window.CoC.views || {};
       bar.appendChild(card);
     }
 
+    // §3.12 — Card de Armadura (absorção de dano). Lê de c.status.armor.
+    const armor = Number(c.status && c.status.armor) || 0;
+    const armorCard = el("div", { class: "derived-card", "data-key": "Armadura" });
+    armorCard.innerHTML = `
+      <div class="derived-label">Armadura</div>
+      <div class="derived-value">${armor}</div>
+      <div class="derived-actions no-print">
+        <button data-armor-op="-1" title="Diminuir armadura">-1</button>
+        <button data-armor-op="+1" title="Aumentar armadura">+1</button>
+      </div>
+    `;
+    bar.appendChild(armorCard);
+
     _bindButtons();
     _sanityAtmosphere();
     renderSidebarVitals();
@@ -158,13 +171,27 @@ window.CoC.views = window.CoC.views || {};
       );
       if (v == null || v.trim() === "") return;
       const trimmed = v.trim();
+      let raw;
       if (/^-?\d+$/.test(trimmed)) {
-        delta = -Math.abs(parseInt(trimmed, 10));
+        raw = Math.abs(parseInt(trimmed, 10));
+        delta = -raw;
       } else {
         const r = dice.rollNotation(trimmed);
-        delta = -Math.abs(r.total);
-        // Roll log handled by investigator.js via bus subscription
+        raw = Math.abs(r.total);
+        delta = -raw;
         bus.publish("roll:logged", { skill: `Perda ${key}`, d100: null, level: "fail", dmg: `${trimmed} → ${r.total}` });
+      }
+      // §3.12 — Armadura absorve dano de PV (não afeta SAN/PM)
+      if (key === "PV") {
+        const armor = Number(c.status && c.status.armor) || 0;
+        if (armor > 0) {
+          const absorbed = Math.min(armor, raw);
+          const net = raw - absorbed;
+          delta = -net;
+          if (absorbed > 0) {
+            toast(`🛡️ Armadura absorveu ${absorbed} de ${raw} dano (${net} em PV).`, { type: "info", duration: 4000 });
+          }
+        }
       }
     }
     if (delta === 0) return;
@@ -188,6 +215,15 @@ window.CoC.views = window.CoC.views || {};
   function _bindButtons() {
     $$("[data-derived]").forEach(btn => {
       btn.onclick = async () => { await _applyDelta(btn.dataset.derived, btn.dataset.op); };
+    });
+    // Armadura (§3.12)
+    $$("[data-armor-op]").forEach(btn => {
+      btn.onclick = () => {
+        const c = cocStore.getState().character;
+        const cur = Number(c?.status?.armor) || 0;
+        const next = Math.max(0, cur + (btn.dataset.armorOp === "+1" ? 1 : -1));
+        cocExecutor.execute({ type: "SET_ARMOR", payload: { armor: next } });
+      };
     });
   }
 

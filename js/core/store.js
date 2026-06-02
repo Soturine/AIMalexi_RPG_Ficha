@@ -150,6 +150,26 @@ window.CoC = window.CoC || {};
         return Object.assign({}, state, { character: nc });
       }
 
+      // Armadura (#3.12) — valor de absorção de dano (status.armor)
+      case "SET_ARMOR": {
+        if (!c) return state;
+        const nc = deepClone(c);
+        nc.status = nc.status || {};
+        nc.status.armor = Math.max(0, Number(action.payload.armor) || 0);
+        return Object.assign({}, state, { character: nc });
+      }
+
+      // Recarga de arma (#3.14) — restaura munição ao máximo
+      case "RELOAD_WEAPON": {
+        if (!c || !Array.isArray(c.weapons)) return state;
+        const nc = deepClone(c);
+        const wi = nc.weapons.findIndex(w => w.id === action.payload.id);
+        if (wi >= 0 && nc.weapons[wi].ammoMax != null) {
+          nc.weapons[wi].ammo = Number(nc.weapons[wi].ammoMax) || 0;
+        }
+        return Object.assign({}, state, { character: nc });
+      }
+
       // ── Rolagens de sessão (boundary_randomness — sem mutação de estado) ───
       // Resultado já calculado na view antes do dispatch; executor emite
       // executor:action → executionTrace captura o fato para observabilidade.

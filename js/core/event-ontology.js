@@ -193,6 +193,20 @@ window.CoC.core = window.CoC.core || {};
       status: 'live',
       resolved_fields: ['slotId', 'item', 'action'],
     },
+    SET_ARMOR: {
+      aggregate: 'character', domain: 'combat',
+      renders: ['vitals'], persists: true, sacred: false,
+      effects: [],
+      status: 'live',
+      resolved_fields: ['armor'],
+    },
+    RELOAD_WEAPON: {
+      aggregate: 'character', domain: 'combat',
+      renders: ['combat'], persists: true, sacred: false,
+      effects: [],
+      status: 'live',
+      resolved_fields: ['id'],
+    },
     MARK_SKILL_IMPROVEMENT: {
       aggregate: 'character', domain: 'skills',
       renders: ['skills'], persists: true, sacred: false,
