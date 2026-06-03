@@ -54,6 +54,14 @@
   margin-top: 0.2rem;
   word-break: break-word;
 }
+.sidebar-age {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink-faded);
+  letter-spacing: 0.05em;
+  margin-top: 0.1rem;
+}
+.sidebar-age:empty { display: none; }
 
 /* Compact vitals bars */
 .sidebar-vitals { display: flex; flex-direction: column; gap: 0.35rem; }
