@@ -51,11 +51,16 @@ window.CoC.views = window.CoC.views || {};
     var dispNode = $s('#identity-display');
     if (dispNode) dispNode.textContent = tagline;
 
-    // Sidebar
+    // Sidebar (resumo executivo: nome · ocupação · idade)
     var sName = $s('#sidebar-name');
     var sOcc  = $s('#sidebar-occupation');
+    var sAge  = $s('#sidebar-age');
     if (sName) sName.textContent = c.investigator.name       || '—';
     if (sOcc)  sOcc.textContent  = c.investigator.occupation || '—';
+    if (sAge) {
+      var _age = Number(c.investigator.age);
+      sAge.textContent = _age ? (_age + ' anos') : '';
+    }
 
     // Occupation change: recalc skills + finances
     var occInput = $s('#id-occupation');
@@ -92,6 +97,8 @@ window.CoC.views = window.CoC.views || {};
         if (f === 'age') {
           _recalc();
           if (window.CoC.views.vitals && window.CoC.views.vitals.render) window.CoC.views.vitals.render();
+          var sAgeLive = $s('#sidebar-age');
+          if (sAgeLive) { var _a = Number(node.value); sAgeLive.textContent = _a ? (_a + ' anos') : ''; }
           var newAge = Number(node.value) || 25;
           var rules  = window.CoC && window.CoC.rules;
           var ui     = window.CoC && window.CoC.ui;
