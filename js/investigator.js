@@ -788,6 +788,28 @@
     });
   }
 
+  // §17 — Teste de Sanidade rápido (rola d100 ≤ SAN atual).
+  function _rollSanCheck() {
+    const c = state.character;
+    const san = Number(c?.derived?.SAN?.current ?? c?.derived?.SAN?.value) || 0;
+    const result = dice.rollD100(state.rollMods.bp || null);
+    // Teste de SAN é pass/fail vs SAN atual (sem graus de dificuldade do Guardião).
+    const graded = dice.gradeRoll(result.value, san, "regular");
+    const entry = {
+      kind:  "san-check",
+      skill: "🧠 Teste de Sanidade",
+      target: san,
+      d100:  result.value,
+      level: graded.level,
+      met:   graded.met,
+      note:  graded.met ? "Sanidade preservada" : "⚠ Perda de Sanidade — veja a fonte do horror",
+      luckCost: 0,
+    };
+    if (window.CoC.views.rolls && window.CoC.views.rolls.registerRoll) {
+      window.CoC.views.rolls.registerRoll(entry);
+    }
+  }
+
   // ── Chat de campanha (#18) ────────────────────────────────────────────────
   function bindChat() {
     const chat = window.CoC.views && window.CoC.views.chat;
@@ -835,8 +857,31 @@
       content: () => {
         const wrap = el("div", {});
         wrap.appendChild(el("h3", {
-          style: { fontFamily: "var(--font-serif)", color: "var(--brass-bright)", marginBottom: "0.75rem" },
-          text: "Log & Modificadores"
+          style: { fontFamily: "var(--font-serif)", color: "var(--brass-bright)", marginBottom: "0.5rem" },
+          text: "Rolagem Rápida"
+        }));
+
+        // §17 — FAB inteligente: rolagens rápidas (Sorte e Sanidade diretos;
+        // a dificuldade Normal/Difícil/Extremo vem do seletor abaixo).
+        const quick = el("div", { class: "fab-quick-rolls" });
+        const mkQuick = (label, fn) => el("button", {
+          class: "btn-primary btn-sm", on: { click: fn }
+        }, [label]);
+        quick.appendChild(mkQuick("🍀 Sorte", () => {
+          window.CoC.views.rolls.rollAttribute("Sorte", { difficulty: state.rollMods.difficulty, bp: state.rollMods.bp });
+        }));
+        quick.appendChild(mkQuick("🧠 Sanidade", () => _rollSanCheck()));
+        // Atalhos de atributo mais usados
+        ["DES", "INT", "POD", "EDU"].forEach(code => {
+          quick.appendChild(mkQuick("🎲 " + code, () => {
+            window.CoC.views.rolls.rollAttribute(code, { difficulty: state.rollMods.difficulty, bp: state.rollMods.bp });
+          }));
+        });
+        wrap.appendChild(quick);
+
+        wrap.appendChild(el("h3", {
+          style: { fontFamily: "var(--font-serif)", color: "var(--brass-bright)", margin: "0.85rem 0 0.5rem" },
+          text: "Modificadores & Log"
         }));
         // Clona o painel de modificadores (sem realocar o existente do desktop)
         const modPanel = $(".modifier-panel");

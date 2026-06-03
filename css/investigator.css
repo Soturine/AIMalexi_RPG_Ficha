@@ -990,6 +990,17 @@ body[data-difficulty="extreme"] .skill-frac-sep {
 .skill-enc-panel .prov-cap-warn { display: block; margin-top: 0.3rem; color: var(--blood, #c0392b); font-size: 0.78rem; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   FAB INTELIGENTE — rolagem rápida (#17)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.fab-quick-rolls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+.fab-quick-rolls button { min-height: 44px; font-size: 0.85rem; padding: 0.4rem 0.3rem; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
    PAINEL DE DEPENDÊNCIAS (#31)
    ═══════════════════════════════════════════════════════════════════════════ */
 
