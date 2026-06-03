@@ -502,29 +502,31 @@
     const btnDeps = $("#btn-deps");
     if (btnDeps) btnDeps.onclick = () => window.CoC.views.dependencies && window.CoC.views.dependencies.open();
 
-    // §13 — Menu overflow (mobile): toggle do dropdown de ações
+    // §14 — Menu overflow (mobile): bottom sheet de ações
     const btnOverflow = $("#btn-overflow");
     const toolbarActions = $("#toolbar-actions");
+    const sheetBackdrop = $("#sheet-backdrop");
     if (btnOverflow && toolbarActions) {
+      const closeSheet = () => {
+        toolbarActions.classList.remove("open");
+        btnOverflow.setAttribute("aria-expanded", "false");
+        if (sheetBackdrop) sheetBackdrop.hidden = true;
+      };
+      const openSheet = () => {
+        toolbarActions.classList.add("open");
+        btnOverflow.setAttribute("aria-expanded", "true");
+        if (sheetBackdrop) sheetBackdrop.hidden = false;
+      };
       btnOverflow.onclick = (e) => {
         e.stopPropagation();
-        const open = toolbarActions.classList.toggle("open");
-        btnOverflow.setAttribute("aria-expanded", String(open));
+        toolbarActions.classList.contains("open") ? closeSheet() : openSheet();
       };
-      // Fecha ao clicar numa ação ou fora do menu
+      // Fecha ao escolher uma ação (exceto trocar tema — mantém o sheet aberto)
       toolbarActions.addEventListener("click", (e) => {
-        if (e.target.closest("button") && !e.target.closest(".theme-picker")) {
-          toolbarActions.classList.remove("open");
-          btnOverflow.setAttribute("aria-expanded", "false");
-        }
+        if (e.target.closest("button") && !e.target.closest(".theme-picker")) closeSheet();
       });
-      document.addEventListener("click", (e) => {
-        if (toolbarActions.classList.contains("open") &&
-            !e.target.closest("#toolbar-actions") && !e.target.closest("#btn-overflow")) {
-          toolbarActions.classList.remove("open");
-          btnOverflow.setAttribute("aria-expanded", "false");
-        }
-      });
+      if (sheetBackdrop) sheetBackdrop.addEventListener("click", closeSheet);
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
     }
 
     const btnSanFx = $("#btn-sanity-fx");

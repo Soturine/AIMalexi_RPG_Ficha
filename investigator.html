@@ -74,26 +74,36 @@
     <button id="btn-overflow" class="btn-ghost no-print" title="Mais ações"
             aria-expanded="false" aria-controls="toolbar-actions">⋮</button>
 
-    <div class="toolbar-actions" id="toolbar-actions">
-      <button id="btn-import" class="btn-ghost" title="Importar JSON">📁 Importar</button>
-      <button id="btn-sanity-fx" class="btn-ghost" title="Configurar efeitos visuais de insanidade">🧠 Efeitos</button>
-      <button id="btn-settings" class="btn-ghost" title="Central de Configurações (tema, idioma, acessibilidade)">⚙️ Configurações</button>
+    <div class="toolbar-actions" id="toolbar-actions" role="menu">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="sheet-title">Ações</div>
 
-      <div class="theme-picker no-print" id="theme-picker" title="Tema da campanha">
-        <button class="theme-swatch active" data-theme="arkham"     title="Arkham — CoC Clássico"></button>
-        <button class="theme-swatch"        data-theme="miskatonic" title="Miskatonic — Acadêmico"></button>
-        <button class="theme-swatch"        data-theme="sepia"      title="Sépia — Documento Histórico"></button>
-        <button class="theme-swatch"        data-theme="obsidian"   title="Obsidian — Moderno"></button>
-        <button class="theme-swatch"        data-theme="eldritch"   title="Eldritch — Horror Cósmico"></button>
+      <div class="sheet-group">
+        <button id="btn-session-export" class="btn-ghost" title="Exportar sessão completa com trace de eventos (rolagens, dano, sanidade)">📊 Sessão</button>
+        <button id="btn-import" class="btn-ghost" title="Importar JSON">📁 Importar</button>
+        <button id="btn-export" class="btn-export" title="Exportar personagem como JSON (BACKUP!)">💾 Exportar JSON</button>
+        <button id="btn-print" class="btn-ghost" title="Imprimir / Salvar como PDF">🖨️ PDF</button>
       </div>
 
-      <button id="btn-print" class="btn-ghost" title="Imprimir / Salvar como PDF">🖨️ PDF</button>
-      <button id="btn-session-export" class="btn-ghost" title="Exportar sessão completa com trace de eventos (rolagens, dano, sanidade)">📊 Sessão</button>
-      <button id="btn-export" class="btn-export" title="Exportar personagem como JSON (BACKUP!)">💾 Exportar JSON</button>
-      <button id="btn-delete" class="btn-danger" title="Deletar este personagem">🗑️</button>
+      <div class="sheet-group">
+        <button id="btn-settings" class="btn-ghost" title="Central de Configurações (tema, idioma, acessibilidade)">⚙️ Configurações</button>
+        <button id="btn-sanity-fx" class="btn-ghost" title="Configurar efeitos visuais de insanidade">🧠 Efeitos</button>
+        <div class="theme-picker no-print" id="theme-picker" title="Tema da campanha">
+          <button class="theme-swatch active" data-theme="arkham"     title="Arkham — CoC Clássico"></button>
+          <button class="theme-swatch"        data-theme="miskatonic" title="Miskatonic — Acadêmico"></button>
+          <button class="theme-swatch"        data-theme="sepia"      title="Sépia — Documento Histórico"></button>
+          <button class="theme-swatch"        data-theme="obsidian"   title="Obsidian — Moderno"></button>
+          <button class="theme-swatch"        data-theme="eldritch"   title="Eldritch — Horror Cósmico"></button>
+        </div>
+      </div>
+
+      <div class="sheet-group sheet-group-danger">
+        <button id="btn-delete" class="btn-danger" title="Deletar este personagem">🗑️ Excluir</button>
+      </div>
     </div>
 
   </div>
+  <div class="sheet-backdrop no-print" id="sheet-backdrop" hidden></div>
 
   <!-- ═══ MOBILE TABS (bottom navigation no mobile) ═══ -->
   <nav class="mobile-tabs no-print" aria-label="Navegação móvel">

@@ -34,29 +34,31 @@
     _initOverflow();
   }
 
-  // §13 mobile — menu overflow ⋮ do toolbar (dropdown)
+  // §14 mobile — menu overflow ⋮ vira bottom sheet
   function _initOverflow() {
     var btn = document.getElementById('btn-overflow');
     var actions = document.getElementById('toolbar-actions');
+    var backdrop = document.getElementById('sheet-backdrop');
     if (!btn || !actions) return;
+    function close() {
+      actions.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+      if (backdrop) backdrop.hidden = true;
+    }
+    function open() {
+      actions.classList.add('open');
+      btn.setAttribute('aria-expanded', 'true');
+      if (backdrop) backdrop.hidden = false;
+    }
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
-      var open = actions.classList.toggle('open');
-      btn.setAttribute('aria-expanded', String(open));
+      actions.classList.contains('open') ? close() : open();
     });
     actions.addEventListener('click', function (e) {
-      if (e.target.closest('button, a')) {
-        actions.classList.remove('open');
-        btn.setAttribute('aria-expanded', 'false');
-      }
+      if (e.target.closest('button, a')) close();
     });
-    document.addEventListener('click', function (e) {
-      if (actions.classList.contains('open') &&
-          !e.target.closest('#toolbar-actions') && !e.target.closest('#btn-overflow')) {
-        actions.classList.remove('open');
-        btn.setAttribute('aria-expanded', 'false');
-      }
-    });
+    if (backdrop) backdrop.addEventListener('click', close);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

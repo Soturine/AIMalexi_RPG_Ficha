@@ -52,14 +52,23 @@
     <button id="btn-overflow" class="btn-ghost no-print" title="Mais ações"
             aria-expanded="false" aria-controls="toolbar-actions">⋮</button>
 
-    <div class="toolbar-actions" id="toolbar-actions">
-      <button id="btn-import" class="btn-ghost" title="Importar biblioteca JSON">📁 Importar</button>
-      <a href="compendium.html" class="btn btn-ghost" title="Compêndio de Regras">📚 Compêndio</a>
-      <button id="btn-print" class="btn-ghost" title="Imprimir / PDF">🖨️ PDF</button>
-      <button id="btn-export" class="btn-export" title="Exportar biblioteca completa como JSON (BACKUP)">💾 Exportar</button>
-      <button id="btn-settings" class="btn-ghost" title="Central de Configurações">⚙️ Config</button>
+    <div class="toolbar-actions" id="toolbar-actions" role="menu">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="sheet-title">Ações do Guardião</div>
+
+      <div class="sheet-group">
+        <button id="btn-import" class="btn-ghost" title="Importar biblioteca JSON">📁 Importar</button>
+        <button id="btn-export" class="btn-export" title="Exportar biblioteca completa como JSON (BACKUP)">💾 Exportar</button>
+        <button id="btn-print" class="btn-ghost" title="Imprimir / PDF">🖨️ PDF</button>
+        <a href="compendium.html" class="btn btn-ghost" title="Compêndio de Regras">📚 Compêndio</a>
+      </div>
+
+      <div class="sheet-group">
+        <button id="btn-settings" class="btn-ghost" title="Central de Configurações">⚙️ Configurações</button>
+      </div>
     </div>
   </div>
+  <div class="sheet-backdrop no-print" id="sheet-backdrop" hidden></div>
 
   <!-- ═══ DASHBOARD EXECUTIVO (Fase D) — visão de 10s, acima das abas ═══ -->
   <section id="keeper-overview" class="keeper-overview" aria-label="Resumo da campanha">

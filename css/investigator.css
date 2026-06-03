@@ -2148,9 +2148,13 @@ body[data-difficulty="extreme"] .skill-frac-sep {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Desktop: as ações fluem direto no toolbar (sem caixa intermediária);
-   o botão overflow fica oculto. */
+   o botão overflow e o cromo do bottom sheet ficam ocultos. */
 .toolbar-actions { display: contents; }
+.toolbar-actions .sheet-group { display: contents; }
+.toolbar-actions .sheet-handle,
+.toolbar-actions .sheet-title { display: none; }
 #btn-overflow { display: none; }
+.sheet-backdrop { display: none; }
 
 /* ── MOBILE (≤ 767px) ─────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
@@ -2187,34 +2191,78 @@ body[data-difficulty="extreme"] .skill-frac-sep {
   }
   .toolbar-spacer { display: none; }
 
-  /* Menu overflow vira dropdown */
+  /* ── Menu overflow vira BOTTOM SHEET (desliza de baixo) ── */
+  .sheet-backdrop {
+    display: block;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 290;
+    animation: sheet-fade 0.2s ease;
+  }
+  .sheet-backdrop[hidden] { display: none; }
+  @keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+
   .toolbar-actions {
-    display: none;
-    position: absolute;
-    top: calc(100% + 0.3rem);
-    right: 0;
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0; top: auto;
     flex-direction: column;
     align-items: stretch;
-    gap: 0.3rem;
-    min-width: 230px;
-    max-width: 80vw;
-    padding: 0.5rem;
+    gap: 0;
+    max-height: 75vh;
+    overflow-y: auto;
+    padding: 0.4rem 0.9rem calc(1rem + env(safe-area-inset-bottom, 0px));
     background: var(--bg-card);
-    border: 1px solid var(--brass);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.65);
-    z-index: 200;
+    border-top: 1px solid var(--brass);
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -12px 40px rgba(0,0,0,0.7);
+    z-index: 300;
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
   }
-  .toolbar-actions.open { display: flex; }
+  .toolbar-actions.open { transform: translateY(0); }
+
+  /* Handle de arraste + título do sheet */
+  .toolbar-actions .sheet-handle {
+    display: block;
+    width: 40px; height: 4px;
+    background: var(--ink-faded);
+    border-radius: 999px;
+    margin: 0.3rem auto 0.6rem;
+    flex: 0 0 auto;
+  }
+  .toolbar-actions .sheet-title {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-faded);
+    margin-bottom: 0.4rem;
+  }
+
+  /* Grupos separados por divisor */
+  .toolbar-actions .sheet-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--ink-faded);
+  }
+  .toolbar-actions .sheet-group:last-of-type { border-bottom: none; }
+  .toolbar-actions .sheet-group-danger { padding-bottom: 0.2rem; }
+
   .toolbar-actions button {
     width: 100%; text-align: left;
-    min-height: 44px;                                   /* touch-friendly */
+    min-height: 48px;                                   /* touch-friendly */
+    font-size: 0.95rem;
+    border-radius: var(--radius);
   }
   .toolbar-actions .theme-picker {
-    border-left: none; padding: 0.3rem 0; margin: 0;
-    justify-content: center;
+    border-left: none; padding: 0.4rem 0.2rem; margin: 0;
+    justify-content: flex-start; gap: 0.5rem;
   }
-  .toolbar-actions .theme-swatch { width: 28px; height: 28px; }
+  .toolbar-actions .theme-swatch { width: 32px; height: 32px; }
 
   /* ── Resumo executivo: foto + nome + vitais acima da dobra ── */
   .app-shell { flex-direction: column; gap: 0.5rem; }
