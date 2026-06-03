@@ -111,9 +111,20 @@
     <button class="mobile-tab" data-tab="pericias"><span class="tab-icon" aria-hidden="true">📜</span><span class="tab-label">Perícias</span></button>
     <button class="mobile-tab" data-tab="combate"><span class="tab-icon" aria-hidden="true">⚔️</span><span class="tab-label">Combate</span></button>
     <button class="mobile-tab" data-tab="inventario"><span class="tab-icon" aria-hidden="true">🎒</span><span class="tab-label">Inventário</span></button>
-    <button class="mobile-tab" data-tab="diario"><span class="tab-icon" aria-hidden="true">📔</span><span class="tab-label">Diário</span></button>
-    <button class="mobile-tab" data-tab="log"><span class="tab-icon" aria-hidden="true">🎲</span><span class="tab-label">Log</span></button>
+    <button class="mobile-tab tab-overflow" data-tab="diario"><span class="tab-icon" aria-hidden="true">📔</span><span class="tab-label">Diário</span></button>
+    <button class="mobile-tab tab-overflow" data-tab="log"><span class="tab-icon" aria-hidden="true">🎲</span><span class="tab-label">Log</span></button>
+    <button class="mobile-tab mobile-more" id="mobile-more" type="button" aria-haspopup="true" aria-expanded="false"><span class="tab-icon" aria-hidden="true">⋯</span><span class="tab-label">Mais</span></button>
   </nav>
+
+  <!-- Sheet "Mais" (bottom nav overflow) -->
+  <div class="more-sheet no-print" id="more-sheet" hidden role="menu" aria-label="Mais opções">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="sheet-title">Mais</div>
+    <button class="more-item" data-more-tab="diario" role="menuitem">📔 Diário de Campanha</button>
+    <button class="more-item" data-more-tab="log" role="menuitem">🎲 Log de Rolagens</button>
+    <button class="more-item" data-more-action="settings" role="menuitem">⚙️ Configurações</button>
+  </div>
+  <div class="sheet-backdrop no-print" id="more-backdrop" hidden></div>
 
   <!-- ═══ APP SHELL ═══ -->
   <div class="app-shell">

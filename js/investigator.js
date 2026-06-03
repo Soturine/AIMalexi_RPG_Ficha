@@ -929,11 +929,42 @@
 
   function bindMobileTabs() {
     $$(".mobile-tab").forEach(t => {
+      if (t.id === "mobile-more") return;   // tratado separadamente
       t.onclick = () => {
         state.mobileTab = t.dataset.tab;
         applyTab();
       };
     });
+
+    // §18 — Bottom nav "Mais": sheet com Diário/Log/Configurações
+    const moreBtn = $("#mobile-more");
+    const moreSheet = $("#more-sheet");
+    const moreBackdrop = $("#more-backdrop");
+    if (moreBtn && moreSheet) {
+      const closeMore = () => {
+        moreSheet.classList.remove("open"); moreSheet.hidden = true;
+        if (moreBackdrop) moreBackdrop.hidden = true;
+        moreBtn.setAttribute("aria-expanded", "false");
+      };
+      const openMore = () => {
+        moreSheet.hidden = false; moreSheet.classList.add("open");
+        if (moreBackdrop) moreBackdrop.hidden = false;
+        moreBtn.setAttribute("aria-expanded", "true");
+      };
+      moreBtn.onclick = (e) => {
+        e.stopPropagation();
+        moreSheet.classList.contains("open") ? closeMore() : openMore();
+      };
+      moreSheet.querySelectorAll("[data-more-tab]").forEach(b => {
+        b.onclick = () => { state.mobileTab = b.dataset.moreTab; applyTab(); closeMore(); };
+      });
+      const settingsItem = moreSheet.querySelector("[data-more-action='settings']");
+      if (settingsItem) settingsItem.onclick = () => {
+        closeMore();
+        if (window.CoC.settings && window.CoC.settings.open) window.CoC.settings.open();
+      };
+      if (moreBackdrop) moreBackdrop.onclick = closeMore;
+    }
     $$(".desktop-tab").forEach(t => {
       t.onclick = () => {
         state.mobileTab = t.dataset.tab;
@@ -948,6 +979,9 @@
     $$("[data-tab]").forEach(s => s.classList.toggle("tab-active", s.dataset.tab === tab));
     $$(".mobile-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
     $$(".desktop-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+    // §18 — quando a aba ativa vive dentro do "Mais" (Diário/Log), destaca o "Mais"
+    const moreBtn = $("#mobile-more");
+    if (moreBtn) moreBtn.classList.toggle("active", tab === "diario" || tab === "log");
   }
 
   // Alias para compatibilidade com chamadas existentes

@@ -2360,6 +2360,32 @@ body[data-difficulty="extreme"] .skill-frac-sep {
   .mobile-tab .tab-label { letter-spacing: 0; }
   .mobile-tab.active { border-top-color: var(--brass); border-bottom-color: transparent; }
 
+  /* §18 — bottom nav: 4 abas + "Mais"; Diário/Log saem da barra (vão p/ o Mais) */
+  .mobile-tab.tab-overflow { display: none; }
+  .mobile-more { display: flex; }
+
+  /* Sheet "Mais" */
+  #more-backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 290; }
+  #more-backdrop[hidden] { display: none; }
+  .more-sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 300;
+    background: var(--bg-card); border-top: 1px solid var(--brass);
+    border-radius: 18px 18px 0 0; box-shadow: 0 -12px 40px rgba(0,0,0,0.7);
+    padding: 0.4rem 0.9rem calc(1.2rem + env(safe-area-inset-bottom, 0px));
+    transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+  }
+  .more-sheet[hidden] { display: block; }    /* mantém no fluxo p/ animar; controle via .open */
+  .more-sheet.open { transform: translateY(0); }
+  .more-sheet .sheet-handle { display: block; width: 40px; height: 4px; background: var(--ink-faded); border-radius: 999px; margin: 0.3rem auto 0.6rem; }
+  .more-sheet .sheet-title { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faded); margin-bottom: 0.4rem; }
+  .more-item {
+    display: flex; align-items: center; width: 100%; text-align: left;
+    min-height: 50px; font-size: 0.98rem; border-radius: var(--radius);
+    background: transparent; border: none; color: var(--ink); cursor: pointer;
+    padding: 0.5rem 0.6rem;
+  }
+  .more-item:hover, .more-item:active { background: var(--bg-card-hi); }
+
   /* Conteúdo: grids de 2 colunas e toque confortável */
   .derived-bar { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
   .skills-list, .weapons-list, .spells-rows, .journal-topics, .body-slots-grid { grid-template-columns: 1fr; }
