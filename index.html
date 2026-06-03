@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AIMalexi RPG · Fichas de Chamado de Cthulhu 7E</title>
-  <meta name="description" content="Ferramenta gratuita de ficha de RPG dinâmica para Chamado de Cthulhu 7ª Edição. Investigador e Mestre. Funciona no navegador, sem instalar nada." />
+  <title>AIMalexi RPG · Plataforma de Chamado de Cthulhu 7E</title>
+  <meta name="description" content="Plataforma completa e gratuita para Chamado de Cthulhu 7ª Edição: crie investigadores, gerencie campanhas, controle sanidade e role testes automaticamente. PWA offline-first." />
   <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/home.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%99%3C/text%3E%3C/svg%3E" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#1a1510" />
@@ -24,59 +25,126 @@
   }
 </script>
 
-<div class="app">
+<div class="home">
+  <div class="home-bg" aria-hidden="true"></div>
 
-  <header class="app-header">
-    <h1 class="app-title">AIMalexi RPG</h1>
-    <p class="app-subtitle">Fichas Dinâmicas · Chamado de Cthulhu · 7ª Edição</p>
+  <!-- ═══ HERO ═══ -->
+  <header class="hero">
+    <span class="hero-badge">Call of Cthulhu · 7ª Edição</span>
+    <h1 class="hero-title">AIMalexi RPG</h1>
+    <p class="hero-sub">Engine completa para Chamado de Cthulhu</p>
+    <p class="hero-lead">
+      Crie investigadores, gerencie campanhas, controle a sanidade e role testes
+      automaticamente. Tudo no navegador, online ou offline — sem instalar nada.
+    </p>
+    <div class="hero-cta">
+      <a href="investigator.html" class="cta-primary">🎲 Criar Investigador</a>
+      <a href="#recursos" class="cta-secondary">Explorar Recursos</a>
+    </div>
   </header>
 
-  <!-- Texto de boas-vindas -->
-  <section class="section" style="text-align: center; max-width: 720px; margin: 0 auto 1.5rem;">
-    <p style="font-size: 1.1rem; line-height: 1.7; color: var(--ink-dim); font-style: italic;">
-      Bem-vindo, investigador. Aqui você cria personagens, gerencia sanidade,
-      rola contra perícias e sobrevive (ou não) ao horror cósmico.
-    </p>
-    <p style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--ink-faded);">
-      Não precisa instalar nada. Funciona no celular, no computador, online ou offline.
-    </p>
-  </section>
-
-  <!-- Portal: 3 entradas principais -->
-  <nav class="portal" aria-label="Entradas principais">
-
-    <a href="investigator.html" class="portal-card investigator">
-      <span class="icon" aria-hidden="true">🎲</span>
-      <h2>Ficha do Investigador</h2>
-      <p>Crie e gerencie seu personagem. Atributos, perícias, ataques, perda de sanidade — tudo automatizado.</p>
-    </a>
-
-    <a href="keeper.html" class="portal-card keeper">
-      <span class="icon" aria-hidden="true">📜</span>
-      <h2>Ficha do Mestre</h2>
-      <p>Gere NPCs aleatórios, crie monstros custom, acesse o bestiário pré-pronto e mantenha biblioteca de criaturas.</p>
-    </a>
-
-    <a href="guia-iniciante.html" class="portal-card guide portal-guide">
-      <span class="icon" aria-hidden="true">❓</span>
-      <h2>Como Jogar</h2>
-      <p>Nunca jogou Cthulhu? Em 15 minutos você cria um investigador e entra na sua primeira sessão. Guia completo para iniciantes.</p>
-    </a>
-
+  <!-- ═══ QUICK ACTIONS ═══ -->
+  <nav class="quick-actions" aria-label="Ações rápidas">
+    <a href="investigator.html" class="qa"><span class="qa-icon" aria-hidden="true">➕</span>Novo Investigador</a>
+    <a href="investigator.html" class="qa"><span class="qa-icon" aria-hidden="true">📂</span>Importar JSON</a>
+    <button type="button" class="qa" id="qa-roll" title="Rolar 1d100"><span class="qa-icon" aria-hidden="true">🎲</span><span class="qa-roll-result" id="qa-roll-result">Rolar d100</span></button>
+    <a href="keeper.html" class="qa"><span class="qa-icon" aria-hidden="true">🌎</span>Campanhas</a>
   </nav>
 
-  <!-- Rodapé -->
-  <footer style="text-align: center; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--ink-faded);">
-    <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-faded); letter-spacing: 0.1em; text-transform: uppercase;">
+  <!-- ═══ STATS ═══ -->
+  <section class="stats-strip" aria-label="Sobre a plataforma">
+    <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Offline (PWA)</div></div>
+    <div class="stat"><div class="stat-num">CoC 7e</div><div class="stat-label">Regras Integradas</div></div>
+    <div class="stat"><div class="stat-num">PDF</div><div class="stat-label">Exportação</div></div>
+    <div class="stat"><div class="stat-num">$0</div><div class="stat-label">Gratuito · Open Source</div></div>
+  </section>
+
+  <!-- ═══ FEATURES ═══ -->
+  <section class="features" id="recursos">
+    <h2 class="features-title">A plataforma completa de mesa digital</h2>
+    <div class="feature-grid">
+
+      <article class="feature-card investigator">
+        <div class="fc-icon" aria-hidden="true">🎲</div>
+        <h3>Ficha do Investigador</h3>
+        <ul>
+          <li>Atributos e derivados automáticos</li>
+          <li>Rolagens com graus de sucesso</li>
+          <li>Sanidade e loucuras integradas</li>
+          <li>Combate, perícias e inventário</li>
+          <li>Exportação em PDF e JSON</li>
+        </ul>
+        <a href="investigator.html" class="fc-open">Abrir →</a>
+      </article>
+
+      <article class="feature-card keeper">
+        <div class="fc-icon" aria-hidden="true">📜</div>
+        <h3>Ferramenta do Mestre</h3>
+        <ul>
+          <li>NPCs aleatórios em 1 clique</li>
+          <li>Bestiário e criaturas customizadas</li>
+          <li>Dashboard executivo da campanha</li>
+          <li>Diário estruturado e Lore</li>
+          <li>Multiplayer (em evolução)</li>
+        </ul>
+        <a href="keeper.html" class="fc-open">Abrir →</a>
+      </article>
+
+      <article class="feature-card guide">
+        <div class="fc-icon" aria-hidden="true">❓</div>
+        <h3>Guia do Iniciante</h3>
+        <ul>
+          <li>Aprenda CoC do zero em ~20 min</li>
+          <li>D100 e graus de sucesso</li>
+          <li>Criação passo a passo</li>
+          <li>Sanidade, combate e investigação</li>
+          <li>Dicas, erros comuns e FAQ</li>
+        </ul>
+        <a href="guia-iniciante.html" class="fc-open">Abrir →</a>
+      </article>
+
+      <article class="feature-card compendium">
+        <div class="fc-icon" aria-hidden="true">📚</div>
+        <h3>Compêndio de Regras</h3>
+        <ul>
+          <li>Atributos e perícias de referência</li>
+          <li>Ocupações e combate</li>
+          <li>Sanidade e Mythos</li>
+          <li>Bestiário consultável</li>
+          <li>Busca rápida durante a sessão</li>
+        </ul>
+        <a href="compendium.html" class="fc-open">Abrir →</a>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="home-footer">
+    <p class="quote">"Não é o conhecimento que enlouquece — é o que ele revela."</p>
+    <p class="meta">
       Código aberto · MIT License ·
       <a href="https://github.com/M4alexii/AIMalexi_RPG_Ficha" target="_blank" rel="noopener">GitHub</a>
-    </p>
-    <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--ink-faded); font-style: italic;">
-      "Não é o conhecimento que enlouquece — é o que ele revela."
     </p>
   </footer>
 
 </div>
 
+<script src="js/engine/dice.js"></script>
+<script>
+  // Quick action: rolar 1d100 inline (delight + sinal de "ferramenta real")
+  (function () {
+    var btn = document.getElementById('qa-roll');
+    var out = document.getElementById('qa-roll-result');
+    if (!btn || !out) return;
+    btn.addEventListener('click', function () {
+      var r = (window.CoC && window.CoC.dice) ? window.CoC.dice.rollD100(null).value
+            : (Math.floor(Math.random() * 100) + 1);
+      out.textContent = '🎲 ' + r;
+      btn.style.transform = 'scale(1.05)';
+      setTimeout(function () { btn.style.transform = ''; }, 150);
+    });
+  })();
+</script>
 </body>
 </html>
