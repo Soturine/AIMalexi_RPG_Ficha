@@ -1375,3 +1375,103 @@
     justify-content: center;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ETAPA 13 — REDESIGN MOBILE DO GUARDIÃO
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Desktop: ações fluem direto no toolbar; overflow oculto */
+.toolbar-actions { display: contents; }
+#btn-overflow { display: none; }
+
+@media (max-width: 767px) {
+
+  /* Header compacto */
+  .app { padding: 0.5rem 0.5rem 1.5rem; }
+  .app-header { flex-direction: column; align-items: stretch; gap: 0.3rem; margin-bottom: 0.4rem; }
+  .app-title { font-size: 1.1rem; }
+  .app-subtitle { display: none; }
+
+  .toolbar {
+    position: relative;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    padding: 0.3rem 0;
+    margin-bottom: 0.5rem;
+    align-items: center;
+  }
+  .toolbar .btn-label { display: none; }       /* primários = só ícone */
+  .btn-back, #btn-new-npc, #btn-new-custom, .btn-campaign {
+    min-width: 40px; min-height: 40px;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.4rem 0.5rem;
+  }
+
+  #btn-overflow {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 40px; min-height: 40px;
+    font-size: 1.3rem; line-height: 1; flex: 0 0 auto;
+  }
+
+  .toolbar-actions {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.3rem);
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+    min-width: 220px;
+    max-width: 80vw;
+    padding: 0.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--keeper-accent, var(--brass));
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.65);
+    z-index: 200;
+  }
+  .toolbar-actions.open { display: flex; }
+  .toolbar-actions button,
+  .toolbar-actions a { width: 100%; text-align: left; min-height: 44px; display: flex; align-items: center; }
+
+  /* Abas: strip horizontal rolável (7 abas não cabem empilhadas) */
+  .keeper-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    position: sticky;
+    top: 0;
+    background: var(--bg-deep);
+    z-index: 50;
+    margin: 0.3rem -0.5rem 0.8rem;
+    padding: 0 0.5rem;
+  }
+  .keeper-tabs::-webkit-scrollbar { display: none; }
+  .keeper-tab {
+    flex: 0 0 auto;
+    min-height: 44px;
+    font-size: 0.82rem;
+    scroll-snap-align: start;
+  }
+
+  /* Dashboard compacto: KPIs 2-col, cards empilhados */
+  .keeper-overview { padding: 0.6rem; }
+  .ko-kpis { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .ko-cards { grid-template-columns: 1fr; }
+
+  /* Compêndio iframe menor no mobile */
+  .compendio-frame { height: 60vh; }
+
+  /* Touch-friendly */
+  .keeper-tab, .ko-kpi, .btn { min-height: 40px; }
+
+  /* Performance */
+  .keeper-overview, .ko-card, .inv-card, .workspace { box-shadow: none; }
+}
+
+/* Tablet do Guardião */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app { max-width: 100%; }
+  .ko-kpis { grid-template-columns: repeat(3, 1fr); }
+}

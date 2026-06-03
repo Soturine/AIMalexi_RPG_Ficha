@@ -40,20 +40,25 @@
 
   <!-- Toolbar -->
   <div class="toolbar">
-    <a href="index.html" class="btn btn-ghost" title="Voltar ao portal">← Início</a>
+    <a href="index.html" class="btn btn-ghost btn-back" title="Voltar ao portal"><span aria-hidden="true">←</span><span class="btn-label"> Início</span></a>
 
-    <button id="btn-new-npc" title="Gerar NPC aleatório com 1 clique">🎲 NPC Aleatório</button>
-    <button id="btn-new-custom" title="Criar criatura customizada do zero">+ Criar</button>
-    <button id="btn-import" title="Importar biblioteca JSON">📁 Importar</button>
+    <button id="btn-new-npc" title="Gerar NPC aleatório com 1 clique"><span aria-hidden="true">🎲</span><span class="btn-label"> NPC Aleatório</span></button>
+    <button id="btn-new-custom" title="Criar criatura customizada do zero"><span aria-hidden="true">+</span><span class="btn-label"> Criar</span></button>
+    <button id="btn-campaign" class="btn-campaign" title="Gerenciar Campanha"><span aria-hidden="true">🌐</span><span class="btn-label"> Campanha</span></button>
     <input type="file" id="file-import" accept="application/json,.json" style="display:none" />
 
     <span class="toolbar-spacer"></span>
 
-    <a href="compendium.html" class="btn btn-ghost" title="Compêndio de Regras">📚 Compêndio</a>
-    <button id="btn-campaign" class="btn-campaign" title="Gerenciar Campanha">🌐 Campanha</button>
-    <button id="btn-print" class="btn-ghost" title="Imprimir / PDF">🖨️</button>
-    <button id="btn-export" class="btn-export" title="Exportar biblioteca completa como JSON (BACKUP)">💾 Exportar</button>
-    <button id="btn-settings" class="btn-ghost" title="Central de Configurações">⚙️ Config</button>
+    <button id="btn-overflow" class="btn-ghost no-print" title="Mais ações"
+            aria-expanded="false" aria-controls="toolbar-actions">⋮</button>
+
+    <div class="toolbar-actions" id="toolbar-actions">
+      <button id="btn-import" class="btn-ghost" title="Importar biblioteca JSON">📁 Importar</button>
+      <a href="compendium.html" class="btn btn-ghost" title="Compêndio de Regras">📚 Compêndio</a>
+      <button id="btn-print" class="btn-ghost" title="Imprimir / PDF">🖨️ PDF</button>
+      <button id="btn-export" class="btn-export" title="Exportar biblioteca completa como JSON (BACKUP)">💾 Exportar</button>
+      <button id="btn-settings" class="btn-ghost" title="Central de Configurações">⚙️ Config</button>
+    </div>
   </div>
 
   <!-- ═══ DASHBOARD EXECUTIVO (Fase D) — visão de 10s, acima das abas ═══ -->

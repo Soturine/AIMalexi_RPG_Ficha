@@ -30,6 +30,33 @@
     var saved = null;
     try { saved = localStorage.getItem(KEY); } catch (e) {}
     if (saved && document.querySelector('.ktab-panel[data-ktab="' + saved + '"]')) show(saved);
+
+    _initOverflow();
+  }
+
+  // §13 mobile — menu overflow ⋮ do toolbar (dropdown)
+  function _initOverflow() {
+    var btn = document.getElementById('btn-overflow');
+    var actions = document.getElementById('toolbar-actions');
+    if (!btn || !actions) return;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = actions.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    });
+    actions.addEventListener('click', function (e) {
+      if (e.target.closest('button, a')) {
+        actions.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('click', function (e) {
+      if (actions.classList.contains('open') &&
+          !e.target.closest('#toolbar-actions') && !e.target.closest('#btn-overflow')) {
+        actions.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
