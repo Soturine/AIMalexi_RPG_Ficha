@@ -177,6 +177,12 @@
 
 ## 11. UX / INTERFACE
 
+> **ETAPA 13 (mobile):** redesign responsivo — header compacto + menu overflow ⋮,
+> bottom navigation fixa, resumo executivo (foto+nome+PV/SAN/MP/Sorte) acima da dobra,
+> retrato reduzido (84px), grids 2-col, breakpoints Mobile/Tablet/Desktop, touch ≥44px.
+> Arquivos: `css/investigator.css`, `investigator.html`, `js/investigator.js`.
+
+
 | # | Regra | Estado | Impacto | Arquivos | Prioridade | Complexidade |
 |---|-------|--------|---------|----------|------------|--------------|
 | 11.1 | Largura total 1920px (sem margens laterais) | ✅ | **CORRIGIDO ETAPA 7 (#16)** — min(98vw, 2100px) | `css/investigator.css` | — | — |
