@@ -120,10 +120,34 @@
   // BOOT
   // ═════════════════════════════════════════════════════════════════════
 
+  // ═════════════════════════════════════════════════════════════════════
+  // BARRA DE PROGRESSO DE LEITURA
+  // ═════════════════════════════════════════════════════════════════════
+
+  function setupReadingProgress() {
+    const bar = $("#reading-bar");
+    if (!bar) return;
+    let ticking = false;
+    function update() {
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY || doc.scrollTop;
+      const max = (doc.scrollHeight - window.innerHeight) || 1;
+      const pct = Math.max(0, Math.min(100, (scrollTop / max) * 100));
+      bar.style.width = pct + "%";
+      ticking = false;
+    }
+    window.addEventListener("scroll", () => {
+      if (!ticking) { window.requestAnimationFrame(update); ticking = true; }
+    }, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
+    update();
+  }
+
   function boot() {
     setupDemoClassify();
     setupSmoothScroll();
     setupSectionObserver();
+    setupReadingProgress();
 
     // Se a URL tem hash, rola suavemente após o load
     if (location.hash) {

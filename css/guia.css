@@ -681,11 +681,109 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   ETAPA 15 — Guia moderno: barra de progresso, tooltips, tempo, resumo, fluxograma
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Barra de progresso de leitura (topo fixo) */
+.reading-progress {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 3px; z-index: 300;
+  background: transparent; pointer-events: none;
+}
+.reading-progress-bar {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--brass), var(--brass-bright));
+  box-shadow: 0 0 8px var(--brass-glow);
+  transition: width 0.1s linear;
+}
+
+/* Tempo estimado por seção */
+.section-time {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-family: var(--font-mono); font-size: 0.68rem;
+  color: var(--ink-faded); text-transform: uppercase; letter-spacing: 0.06em;
+  margin-left: 0.5rem; vertical-align: middle;
+}
+
+/* Tooltip de termo técnico */
+.term {
+  border-bottom: 1px dotted var(--brass);
+  cursor: help; text-decoration: none; color: inherit;
+}
+.term:hover { color: var(--brass-bright); }
+
+/* Resumo executivo ao fim da seção */
+.section-summary {
+  background: var(--bg-deep);
+  border: 1px dashed var(--brass);
+  border-radius: var(--radius);
+  padding: 0.7rem 1rem; margin: 1.2rem 0 0;
+}
+.section-summary .summary-label {
+  font-family: var(--font-mono); font-size: 0.68rem;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--brass); margin-bottom: 0.3rem;
+}
+.section-summary ul { margin: 0; padding-left: 1.1rem; }
+.section-summary li { margin: 0.15rem 0; font-size: 0.9rem; }
+
+/* Grid de cards informativos */
+.guia-cards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem; margin: 1rem 0;
+}
+.guia-card {
+  background: var(--bg-card-hi); border: 1px solid var(--ink-faded);
+  border-radius: var(--radius-lg); padding: 0.9rem 1rem;
+}
+.guia-card .gc-icon { font-size: 1.6rem; display: block; margin-bottom: 0.3rem; }
+.guia-card h4 { color: var(--brass-bright); margin: 0 0 0.3rem; }
+.guia-card p { margin: 0; font-size: 0.88rem; color: var(--ink-dim); }
+.guia-card .gc-num {
+  font-family: var(--font-serif); font-size: 1.8rem; font-weight: 700;
+  color: var(--brass-bright); line-height: 1;
+}
+
+/* Passos numerados (criação em 7 passos) */
+.steps { counter-reset: step; list-style: none; padding: 0; margin: 1rem 0; }
+.steps > li {
+  position: relative; padding: 0.6rem 0.6rem 0.6rem 3rem;
+  margin-bottom: 0.5rem; background: var(--bg-card-hi);
+  border-radius: var(--radius); border-left: 3px solid var(--brass);
+}
+.steps > li::before {
+  counter-increment: step; content: counter(step);
+  position: absolute; left: 0.7rem; top: 0.6rem;
+  width: 1.6rem; height: 1.6rem; border-radius: 50%;
+  background: var(--brass); color: var(--bg-deep);
+  font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Fluxograma da mecânica */
+.flowchart { display: flex; flex-direction: column; align-items: center; gap: 0; margin: 1rem 0; }
+.flow-node {
+  background: var(--bg-card-hi); border: 1px solid var(--brass);
+  border-radius: var(--radius); padding: 0.6rem 1rem; text-align: center;
+  max-width: 340px; width: 100%; font-size: 0.9rem;
+}
+.flow-node.decision { border-style: dashed; border-color: var(--mist); }
+.flow-node.start { background: var(--brass); color: var(--bg-deep); font-weight: 700; }
+.flow-arrow { color: var(--brass); font-size: 1.2rem; line-height: 1.4; }
+.flow-branch { display: flex; gap: 1rem; width: 100%; max-width: 360px; justify-content: space-between; }
+.flow-branch .flow-node { font-size: 0.8rem; padding: 0.4rem 0.6rem; }
+
+@media (max-width: 767px) {
+  .section-summary { font-size: 0.95rem; }
+  .flow-branch { flex-direction: column; align-items: center; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    PRINT
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media print {
-  .guia-toc, .demo-roll-button, .no-print { display: none !important; }
+  .guia-toc, .demo-roll-button, .no-print, .reading-progress { display: none !important; }
   .demo-roll-result.empty { display: none; }
   .guia-section { page-break-inside: avoid; }
 }
