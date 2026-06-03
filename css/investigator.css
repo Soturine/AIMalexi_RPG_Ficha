@@ -2140,3 +2140,186 @@ body[data-difficulty="extreme"] .skill-frac-sep {
     grid-template-columns: 1fr;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ETAPA 13 — REDESIGN MOBILE RESPONSIVO
+   Breakpoints: Mobile 0–767 · Tablet 768–1023 · Desktop 1024+
+   Page-scoped (só a ficha do investigador). Não altera desktop.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Desktop: as ações fluem direto no toolbar (sem caixa intermediária);
+   o botão overflow fica oculto. */
+.toolbar-actions { display: contents; }
+#btn-overflow { display: none; }
+
+/* ── MOBILE (≤ 767px) ─────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+  /* Header compacto: uma linha só, sem quebra */
+  .app { padding: 0.5rem 0.5rem 4.5rem; }            /* espaço p/ bottom nav */
+  .app-header { margin-bottom: 0.4rem; text-align: left; }
+  .app-title { font-size: 1.15rem; letter-spacing: 0.04em; }
+  .app-subtitle { display: none; }                    /* economiza vertical */
+
+  .toolbar {
+    position: relative;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    padding: 0.3rem 0;
+    margin-bottom: 0.5rem;
+    align-items: center;
+  }
+  .toolbar .btn-label { display: none; }               /* só ícones nos primários */
+  .btn-back, .btn-new-char {
+    min-width: 40px; min-height: 40px;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.4rem 0.55rem;
+  }
+  .character-selector { flex: 1 1 auto; min-width: 0; }
+  .character-selector select { min-width: 0; width: 100%; max-width: none; }
+
+  /* Botão overflow ⋮ visível */
+  #btn-overflow {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 40px; min-height: 40px;
+    font-size: 1.3rem; line-height: 1;
+    flex: 0 0 auto;
+  }
+  .toolbar-spacer { display: none; }
+
+  /* Menu overflow vira dropdown */
+  .toolbar-actions {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.3rem);
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+    min-width: 230px;
+    max-width: 80vw;
+    padding: 0.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--brass);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.65);
+    z-index: 200;
+  }
+  .toolbar-actions.open { display: flex; }
+  .toolbar-actions button {
+    width: 100%; text-align: left;
+    min-height: 44px;                                   /* touch-friendly */
+  }
+  .toolbar-actions .theme-picker {
+    border-left: none; padding: 0.3rem 0; margin: 0;
+    justify-content: center;
+  }
+  .toolbar-actions .theme-swatch { width: 28px; height: 28px; }
+
+  /* ── Resumo executivo: foto + nome + vitais acima da dobra ── */
+  .app-shell { flex-direction: column; gap: 0.5rem; }
+  .character-sidebar {
+    width: 100%;
+    position: static;
+    max-height: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem;
+  }
+  .character-sidebar .character-portrait,
+  .character-sidebar #portrait-main {
+    width: 84px !important;
+    max-width: 84px;
+    aspect-ratio: 3 / 4;
+    max-height: 112px;
+    flex-shrink: 0;
+  }
+  .sidebar-identity { flex: 1 1 auto; min-width: 100px; text-align: left; }
+  .sidebar-name { font-size: 1.05rem; }
+  .sidebar-occupation { font-size: 0.8rem; }
+
+  /* Vitais em grade 2 colunas, compactos, ocupam a linha inteira */
+  .sidebar-vitals {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+  }
+  .svital { margin: 0; }
+
+  /* Botões de rolar atributos + edição: empilham e ficam tocáveis */
+  .sidebar-attr-header { width: 100%; display: flex; gap: 0.4rem; }
+  .sidebar-attr-header button { flex: 1; min-height: 40px; }
+  .sidebar-edit-btn { min-height: 40px; }
+
+  /* Atributos: 3 por linha, compactos */
+  .sidebar-attributes {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.2rem;
+  }
+  .sattr-row {
+    width: auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 0.3rem 0.2rem;
+    background: var(--bg-card-hi);
+    border-radius: var(--radius);
+  }
+  .sattr-fracs { margin-left: 0; }
+
+  /* ── Bottom navigation fixa ── */
+  .mobile-tabs {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0; top: auto;
+    border-top: 1px solid var(--brass);
+    border-bottom: none;
+    padding: 0.2rem 0.15rem calc(0.2rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.5);
+    gap: 0;
+  }
+  .mobile-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-height: 48px;
+    padding: 0.25rem 0.1rem;
+    font-size: 0.58rem;
+    line-height: 1.1;
+    border-bottom: none;
+    border-top: 2px solid transparent;
+  }
+  .mobile-tab .tab-icon { font-size: 1.15rem; }
+  .mobile-tab .tab-label { letter-spacing: 0; }
+  .mobile-tab.active { border-top-color: var(--brass); border-bottom-color: transparent; }
+
+  /* Conteúdo: grids de 2 colunas e toque confortável */
+  .derived-bar { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  .skills-list, .weapons-list, .spells-rows, .journal-topics, .body-slots-grid { grid-template-columns: 1fr; }
+  .section { padding: 0.7rem; }
+  .section-title { font-size: 1.05rem; }
+
+  /* Alvos de toque mínimos */
+  .skill-roll, .skill-mark, .skill-info-toggle,
+  .derived-actions button, .condition-chip { min-height: 36px; }
+
+  /* ── Performance: menos sombra/blur/animação no mobile ── */
+  .section, .derived-card, .weapon-card, .skill-row, .spell-card, .tome-card {
+    box-shadow: none;
+  }
+}
+
+/* ── TABLET (768–1023px) — layout intermediário ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app { max-width: 100%; padding: 0.75rem 1rem; }
+  .character-sidebar { width: 240px; }
+  .derived-bar { grid-template-columns: repeat(4, 1fr); }
+}
