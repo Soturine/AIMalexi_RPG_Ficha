@@ -233,19 +233,16 @@ body[data-difficulty="extreme"] .skill-frac-sep {
   flex: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr;   /* §21 — coluna única: o conteúdo usa a largura
+                                   toda (antes reservava 320px que ficavam vazios).
+                                   O Log é uma aba que ocupa a largura inteira. */
   gap: var(--gap-lg);
   align-items: start;
 }
 
 .content-col { min-width: 0; }
 
-.sidebar-col {
-  position: sticky;
-  top: 1rem;
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
-}
+.sidebar-col { min-width: 0; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    DESKTOP TABS — M3.5.2
@@ -292,6 +289,19 @@ body[data-difficulty="extreme"] .skill-frac-sep {
   .main-panel > .content-col > .section.tab-active { display: block; }
   .sidebar-col { display: none; }
   .sidebar-col.tab-active { display: block; }
+
+  /* §21 — Aba Log ocupa a largura inteira: Modificadores | Chat (meio, maior) | Log */
+  .sidebar-col[data-tab="log"].tab-active {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) 300px;
+    gap: var(--gap-lg);
+    align-items: start;
+  }
+  .sidebar-col[data-tab="log"] .modifier-panel { order: 1; margin-bottom: 0; align-self: start; }
+  .sidebar-col[data-tab="log"] #chat-panel    { order: 2; margin-top: 0; height: calc(100vh - 9rem); }
+  .sidebar-col[data-tab="log"] #roll-log       { order: 3; max-height: calc(100vh - 9rem); overflow-y: auto; }
+  /* Chat preenche a coluna do meio inteira */
+  .sidebar-col[data-tab="log"] #chat-panel .chat-list { max-height: none; flex: 1 1 auto; }
 }
 
 /* ── Responsive ────────────────────────────────────────────────────────── */
@@ -417,21 +427,30 @@ body[data-difficulty="extreme"] .skill-frac-sep {
 }
 .sidebar-edit-btn:hover { background: var(--bg-card-hi); }
 
-/* Atributos em grade 2 colunas (apenas com sidebar vertical, ≥901px) */
+/* Atributos em grade 2 colunas — cards centrados limpos (≥901px, sidebar vertical) */
 @media (min-width: 901px) {
   .sidebar-attributes {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.3rem 0.4rem;
+    gap: 0.4rem;
   }
   .sidebar-attributes .sattr-row {
-    flex-wrap: wrap;
-    padding: 0.3rem 0.45rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.05rem;
+    padding: 0.4rem 0.3rem;
     background: var(--bg-card-hi);
+    border: 1px solid var(--ink-faded);
+    text-align: center;
   }
-  .sidebar-attributes .sattr-label { width: auto; flex: 1 1 auto; }
-  .sidebar-attributes .sattr-value { font-size: 1.2rem; }
-  .sidebar-attributes .sattr-fracs { flex-basis: 100%; margin-left: 0; text-align: right; }
+  .sidebar-attributes .sattr-label {
+    width: auto;
+    font-size: var(--text-xs);
+    color: var(--ink-dim);
+  }
+  .sidebar-attributes .sattr-value { font-size: 1.4rem; line-height: 1.1; }
+  .sidebar-attributes .sattr-fracs { margin-left: 0; font-size: var(--text-xs); }
 }
 
 /* Aba Personagem — usa a largura: identidade (esq.) + narrativa curta (dir.) */
