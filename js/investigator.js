@@ -102,6 +102,8 @@
     window.CoC.views.inventory.init();
     // ETAPA 5 — Body slots init
     if (window.CoC.views.bodySlots) window.CoC.views.bodySlots.init();
+    // ETAPA 20 — Dashboard executivo init
+    if (window.CoC.views.dashboard) window.CoC.views.dashboard.init();
     // M4.2 — Journal slice init
     window.CoC.views.journal.init();
     // M4.3 — Spells slice init
@@ -155,6 +157,7 @@
     _pipeline.register('background', function () { window.CoC.views.background.render(); });
     _pipeline.register('inventory',  function () { window.CoC.views.inventory.render(); });
     _pipeline.register('bodySlots',  function () { if (window.CoC.views.bodySlots) window.CoC.views.bodySlots.render(); });
+    _pipeline.register('dashboard',  function () { if (window.CoC.views.dashboard) window.CoC.views.dashboard.render(); });
     _pipeline.register('journal',    function () { window.CoC.views.journal.render(); });
     _pipeline.register('spells',     function () { window.CoC.views.spells.render(); });
     _pipeline.register('tomes',      function () { window.CoC.views.tomes.render(); });
