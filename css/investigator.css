@@ -1009,6 +1009,49 @@ body[data-difficulty="extreme"] .skill-frac-sep {
 .fab-quick-rolls button { min-height: 44px; font-size: 0.85rem; padding: 0.4rem 0.3rem; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   DASHBOARD EXECUTIVO (#20)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.dashboard-section { padding: 0.85rem; }
+.ed-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.7rem; }
+.ed-name { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 700; color: var(--brass-bright); }
+.ed-tag { font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faded); }
+
+.ed-vitals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-bottom: 0.9rem; }
+.ed-vital {
+  background: var(--bg-card-hi); border: 1px solid var(--ink-faded);
+  border-top: 3px solid var(--accent, var(--brass)); border-radius: var(--radius-lg);
+  padding: 0.6rem 0.5rem; text-align: center;
+}
+.ed-vital.pv   { --accent: var(--blood, #c0392b); }
+.ed-vital.san  { --accent: var(--mist, #7a8590); }
+.ed-vital.pm   { --accent: var(--brass); }
+.ed-vital.luck { --accent: var(--ok, #6a9a6a); }
+.ed-vital-label { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-dim); }
+.ed-vital-val { font-family: var(--font-serif); font-size: 1.6rem; font-weight: 700; color: var(--ink); line-height: 1.1; }
+.ed-vital-max { font-size: 0.85rem; color: var(--ink-faded); font-weight: 400; }
+.ed-vital-bar { height: 4px; background: var(--bg-deep); border-radius: 999px; margin-top: 0.35rem; overflow: hidden; }
+.ed-vital-bar i { display: block; height: 100%; background: var(--accent, var(--brass)); }
+
+.ed-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+.ed-block { background: var(--bg-card); border: 1px solid var(--ink-faded); border-radius: var(--radius); padding: 0.6rem 0.7rem; }
+.ed-block-title { font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brass); margin-bottom: 0.4rem; }
+.ed-empty { color: var(--ink-faded); font-size: 0.82rem; font-style: italic; }
+.ed-roll { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.82rem; padding: 0.15rem 0; border-bottom: 1px dotted var(--ink-faded); }
+.ed-roll:last-child { border-bottom: none; }
+.ed-roll-level { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-dim); white-space: nowrap; }
+.ed-roll.crit .ed-roll-level, .ed-roll.extreme .ed-roll-level { color: var(--brass-bright); }
+.ed-roll.fail .ed-roll-level, .ed-roll.fumble .ed-roll-level { color: var(--err, #c0392b); }
+.ed-cond-chips, .ed-equip { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.ed-cond { font-size: 0.76rem; background: var(--blood, #6b2020); color: #ffd8d8; border-radius: 999px; padding: 0.12rem 0.5rem; }
+.ed-equip-item { font-size: 0.78rem; background: var(--bg-card-hi); border: 1px solid var(--ink-faded); border-radius: var(--radius); padding: 0.12rem 0.45rem; color: var(--ink-dim); }
+
+@media (max-width: 767px) {
+  .ed-grid { grid-template-columns: 1fr; }
+  .ed-vitals { grid-template-columns: 1fr 1fr; }
+  .dashboard-section { padding: 0.6rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    PAINEL DE DEPENDÊNCIAS (#31)
    ═══════════════════════════════════════════════════════════════════════════ */
 
