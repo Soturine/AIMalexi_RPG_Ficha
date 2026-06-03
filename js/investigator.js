@@ -502,6 +502,31 @@
     const btnDeps = $("#btn-deps");
     if (btnDeps) btnDeps.onclick = () => window.CoC.views.dependencies && window.CoC.views.dependencies.open();
 
+    // §13 — Menu overflow (mobile): toggle do dropdown de ações
+    const btnOverflow = $("#btn-overflow");
+    const toolbarActions = $("#toolbar-actions");
+    if (btnOverflow && toolbarActions) {
+      btnOverflow.onclick = (e) => {
+        e.stopPropagation();
+        const open = toolbarActions.classList.toggle("open");
+        btnOverflow.setAttribute("aria-expanded", String(open));
+      };
+      // Fecha ao clicar numa ação ou fora do menu
+      toolbarActions.addEventListener("click", (e) => {
+        if (e.target.closest("button") && !e.target.closest(".theme-picker")) {
+          toolbarActions.classList.remove("open");
+          btnOverflow.setAttribute("aria-expanded", "false");
+        }
+      });
+      document.addEventListener("click", (e) => {
+        if (toolbarActions.classList.contains("open") &&
+            !e.target.closest("#toolbar-actions") && !e.target.closest("#btn-overflow")) {
+          toolbarActions.classList.remove("open");
+          btnOverflow.setAttribute("aria-expanded", "false");
+        }
+      });
+    }
+
     const btnSanFx = $("#btn-sanity-fx");
     if (btnSanFx) btnSanFx.onclick = () => window.CoC.sanityFx && window.CoC.sanityFx.openSettings();
 

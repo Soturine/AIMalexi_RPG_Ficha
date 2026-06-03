@@ -43,8 +43,8 @@
   <!-- ═══ TOOLBAR ═══ -->
   <div class="toolbar">
 
-    <a href="index.html" class="btn btn-ghost" title="Voltar ao portal">
-      ← Início
+    <a href="index.html" class="btn btn-ghost btn-back" title="Voltar ao portal">
+      <span aria-hidden="true">←</span><span class="btn-label"> Início</span>
     </a>
 
     <div class="character-selector">
@@ -57,12 +57,8 @@
       </select>
     </div>
 
-    <button id="btn-new" title="Criar novo personagem (wizard)">
-      + Novo
-    </button>
-
-    <button id="btn-import" title="Importar JSON">
-      📁 Importar
+    <button id="btn-new" class="btn-new-char" title="Criar novo personagem (wizard)">
+      <span aria-hidden="true">+</span><span class="btn-label"> Novo</span>
     </button>
 
     <input
@@ -74,91 +70,39 @@
 
     <span class="toolbar-spacer"></span>
 
-    <button
-      id="btn-sanity-fx"
-      class="btn-ghost"
-      title="Configurar efeitos visuais de insanidade"
-    >
-      🧠 Efeitos
-    </button>
+    <!-- ⋮ Menu overflow (só aparece no mobile) -->
+    <button id="btn-overflow" class="btn-ghost no-print" title="Mais ações"
+            aria-expanded="false" aria-controls="toolbar-actions">⋮</button>
 
-    <button
-      id="btn-settings"
-      class="btn-ghost"
-      title="Central de Configurações (tema, idioma, acessibilidade)"
-    >
-      ⚙️ Configurações
-    </button>
+    <div class="toolbar-actions" id="toolbar-actions">
+      <button id="btn-import" class="btn-ghost" title="Importar JSON">📁 Importar</button>
+      <button id="btn-sanity-fx" class="btn-ghost" title="Configurar efeitos visuais de insanidade">🧠 Efeitos</button>
+      <button id="btn-settings" class="btn-ghost" title="Central de Configurações (tema, idioma, acessibilidade)">⚙️ Configurações</button>
 
-    <div class="theme-picker no-print" id="theme-picker" title="Tema da campanha">
-      <button class="theme-swatch active" data-theme="arkham"     title="Arkham — CoC Clássico"></button>
-      <button class="theme-swatch"        data-theme="miskatonic" title="Miskatonic — Acadêmico"></button>
-      <button class="theme-swatch"        data-theme="sepia"      title="Sépia — Documento Histórico"></button>
-      <button class="theme-swatch"        data-theme="obsidian"   title="Obsidian — Moderno"></button>
-      <button class="theme-swatch"        data-theme="eldritch"   title="Eldritch — Horror Cósmico"></button>
+      <div class="theme-picker no-print" id="theme-picker" title="Tema da campanha">
+        <button class="theme-swatch active" data-theme="arkham"     title="Arkham — CoC Clássico"></button>
+        <button class="theme-swatch"        data-theme="miskatonic" title="Miskatonic — Acadêmico"></button>
+        <button class="theme-swatch"        data-theme="sepia"      title="Sépia — Documento Histórico"></button>
+        <button class="theme-swatch"        data-theme="obsidian"   title="Obsidian — Moderno"></button>
+        <button class="theme-swatch"        data-theme="eldritch"   title="Eldritch — Horror Cósmico"></button>
+      </div>
+
+      <button id="btn-print" class="btn-ghost" title="Imprimir / Salvar como PDF">🖨️ PDF</button>
+      <button id="btn-session-export" class="btn-ghost" title="Exportar sessão completa com trace de eventos (rolagens, dano, sanidade)">📊 Sessão</button>
+      <button id="btn-export" class="btn-export" title="Exportar personagem como JSON (BACKUP!)">💾 Exportar JSON</button>
+      <button id="btn-delete" class="btn-danger" title="Deletar este personagem">🗑️</button>
     </div>
-
-    <button
-      id="btn-print"
-      class="btn-ghost"
-      title="Imprimir / Salvar como PDF"
-    >
-      🖨️ PDF
-    </button>
-
-    <button
-      id="btn-session-export"
-      class="btn-ghost"
-      title="Exportar sessão completa com trace de eventos (rolagens, dano, sanidade)"
-    >
-      📊 Sessão
-    </button>
-
-    <button
-      id="btn-export"
-      class="btn-export"
-      title="Exportar personagem como JSON (BACKUP!)"
-    >
-      💾 Exportar JSON
-    </button>
-
-    <button
-      id="btn-delete"
-      class="btn-danger"
-      title="Deletar este personagem"
-    >
-      🗑️
-    </button>
 
   </div>
 
-  <!-- ═══ MOBILE TABS ═══ -->
+  <!-- ═══ MOBILE TABS (bottom navigation no mobile) ═══ -->
   <nav class="mobile-tabs no-print" aria-label="Navegação móvel">
-
-    <button class="mobile-tab active" data-tab="personagem">
-      👤 Personagem
-    </button>
-
-    <button class="mobile-tab" data-tab="pericias">
-      📜 Perícias
-    </button>
-
-    <button class="mobile-tab" data-tab="combate">
-      ⚔️ Combate
-    </button>
-
-    <button class="mobile-tab" data-tab="inventario">
-      🎒 Inventário
-    </button>
-
-    <button class="mobile-tab" data-tab="diario">
-      📔 Diário
-    </button>
-
-    <button class="mobile-tab" data-tab="log">
-      🎲 Log
-    </button>
-
+    <button class="mobile-tab active" data-tab="personagem"><span class="tab-icon" aria-hidden="true">👤</span><span class="tab-label">Personagem</span></button>
+    <button class="mobile-tab" data-tab="pericias"><span class="tab-icon" aria-hidden="true">📜</span><span class="tab-label">Perícias</span></button>
+    <button class="mobile-tab" data-tab="combate"><span class="tab-icon" aria-hidden="true">⚔️</span><span class="tab-label">Combate</span></button>
+    <button class="mobile-tab" data-tab="inventario"><span class="tab-icon" aria-hidden="true">🎒</span><span class="tab-label">Inventário</span></button>
+    <button class="mobile-tab" data-tab="diario"><span class="tab-icon" aria-hidden="true">📔</span><span class="tab-label">Diário</span></button>
+    <button class="mobile-tab" data-tab="log"><span class="tab-icon" aria-hidden="true">🎲</span><span class="tab-label">Log</span></button>
   </nav>
 
   <!-- ═══ APP SHELL ═══ -->
