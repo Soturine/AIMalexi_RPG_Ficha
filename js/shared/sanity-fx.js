@@ -68,8 +68,9 @@ window.CoC = window.CoC || {};
   function resolveInitialMode() {
     const saved = store && typeof store.getPref === "function" ? store.getPref(PREF_KEY, null) : null;
     if (saved && MODES.includes(saved)) return saved;
-    // Sem preferência explícita: COMPLETO por padrão, mas respeita o SO.
-    return prefersReducedMotion() ? "reduced" : "full";
+    // Sem preferência explícita: DESLIGADO por padrão (o usuário ativa em Efeitos
+    // se quiser). Mantém a ficha neutra ao entrar.
+    return "off";
   }
 
   function applyModeAttr() {
