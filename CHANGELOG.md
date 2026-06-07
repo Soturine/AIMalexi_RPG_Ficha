@@ -12,6 +12,7 @@ Para detalhes historicos de arquitetura e fases antigas, consulte tambem
 - `docs/ROADMAP.md` com prioridades realistas e estado operacional do projeto.
 - `AGENTS.md` com instrucoes para futuros agentes de IA.
 - `CHANGELOG.md` inicial.
+- Prints e GIF de preview em `assets/screenshots/`.
 
 ### Alterado
 
@@ -20,6 +21,7 @@ Para detalhes historicos de arquitetura e fases antigas, consulte tambem
   limitacoes conhecidas.
 - README documenta execucao local, GitHub Pages, estrutura de pastas,
   backup/exportacao/importacao, PWA/offline parcial, contribuicao e aviso legal.
+- README agora inclui uma secao `Preview` com tour visual das telas principais.
 
 ### Observado
 

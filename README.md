@@ -8,6 +8,20 @@ Site publico, quando publicado pelo GitHub Pages:
 
 https://m4alexii.github.io/AIMalexi_RPG_Ficha/
 
+## Preview
+
+Tour rapido pelas telas principais:
+
+![Tour rapido do AIMalexi RPG Ficha](assets/screenshots/tour.gif)
+
+| Portal | Ficha do Investigador |
+|---|---|
+| <img src="assets/screenshots/home.png" alt="Portal inicial do AIMalexi RPG" width="420"> | <img src="assets/screenshots/investigator.png" alt="Ficha do Investigador com modal de novo personagem" width="420"> |
+
+| Centro do Guardiao | Compendio |
+|---|---|
+| <img src="assets/screenshots/keeper.png" alt="Centro de Campanha do Guardiao" width="420"> | <img src="assets/screenshots/compendium.png" alt="Compendio de regras" width="420"> |
+
 ## Status do Projeto
 
 Este README foi atualizado para separar o que esta pronto do que ainda esta em
