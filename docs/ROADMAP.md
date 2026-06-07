@@ -19,7 +19,7 @@ atualizado para manutencao e contribuicao.
 - Multiplayer remoto existe como transporte Realtime, mas campanha duravel
   ainda esta em desenvolvimento.
 - Suite Node existe, mas a auditoria de 2026-06-07 encontrou 16 falhas
-  pre-existentes: `872/888 passed`.
+  pre-existentes: `873/889 passed`.
 
 ## Prioridade 0 - Governanca e Documentacao
 

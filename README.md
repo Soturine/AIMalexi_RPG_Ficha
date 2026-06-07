@@ -85,7 +85,7 @@ continuam em evolucao e nao devem ser tratadas como finalizadas.
 - O PWA nao deve ser anunciado como "100% offline" enquanto o SDK remoto e a
   lista de precache nao forem validados em todos os fluxos.
 - A suite automatizada existe, mas na auditoria desta documentacao
-  (`2026-06-07`) retornou `872/888 passed`, com 16 falhas pre-existentes em
+  (`2026-06-07`) retornou `873/889 passed`, com 16 falhas pre-existentes em
   proveniencia de pericias, ontologia/arquitetura e KPIs do dashboard.
 - Algumas regras e fluxos de jogo seguem em backlog. Consulte
   `Melhorias/TODO_AUDIT_CoC7e.md` e `docs/ROADMAP.md`.

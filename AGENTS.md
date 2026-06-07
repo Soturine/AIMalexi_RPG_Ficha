@@ -61,7 +61,7 @@ $broken
 ```
 
 No estado auditado em 2026-06-07, a suite Node falhava antes das mudancas de
-documentacao (`872/888 passed`). Se isso ainda ocorrer, registre como baseline
+documentacao (`873/889 passed`). Se isso ainda ocorrer, registre como baseline
 em vez de ocultar.
 
 ## PWA e Cache

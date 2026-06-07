@@ -28,7 +28,7 @@ Para detalhes historicos de arquitetura e fases antigas, consulte tambem
 - Links locais principais entre HTMLs e assets foram auditados sem quebra
   aparente.
 - A suite `node js/tests/runner.js` falhou antes das mudancas de documentacao:
-  `872/888 passed`, com 16 falhas pre-existentes em proveniencia de pericias,
+  `873/889 passed`, com 16 falhas pre-existentes em proveniencia de pericias,
   ontologia/arquitetura e KPIs do dashboard.
 
 ### Nao alterado
