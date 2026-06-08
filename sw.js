@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    AIMalexi RPG · sw.js
-   Service Worker — Cache-First para funcionamento 100% offline.
+   Service Worker — Cache-First para o shell local e uso offline parcial.
 
    Estratégia:
-   - Na instalação: pré-cacheia todos os assets estáticos (shell do app).
+   - Na instalação: pré-cacheia os assets locais principais (shell do app).
    - Em fetch: serve do cache primeiro; só vai à rede se não houver hit.
    - Em atualização: novo SW aguarda até todas as abas serem fechadas
      antes de assumir (skipWaiting desabilitado intencionalmente para

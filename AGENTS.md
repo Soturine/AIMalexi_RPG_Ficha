@@ -1,48 +1,48 @@
 # AGENTS.md
 
-Instrucoes para agentes de IA que trabalharem neste repositorio.
+Instruções para agentes de IA que trabalharem neste repositório.
 
-## Primeiro Passo Obrigatorio
+## Primeiro Passo Obrigatório
 
 1. Rode `git status --short --branch`.
 2. Confirme a branch ativa.
 3. Leia `README.md`, este arquivo, `docs/ROADMAP.md` e, quando a tarefa tocar
    arquitetura/regras, `Melhorias/DIRETRIZ_OFICIAL_V1.md`.
-4. Audite o codigo antes de mudar comportamento.
+4. Audite o código antes de mudar comportamento.
 
-## Principios do Projeto
+## Princípios do Projeto
 
-- O projeto e uma ferramenta web estatica para GitHub Pages.
-- Nao introduza build obrigatorio, framework pesado ou dependencia desnecessaria.
+- O projeto é uma ferramenta web estática para GitHub Pages.
+- Não introduza build obrigatório, framework pesado ou dependência desnecessária.
 - Preserve caminhos relativos.
-- Nao altere regras, calculos ou comportamento da ficha sem necessidade clara.
-- Nunca copie textos longos, aventuras oficiais, PDFs, arte oficial ou conteudo
-  proprietario protegido.
-- Prefira resumos originais e dados mecanicos minimos quando documentar ou
-  ampliar referencias.
+- Não altere regras, cálculos ou comportamento da ficha sem necessidade clara.
+- Nunca copie textos longos, aventuras oficiais, PDFs, arte oficial ou conteúdo
+  proprietário protegido.
+- Prefira resumos originais e dados mecânicos mínimos quando documentar ou
+  ampliar referências.
 
-## Arquivos e Areas Importantes
+## Arquivos e Áreas Importantes
 
 - `index.html`: portal.
 - `investigator.html` + `js/investigator.js` + `js/views/`: ficha do jogador.
-- `keeper.html` + `js/keeper*.js` + `js/campaign/`: Guardiao e campanha.
-- `compendium.html` + `js/compendium/`: referencia.
+- `keeper.html` + `js/keeper*.js` + `js/campaign/`: Guardião e campanha.
+- `compendium.html` + `js/compendium/`: referência.
 - `js/engine/`: regras, dados, storage, dice e geradores auxiliares.
-- `data/`: pericias, ocupacoes, bestiario, armas, NPCs e presets.
-- `css/`: estilos por pagina e tema.
+- `data/`: perícias, ocupações, bestiário, armas, NPCs e presets.
+- `css/`: estilos por página e tema.
 - `sw.js` e `manifest.json`: PWA/offline.
 - `supabase/`: schema de campanha.
-- `Melhorias/`: diretrizes historicas, auditorias e arquitetura.
+- `Melhorias/`: diretrizes históricas, auditorias e arquitetura.
 
-## Verificacoes Recomendadas
+## Verificações Recomendadas
 
-Use conforme o risco da mudanca:
+Use conforme o risco da mudança:
 
 ```powershell
 node js/tests/runner.js
 ```
 
-Verificacao simples de links locais em HTML:
+Verificação simples de links locais em HTML:
 
 ```powershell
 $files = @('index.html','investigator.html','keeper.html','guia-iniciante.html','compendium.html')
@@ -60,35 +60,36 @@ foreach ($file in $files) {
 $broken
 ```
 
-No estado auditado em 2026-06-07, a suite Node falhava antes das mudancas de
-documentacao (`873/889 passed`). Se isso ainda ocorrer, registre como baseline
-em vez de ocultar.
+Na auditoria de 2026-06-07, a suíte Node passou com `889/889` depois das
+correções de ontologia, proveniência de perícias, arquitetura de views e KPIs do
+Guardião. Se uma futura rodada voltar a falhar, investigue como regressão antes
+de registrar como baseline.
 
 ## PWA e Cache
 
 - Se adicionar ou remover arquivo JS/CSS/HTML essencial, revise `PRECACHE_URLS`
   em `sw.js`.
 - Se alterar `PRECACHE_URLS`, incremente `CACHE_VERSION`.
-- Nao ative `skipWaiting` sem entender o impacto em sessoes de jogo abertas.
-- Enquanto Supabase for carregado por CDN, nao prometa offline completo.
+- Não ative `skipWaiting` sem entender o impacto em sessões de jogo abertas.
+- Enquanto Supabase for carregado por CDN, não prometa offline completo.
 
 ## Commits
 
-- Faca commits pequenos e tematicos.
+- Faça commits pequenos e temáticos.
 - Antes de cada commit, rode `git status --short`, confira o diff e execute uma
-  verificacao proporcional ao risco.
+  verificação proporcional ao risco.
 - Mensagens recomendadas:
   - `docs: atualizar README com status real do projeto`
   - `docs: adicionar roadmap do projeto`
-  - `docs: adicionar instrucoes para agentes IA`
+  - `docs: adicionar instruções para agentes IA`
   - `docs: adicionar changelog inicial`
-  - `fix: corrigir links e referencias da documentacao`
+  - `fix: corrigir links e referências da documentação`
 
 ## Coisas Que Exigem Cuidado Extra
 
-- Qualquer alteracao em `js/engine/coc7e-rules.js`, `js/engine/dice.js` ou
+- Qualquer alteração em `js/engine/coc7e-rules.js`, `js/engine/dice.js` ou
   `data/`.
-- Qualquer mudanca de schema em `js/engine/storage.js`.
-- Qualquer alteracao em `js/config.js`, Supabase ou fluxo remoto.
-- Qualquer mudanca que afete exportacao/importacao de personagens.
-- Qualquer conteudo de regras que possa reproduzir material proprietario.
+- Qualquer mudança de schema em `js/engine/storage.js`.
+- Qualquer alteração em `js/config.js`, Supabase ou fluxo remoto.
+- Qualquer mudança que afete exportação/importação de personagens.
+- Qualquer conteúdo de regras que possa reproduzir material proprietário.

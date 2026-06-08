@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-AIMalexi RPG is a browser-based character sheet tool for **Call of Cthulhu 7th Edition** (PT-BR). Three HTML pages: `investigator.html` (player sheet), `keeper.html` (GM tool), `guia-iniciante.html` (beginner guide). Deployed as a static site on GitHub Pages.
+AIMalexi RPG is a browser-based character sheet tool for **Call of Cthulhu 7th Edition** (PT-BR). Main HTML pages: `index.html` (portal), `investigator.html` (player sheet), `keeper.html` (GM tool), `guia-iniciante.html` (beginner guide), and `compendium.html` (reference). Deployed as a static site on GitHub Pages.
 
 ## Running locally
 
@@ -24,11 +24,11 @@ python -m http.server 8765
 # then open http://localhost:8765/
 ```
 
-Automated tests: `node js/tests/runner.js` — zero-dep Node runner + 16 suites (now also `test-occupation.js`), gated in CI via `.github/workflows/ci.yml`. Manual browser test: `test-engine.html`.
+Automated tests: `node js/tests/runner.js` - zero-dep Node runner + 19 `test-*.js` suites, gated in CI via `.github/workflows/ci.yml`. In the 2026-06-07 audit the local suite passed with `889/889`. Manual browser test: `test-engine.html`.
 
 ## Deployment
 
-Push to `main`. GitHub Pages serves from the root of `main` automatically. After adding any new JS/CSS file, add its path to `PRECACHE_URLS` in `sw.js` **and** bump `CACHE_VERSION` (currently `"v23"`). The SW uses cache-first with no `skipWaiting` (intentional — avoids interrupting a live session).
+Push to `main`. GitHub Pages serves from the root of `main` automatically. After adding any new JS/CSS file, add its path to `PRECACHE_URLS` in `sw.js` **and** bump `CACHE_VERSION` (currently `"v51"`). The SW uses cache-first with no `skipWaiting` (intentional - avoids interrupting a live session).
 
 ## Architecture
 
@@ -65,7 +65,7 @@ js/campaign/            ← multiplayer (BroadcastChannel + Supabase Realtime "M
   pin-system.js · campaign-store.js · campaign-ontology.js
 
 js/views/               ← 13 sheet-section views (identity, attributes, skills, combat, rolls…)
-js/tests/               ← runner.js + 16 test suites (Node, CI-gated)
+js/tests/               ← runner.js + 19 test suites (Node, CI-gated)
 
 js/vendor/              ← vendored, never edit
   signals-core.js       ← Preact Signals
@@ -77,7 +77,7 @@ js/dev/
 
 data/                   ← plain JS objects, safe to edit
   skills.js, occupations.js, bestiary.js, npc-archetypes.js…
-  presets/              ← empty.js, klein-moretti.js (example character)
+  presets/              ← empty.js
 ```
 
 **Data flow (target):** `UI → dispatch(action) → middleware → store(signals) → views react`

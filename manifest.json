@@ -1,7 +1,7 @@
 {
   "name": "AIMalexi RPG — Chamado de Cthulhu 7E",
   "short_name": "CoC 7E",
-  "description": "Fichas dinâmicas de Call of Cthulhu 7ª Edição. Investigador, Mestre, bestiário. Funciona offline.",
+  "description": "Fichas dinâmicas de Call of Cthulhu 7ª Edição. Investigador, Guardião, bestiário e suporte offline parcial.",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "any",
