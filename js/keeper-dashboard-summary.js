@@ -17,8 +17,6 @@ window.CoC = window.CoC || {};
   function num(x) { return Number(x) || 0; }
 
   // PURA: KPIs dos investigadores a partir do mapa campaign-store.investigators.
-  // §15: substitui médias genéricas (SAN/PV média) por métricas executivas:
-  // vivos, enlouquecidos, mortos.
   function computeInvestigatorKpis(investigators) {
     var list = Object.keys(investigators || {}).map(function (k) { return investigators[k]; });
     var total = list.length;
@@ -32,6 +30,17 @@ window.CoC = window.CoC || {};
       var s = (i && i.status) || {};
       return !!s.dead || (s.hp != null && num(s.hp) <= 0);
     }
+    function isAlive(i) {
+      var s = (i && i.status) || {};
+      return !s.dead && s.hp != null && num(s.hp) > 0;
+    }
+    function avgStatus(field) {
+      if (!total) return 0;
+      var sum = list.reduce(function (acc, i) {
+        return acc + num(i && i.status && i.status[field]);
+      }, 0);
+      return Math.round(sum / total);
+    }
 
     var critical = list.filter(function (i) {
       var s = i && i.status ? i.status : {};
@@ -42,9 +51,11 @@ window.CoC = window.CoC || {};
     return {
       total:   total,
       online:  list.filter(function (i) { return i && i.online; }).length,
-      alive:   list.filter(function (i) { return !isDead(i); }).length,
+      alive:   list.filter(isAlive).length,
       insane:  list.filter(isInsane).length,
       dead:    list.filter(isDead).length,
+      sanAvg:  avgStatus('san'),
+      hpAvg:   avgStatus('hp'),
       critical: critical
     };
   }

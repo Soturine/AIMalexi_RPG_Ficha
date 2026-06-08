@@ -11,6 +11,13 @@ window.CoC = window.CoC || {};
   // ─── Helpers locais ────────────────────────────────────────────────────
   const num = (v) => (typeof v === "number" && !isNaN(v) ? v : 0);
   const floor = Math.floor;
+  const DEFAULT_SKILL_BASES = Object.freeze({
+    "Ocultismo": 5,
+    "Esquivar": "DES/2",
+    "Língua Nativa": "EDU",
+    "Nível de Crédito": 0,
+    "Mythos de Cthulhu": 0
+  });
 
   /**
    * Avalia uma expressão aritmética SIMPLES contendo apenas:
@@ -371,6 +378,21 @@ window.CoC = window.CoC || {};
     return num(intelligence) * 2;
   }
 
+  function calcSkillBase(skillName, attributes) {
+    attributes = attributes || {};
+    const normalized = String(skillName || "").replace(/\s*\(.+\)$/, "");
+    const def = (window.CoCData && window.CoCData.findSkill)
+      ? (window.CoCData.findSkill(skillName) || window.CoCData.findSkill(normalized))
+      : null;
+    const baseDef = def
+      ? (def.baseFormula || def.base)
+      : (DEFAULT_SKILL_BASES[skillName] || DEFAULT_SKILL_BASES[normalized]);
+
+    if (baseDef === "DES/2") return floor(num(attributes.DES && attributes.DES.value) / 2);
+    if (baseDef === "EDU") return num(attributes.EDU && attributes.EDU.value);
+    return num(baseDef);
+  }
+
   /**
    * Proveniência de uma perícia (#32) — decompõe o valor em suas fontes.
    * Função PURA. Determina a categoria do gasto (ocupação vs interesse) pela
@@ -392,16 +414,9 @@ window.CoC = window.CoC || {};
     const sk = skills[skillName] || {};
     const total = num(sk.value);
 
-    // Base: da definição (fixa, DES/2, EDU) — usa CoCData se disponível
-    let base = 0;
-    const def = (window.CoCData && window.CoCData.findSkill)
-      ? (window.CoCData.findSkill(skillName) || window.CoCData.findSkill(skillName.replace(/\s*\(.+\)$/, "")))
-      : null;
-    if (def) {
-      if (def.baseFormula === "DES/2") base = floor(num(character.attributes && character.attributes.DES && character.attributes.DES.value) / 2);
-      else if (def.baseFormula === "EDU") base = num(character.attributes && character.attributes.EDU && character.attributes.EDU.value);
-      else base = num(def.base);
-    }
+    // Base: da definição (fixa, DES/2, EDU). Em testes Node, data/skills.js
+    // pode não estar carregado; o fallback cobre perícias canônicas críticas.
+    const base = calcSkillBase(skillName, character.attributes);
 
     const allocated = Math.max(0, total - base);
 
@@ -569,6 +584,7 @@ window.CoC = window.CoC || {};
     calcFinances,
     calcOccupationPoints,
     calcPersonalInterestPoints,
+    calcSkillBase,
     computeSkillProvenance,
     buildOccupationContext,
     sumSkillPointsSpent,

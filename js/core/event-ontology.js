@@ -141,15 +141,6 @@ window.CoC.core = window.CoC.core || {};
       note: 'Oposto de SPEND_LUCK; ausente em actions.js',
     },
 
-    // ── Atributos primários ───────────────────────────────────────────────────
-    SET_ATTRIBUTE: {
-      aggregate: 'character', domain: 'attributes',
-      renders: ['attributes', 'vitals', 'skills'], persists: true, sacred: false,
-      effects: [],
-      status: 'planned',
-      note: 'Atualmente mutação direta em attributes.js; migração pendente para store',
-    },
-
     // ── Perícias ──────────────────────────────────────────────────────────────
     SET_SKILL: {
       aggregate: 'character', domain: 'skills',
@@ -177,7 +168,7 @@ window.CoC.core = window.CoC.core || {};
       boundary_randomness: true,
       // difficulty e met são opcionais para compatibilidade com logs antigos
       // (ausentes → difficulty="regular", met=true)
-      resolved_fields: ['roll', 'skillValue', 'level', 'difficulty', 'met'],
+      resolved_fields: ['roll', 'skillValue', 'level'],
     },
     SKILL_IMPROVED: {
       aggregate: 'character', domain: 'skills',
@@ -238,7 +229,7 @@ window.CoC.core = window.CoC.core || {};
       effects: ['roll:logged', 'roll:pushed'],
       status: 'live',
       boundary_randomness: true,
-      resolved_fields: ['roll', 'skillValue', 'level', 'difficulty', 'met'],
+      resolved_fields: ['roll', 'skillValue', 'level'],
     },
     REGISTER_FUMBLE: {
       aggregate: 'session', domain: 'rolls',
